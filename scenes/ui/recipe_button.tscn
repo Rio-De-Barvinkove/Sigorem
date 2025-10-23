@@ -1,0 +1,27 @@
+[gd_scene load_steps=2 format=3 uid="uid://dsv2wih236031"]
+
+[ext_resource type="Script" path="res://scripts/ui/recipe_button.gd" id="1_recipebtn"]
+
+[node name="RecipeButton" type="Button"]
+custom_minimum_size = Vector2(0, 50)
+script = ExtResource("1_recipebtn")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Icon" type="TextureRect" parent="HBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Recipe Name"
+vertical_alignment = 1

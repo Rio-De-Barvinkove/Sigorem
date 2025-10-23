@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3 uid="uid://dps3xrk1e80j7"]
+
+[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_445gr"]
+[ext_resource type="Texture2D" uid="uid://b1i2a3r4s5t6" path="res://icon.svg" id="2_6y7h8"]
+[ext_resource type="Script" path="res://scripts/player/build_mode.gd" id="3_buildmode"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_fghij"]
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_445gr")
+
+[node name="BuildMode" type="Node" parent="."]
+script = ExtResource("3_buildmode")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_fghij")
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+billboard = 1
+texture = ExtResource("2_6y7h8")

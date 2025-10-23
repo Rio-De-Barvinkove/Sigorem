@@ -1,0 +1,31 @@
+[gd_scene load_steps=8 format=3 uid="uid://c6v2wih236026"]
+
+[ext_resource type="Script" path="res://scripts/world/tile_map.gd" id="1_5j1ce"]
+[ext_resource type="PackedScene" uid="uid://dps3xrk1e80j7" path="res://scenes/player.tscn" id="2_p6w2a"]
+[ext_resource type="Script" path="res://scripts/player/camera_controller.gd" id="3_q7w8e"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih236027" path="res://scenes/ui/inventory.tscn" id="4_inventory"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih236028" path="res://scenes/ui/pause_menu.tscn" id="5_pause"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih236029" path="res://scenes/ui/character_menu.tscn" id="6_char"]
+[ext_resource type="MeshLibrary" path="res://resources/terrain_meshlib.tres" id="7_meshlib"]
+
+[node name="World" type="Node3D"]
+
+[node name="GridMap" type="GridMap" parent="."]
+mesh_library = ExtResource("7_meshlib")
+script = ExtResource("1_5j1ce")
+
+[node name="Player" parent="." instance=ExtResource("2_p6w2a")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 1, 25)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 15, 15)
+script = ExtResource("3_q7w8e")
+target = NodePath("../Player")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="InventoryUI" parent="UI" instance=ExtResource("4_inventory")]
+
+[node name="PauseMenu" parent="UI" instance=ExtResource("5_pause")]
+
+[node name="CharacterMenu" parent="UI" instance=ExtResource("6_char")]
