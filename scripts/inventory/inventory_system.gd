@@ -1,5 +1,7 @@
 extends Node
 
+const ItemResource = preload("res://resources/items/item_resource.gd")
+
 signal inventory_changed
 
 const MAX_SLOTS = 48
@@ -61,3 +63,10 @@ func remove_item(item_id: String, quantity: int):
 				slot.item = null
 	
 	emit_signal("inventory_changed")
+
+func count_item(item_id: String) -> int:
+	var total_count = 0
+	for slot in slots:
+		if slot.item and slot.item.id == item_id:
+			total_count += slot.quantity
+	return total_count

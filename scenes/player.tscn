@@ -1,8 +1,11 @@
 [gd_scene load_steps=5 format=3 uid="uid://dps3xrk1e80j7"]
 
-[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_445gr"]
-[ext_resource type="Texture2D" uid="uid://b1i2a3r4s5t6" path="res://icon.svg" id="2_6y7h8"]
-[ext_resource type="Script" path="res://scripts/player/build_mode.gd" id="3_buildmode"]
+[ext_resource type="Script" path="res://scripts/game/player/PlayerController.gd" id="1_445gr"]
+[ext_resource type="Texture2D" path="res://icon.svg" id="2_6y7h8"]
+[ext_resource type="Script" path="res://scripts/game/player/BuildController.gd" id="3_buildmode"]
+[ext_resource type="Script" path="res://scripts/game/player/PlayerStats.gd" id="4_stats"]
+[ext_resource type="Script" path="res://scripts/game/systems/needs_system.gd" id="5_needs"]
+[ext_resource type="Script" path="res://scripts/game/systems/status_effects.gd" id="6_effects"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_fghij"]
 
@@ -19,3 +22,12 @@ shape = SubResource("CapsuleShape3D_fghij")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 billboard = 1
 texture = ExtResource("2_6y7h8")
+
+[node name="PlayerStats" type="Node" parent="."]
+script = ExtResource("4_stats")
+
+[node name="NeedsSystem" type="Node" parent="."]
+script = ExtResource("5_needs")
+
+[node name="StatusEffects" type="Node" parent="."]
+script = ExtResource("6_effects")

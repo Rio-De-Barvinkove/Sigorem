@@ -1,11 +1,18 @@
 extends Control
 
-func _ready():
-	$VBoxContainer/NewGameButton.pressed.connect(on_new_game_pressed)
-	$VBoxContainer/QuitButton.pressed.connect(on_quit_pressed)
+@onready var loading_screen = $LoadingScreen
+# Використовуємо спрощений LoadingScreen
 
-func on_new_game_pressed():
-	get_tree().change_scene_to_file("res://scenes/world.tscn")
+func _on_play_button_pressed():
+	# Приховуємо меню
+	hide()
+	
+	# Запускаємо нову систему завантаження
+	if loading_screen:
+		loading_screen.start_loading()
+	else:
+		# Якщо loading screen немає, просто переходимо
+		get_tree().change_scene_to_file("res://scenes/world.tscn")
 
-func on_quit_pressed():
+func _on_quit_button_pressed():
 	get_tree().quit()

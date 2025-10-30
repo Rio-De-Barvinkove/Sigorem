@@ -9,11 +9,16 @@ var needs_system: Node
 
 func _ready():
 	hide()
-	# These should be connected to the actual player nodes
-	# player_stats = get_node("/root/World/Player/PlayerStats")
-	# needs_system = get_node("/root/World/Player/NeedsSystem")
-	# player_stats.stat_changed.connect(on_stat_changed)
-	# needs_system.needs_changed.connect(on_needs_changed)
+	# Підключаємося після завантаження світу
+	call_deferred("_connect_to_player")
+
+func _connect_to_player():
+	player_stats = get_node_or_null("/root/World/Player/PlayerStats")
+	needs_system = get_node_or_null("/root/World/Player/NeedsSystem")
+	if player_stats:
+		player_stats.stat_changed.connect(on_stat_changed)
+	if needs_system:
+		needs_system.needs_changed.connect(on_needs_changed)
 	
 func _unhandled_input(event):
 	if event.is_action_pressed("character_menu"): # Assuming you have an input map for this

@@ -1,27 +1,28 @@
 extends StaticBody3D
 
-class_name GatherableObject
+const GatherableResource = preload("res://resources/objects/gatherable_resource.gd")
 
-@export var resource: GatherableResource
-var health = 100.0
+@export var resource_data: GatherableResource
 
 func _ready():
-	# Connect to an interaction system, perhaps via an Area3D
-	pass
+	if not resource_data:
+		push_error("Gatherable object has no resource data assigned!")
+		queue_free()
+		return
 
-func take_damage(amount: float, tool_type: String):
-	if resource.required_tool_type == tool_type:
-		health -= amount * 2 # Double damage with correct tool
-	else:
-		health -= amount
+	# Setup visuals based on resource_data if needed
+	var mesh_instance = $MeshInstance3D
+	if mesh_instance and resource_data.item_yield and resource_data.item_yield.icon:
+		var material = StandardMaterial3D.new()
+		material.albedo_texture = resource_data.item_yield.icon
+		mesh_instance.set_surface_override_material(0, material)
+
+
+func interact(player):
+	print("Player interacted with ", resource_data.item_yield.item_name)
+	# Here you would start a timer for gathering_time
+	# After the timer, add item_yield to player's inventory
+	InventorySystem.add_item(resource_data.item_yield, resource_data.yield_amount)
 	
-	if health <= 0:
-		harvest()
-
-func harvest():
-	# Use GameEvents to notify that an item was spawned/dropped
-	var item = resource.item_drop
-	var count = resource.drop_quantity
-	# For now, we'll just emit a signal. A proper implementation would spawn the item in the world.
-	GameEvents.emit_signal("item_picked_up", item, count)
+	# For now, just destroy the object
 	queue_free()

@@ -1,24 +1,36 @@
-[gd_scene load_steps=8 format=3 uid="uid://c6v2wih236026"]
+[gd_scene load_steps=9 format=3 uid="uid://c6v2wih236026"]
 
-[ext_resource type="Script" path="res://scripts/world/tile_map.gd" id="1_5j1ce"]
+[ext_resource type="Script" uid="uid://dh7eiekt4eerp" path="res://scripts/game/world/WorldGenerator.gd" id="1_5j1ce"]
 [ext_resource type="PackedScene" uid="uid://dps3xrk1e80j7" path="res://scenes/player.tscn" id="2_p6w2a"]
-[ext_resource type="Script" path="res://scripts/player/camera_controller.gd" id="3_q7w8e"]
+[ext_resource type="Script" uid="uid://bgxhog0gtcg6q" path="res://scripts/game/player/CameraController.gd" id="3_q7w8e"]
 [ext_resource type="PackedScene" uid="uid://dsv2wih236027" path="res://scenes/ui/inventory.tscn" id="4_inventory"]
 [ext_resource type="PackedScene" uid="uid://dsv2wih236028" path="res://scenes/ui/pause_menu.tscn" id="5_pause"]
-[ext_resource type="PackedScene" uid="uid://dsv2wih236029" path="res://scenes/ui/character_menu.tscn" id="6_char"]
-[ext_resource type="MeshLibrary" path="res://resources/terrain_meshlib.tres" id="7_meshlib"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih23603a" path="res://scenes/ui/character_menu.tscn" id="6_char"]
+[ext_resource type="Script" uid="uid://8b4ihqwx0ma" path="res://scripts/world/world_objects.gd" id="8_world_objects"]
+[ext_resource type="Script" uid="uid://dnkdy3jxy7cuy" path="res://scripts/ui/game_hud.gd" id="9_hud"]
 
 [node name="World" type="Node3D"]
 
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 20, 0)
+light_energy = 1.2
+shadow_enabled = true
+shadow_normal_bias = 1.0
+
 [node name="GridMap" type="GridMap" parent="."]
-mesh_library = ExtResource("7_meshlib")
 script = ExtResource("1_5j1ce")
+cell_size = Vector3(1, 1, 1)
+cell_octant_size = 8
+cell_center_x = true
+cell_center_y = true
+cell_center_z = true
 
 [node name="Player" parent="." instance=ExtResource("2_p6w2a")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 1, 25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 6, 25)
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 15, 15)
+current = true
 script = ExtResource("3_q7w8e")
 target = NodePath("../Player")
 
@@ -29,3 +41,31 @@ target = NodePath("../Player")
 [node name="PauseMenu" parent="UI" instance=ExtResource("5_pause")]
 
 [node name="CharacterMenu" parent="UI" instance=ExtResource("6_char")]
+
+[node name="GameHUD" type="CanvasLayer" parent="."]
+script = ExtResource("9_hud")
+
+[node name="InfoLabel" type="Label" parent="GameHUD"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -30.0
+offset_right = 800.0
+offset_bottom = -10.0
+grow_vertical = 0
+text = "Controls"
+
+[node name="BuildModeLabel" type="Label" parent="GameHUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -400.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 30.0
+grow_horizontal = 0
+horizontal_alignment = 2
+
+[node name="WorldObjects" type="Node3D" parent="."]
+script = ExtResource("8_world_objects")

@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3 uid="uid://cbcdivsomn3ml"]
+
+[ext_resource type="PackedScene" uid="uid://dumqndf4ppn0g" path="res://scenes/blocks/dirt_block.tscn" id="1_x4nrn"]
+[ext_resource type="PackedScene" uid="uid://cyx5svl31wy32" path="res://scenes/blocks/grass_block.tscn" id="2_p1owj"]
+[ext_resource type="PackedScene" uid="uid://bwyl8uf0vwf3g" path="res://scenes/blocks/stone_block.tscn" id="3_7dtpe"]
+
+[node name="Node3D" type="Node3D"]
+
+[node name="Node3D" parent="." instance=ExtResource("1_x4nrn")]
+transform = Transform3D(-0.31692952, 0.693529, -0.6469726, 0.9274746, 0.36928502, -0.058478314, 0.19836082, -0.61858404, -0.76026726, -0.7725854, -0.044114828, 2.26375)
+
+[node name="Node3D2" parent="." instance=ExtResource("2_p1owj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1)
+
+[node name="Node3D3" parent="." instance=ExtResource("3_7dtpe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 1)

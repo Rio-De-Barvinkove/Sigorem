@@ -4,6 +4,7 @@ extends Control
 # inventory_system is now an autoload singleton
 
 func _ready():
+	hide() # Спочатку приховано
 	InventorySystem.inventory_changed.connect(update_ui)
 	
 	# Create placeholder slots
@@ -13,6 +14,10 @@ func _ready():
 		grid_container.add_child(slot)
 	
 	update_ui() # Initial update
+
+func _unhandled_input(event):
+	if event.is_action_pressed("toggle_inventory"):
+		visible = !visible
 
 func update_ui():
 	var slots = InventorySystem.slots

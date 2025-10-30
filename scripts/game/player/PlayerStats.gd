@@ -17,6 +17,13 @@ var stamina = 100.0:
 		emit_signal("stat_changed", "stamina", stamina, max_stamina)
 var max_stamina = 100.0
 
+var stamina_regen_modifier = 1.0
+var stamina_regen_rate = 5.0
+
+func _process(_delta):
+	if stamina < max_stamina:
+		regenerate_stamina(stamina_regen_rate * stamina_regen_modifier * _delta)
+
 func take_damage(amount: float):
 	health -= amount
 
@@ -28,3 +35,5 @@ func use_stamina(amount: float):
 
 func regenerate_stamina(amount: float):
 	stamina += amount
+
+

@@ -1,4 +1,7 @@
-[gd_scene format=3 uid="uid://bqh6i7d5d7f7g"]
+[gd_scene load_steps=3 format=3 uid="uid://bqh6i7d5d7f7g"]
+
+[ext_resource type="Script" uid="uid://bda0lu6efr3c5" path="res://scripts/ui/main_menu.gd" id="1_abcde"]
+[ext_resource type="Script" path="res://scripts/ui/loading_screen_simple.gd" id="2_loading"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -7,7 +10,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_mainmenu")
+script = ExtResource("1_abcde")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -16,26 +19,58 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -50.0
+offset_left = -100.0
 offset_top = -50.0
-offset_right = 50.0
+offset_right = 100.0
 offset_bottom = 50.0
 grow_horizontal = 2
 grow_vertical = 2
-alignment = 1
+theme_override_constants/separation = 10
 
-[node name="NewGameButton" type="Button" parent="VBoxContainer"]
+[node name="PlayButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-text = "New Game"
+text = "Play"
 
-[node name="LoadGameButton" type="Button" parent="VBoxContainer"]
+[node name="OptionsButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-text = "Load Game"
-
-[node name="SettingsButton" type="Button" parent="VBoxContainer"]
-layout_mode = 2
-text = "Settings"
+text = "Options"
 
 [node name="QuitButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 text = "Quit"
+
+[node name="LoadingScreen" type="CanvasLayer" parent="."]
+visible = false
+script = ExtResource("2_loading")
+
+[node name="ColorRect" type="ColorRect" parent="LoadingScreen"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.15, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="LoadingScreen"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -20.0
+offset_right = 150.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="LoadingScreen/VBoxContainer"]
+layout_mode = 2
+text = "Loading..."
+horizontal_alignment = 1
+
+[node name="ProgressBar" type="ProgressBar" parent="LoadingScreen/VBoxContainer"]
+layout_mode = 2
+
+[connection signal="pressed" from="VBoxContainer/PlayButton" to="." method="_on_play_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]

@@ -1,5 +1,7 @@
 extends Node
 
+const CraftingRecipe = preload("res://resources/recipes/recipe_resource.gd")
+
 var recipes: Array[CraftingRecipe] = []
 
 func _ready():
@@ -36,8 +38,9 @@ func craft_item(recipe: CraftingRecipe, inventory_system: Node):
 	if can_craft(recipe, inventory_system):
 		for i in range(recipe.ingredients.size()):
 			inventory_system.remove_item(recipe.ingredients[i].id, recipe.ingredient_counts[i])
-		
 		inventory_system.add_item(recipe.result_item, recipe.result_count)
 		GameEvents.emit_signal("item_crafted", recipe)
 		return true
 	return false
+
+

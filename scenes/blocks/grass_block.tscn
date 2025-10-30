@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://cyx5svl31wy32"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_33psj"]
+albedo_color = Color(0.29803923, 0.6862745, 0.3137255, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_vsvvm"]
+material = SubResource("StandardMaterial3D_33psj")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mshw5"]
+
+[node name="Node3D" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_vsvvm")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
+shape = SubResource("BoxShape3D_mshw5")
