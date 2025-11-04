@@ -17,6 +17,9 @@ class_name TerrainGenerator
 @export var use_threading := false
 @export var use_vegetation := false
 @export var use_heightmap := false
+@export var use_splat_mapping := false
+@export var use_detail_layers := false
+@export var use_optimization := true
 
 @export_group("Параметри процедурної генерації")
 @export var noise: FastNoiseLite
@@ -37,6 +40,9 @@ var lod_module: LODManager
 var threading_module: ThreadingManager
 var vegetation_module: VegetationManager
 var heightmap_module: HeightmapLoader
+var splat_module: SplatMapManager
+var detail_module: DetailLayerManager
+var optimization_module: OptimizationManager
 
 var is_initialized := false
 
@@ -95,6 +101,21 @@ func initialize_modules():
 		heightmap_module = HeightmapLoader.new()
 		add_child(heightmap_module)
 
+	# Splat mapping
+	if use_splat_mapping:
+		splat_module = SplatMapManager.new()
+		add_child(splat_module)
+
+	# Detail layers
+	if use_detail_layers:
+		detail_module = DetailLayerManager.new()
+		add_child(detail_module)
+
+	# Optimization manager (завжди активний, якщо use_optimization = true)
+	if use_optimization:
+		optimization_module = OptimizationManager.new()
+		add_child(optimization_module)
+
 	is_initialized = true
 	print("TerrainGenerator: Модулі ініціалізовані")
 
@@ -144,3 +165,10 @@ func _generate_terrain_editor():
 @export_tool_button("Генерувати структури", "Node3D")
 func _generate_structures_editor():
 	generate_structures()
+
+@export_tool_button("Показати звіт продуктивності", "Info")
+func _show_performance_report():
+	if optimization_module:
+		print(optimization_module.get_performance_report())
+	else:
+		print("Оптимізація вимкнена")

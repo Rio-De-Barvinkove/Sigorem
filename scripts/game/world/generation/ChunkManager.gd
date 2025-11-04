@@ -61,20 +61,41 @@ func get_player_chunk_position() -> Vector2i:
 	)
 
 func generate_chunk(gridmap: GridMap, chunk_pos: Vector2i):
-	"""Генерація окремого чанка"""
+	"""Генерація окремого чанка з оптимізацією"""
 	if active_chunks.has(chunk_pos):
 		return  # Чанк вже існує
 
+	# Розраховуємо оптимізацію для цього чанка
+	var distance_to_player = get_chunk_distance(chunk_pos)
+	var optimization = {}
+
+	if get_parent().optimization_module and get_parent().use_optimization:
+		optimization = get_parent().optimization_module.optimize_chunk_generation(chunk_pos, distance_to_player)
+
+	# Перевіряємо ліміт часу генерації
+	if get_parent().optimization_module and get_parent().use_optimization:
+		get_parent().optimization_module.start_generation_timer()
+
 	# Тут викликаємо процедурну генерацію для чанка
 	if get_parent().procedural_module:
-		get_parent().procedural_module.generate_chunk(gridmap, chunk_pos)
+		get_parent().procedural_module.generate_chunk(gridmap, chunk_pos, optimization)
+
+		# Перевіряємо, чи не перевищено час
+		if get_parent().optimization_module and get_parent().use_optimization:
+			if not get_parent().optimization_module.check_generation_time():
+				print("ChunkManager: Генерація перервана через ліміт часу для чанка ", chunk_pos)
+				return
 
 	# Генеруємо рослинність для чанка
 	if get_parent().vegetation_module and get_parent().use_vegetation:
 		get_parent().vegetation_module.generate_multimesh_for_chunk(chunk_pos, gridmap)
 
+	# Генеруємо detail layers
+	if get_parent().detail_module and get_parent().use_detail_layers:
+		get_parent().detail_module.update_detail_layer(chunk_pos, gridmap)
+
 	active_chunks[chunk_pos] = true
-	print("ChunkManager: Згенеровано чанк ", chunk_pos)
+	print("ChunkManager: Згенеровано чанк ", chunk_pos, " з LOD рівнем ", optimization.get("resolution", 1.0))
 
 func regenerate_chunks_around_player(gridmap: GridMap):
 	"""Регенерація чанків навколо гравця"""
