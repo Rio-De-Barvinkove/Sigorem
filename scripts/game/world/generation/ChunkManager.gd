@@ -69,6 +69,10 @@ func generate_chunk(gridmap: GridMap, chunk_pos: Vector2i):
 	if get_parent().procedural_module:
 		get_parent().procedural_module.generate_chunk(gridmap, chunk_pos)
 
+	# Генеруємо рослинність для чанка
+	if get_parent().vegetation_module and get_parent().use_vegetation:
+		get_parent().vegetation_module.generate_multimesh_for_chunk(chunk_pos, gridmap)
+
 	active_chunks[chunk_pos] = true
 	print("ChunkManager: Згенеровано чанк ", chunk_pos)
 
@@ -95,6 +99,10 @@ func cull_distant_chunks(gridmap: GridMap):
 
 	for chunk_pos in chunks_to_remove:
 		remove_chunk(gridmap, chunk_pos)
+
+	# Видаляємо рослинність для чанка
+	if get_parent().vegetation_module and get_parent().use_vegetation:
+		get_parent().vegetation_module.remove_multimesh_for_chunk(chunk_pos)
 
 func remove_chunk(gridmap: GridMap, chunk_pos: Vector2i):
 	"""Видалення чанка"""

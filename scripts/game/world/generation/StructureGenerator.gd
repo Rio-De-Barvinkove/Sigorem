@@ -15,6 +15,7 @@ var rules: Resource
 @export var structure_types: Array[String] = ["house", "cave", "ruins"]
 
 var generated_structures: Array = []
+var wfc_integrator: WFCIntegrator
 
 func _ready():
 	# Ініціалізація WFC компонентів
@@ -22,10 +23,10 @@ func _ready():
 
 func setup_wfc_components():
 	"""Налаштування WFC генератора"""
-	# Тут буде ініціалізація WFC з ассета
-	# Зараз це заглушка
+	wfc_integrator = WFCIntegrator.new()
+	add_child(wfc_integrator)
 
-	print("StructureGenerator: WFC компоненти ініціалізовані (заглушка)")
+	print("StructureGenerator: WFC компоненти ініціалізовані")
 
 func generate_structures(gridmap: GridMap):
 	"""Генерація структур на існуючому терейні"""
@@ -37,8 +38,27 @@ func generate_structures(gridmap: GridMap):
 
 	print("StructureGenerator: Генерація структур...")
 
-	# Простий приклад генерації будинків
-	generate_simple_houses(gridmap)
+	# Спробуємо використати WFC для складних структур
+	var wfc_success = generate_wfc_structures(gridmap)
+
+	# Якщо WFC не працює, використовуємо простий генератор
+	if not wfc_success:
+		generate_simple_houses(gridmap)
+
+func generate_wfc_structures(gridmap: GridMap) -> bool:
+	"""Генерація структур з використанням WFC"""
+	if not wfc_integrator:
+		return false
+
+	# Генеруємо підземелля
+	var dungeon_center = Vector2i(50, 50)  # Приклад центру карти
+	var success = wfc_integrator.generate_dungeon(gridmap, dungeon_center, Vector2i(20, 20))
+
+	if success:
+		generated_structures.append({"type": "dungeon", "position": dungeon_center, "size": Vector2i(20, 20)})
+		print("StructureGenerator: Згенеровано dungeon з WFC")
+
+	return success
 
 func generate_simple_houses(gridmap: GridMap):
 	"""Генерація простих будинків"""
@@ -52,7 +72,13 @@ func generate_simple_houses(gridmap: GridMap):
 
 		# Перевіряємо, чи не занадто близько до інших структур
 		if is_position_valid_for_structure(house_pos):
-			generate_house(gridmap, house_pos)
+			# Спробуємо використати WFC для будинку
+			var wfc_success = wfc_integrator and wfc_integrator.generate_building(gridmap, house_pos, "house")
+
+			if not wfc_success:
+				# Якщо WFC не працює, використовуємо простий генератор
+				generate_house(gridmap, house_pos)
+
 			generated_structures.append({"type": "house", "position": house_pos})
 
 func generate_house(gridmap: GridMap, position: Vector2i):

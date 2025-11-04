@@ -15,6 +15,8 @@ class_name TerrainGenerator
 @export var use_structures := false
 @export var use_lod := false
 @export var use_threading := false
+@export var use_vegetation := false
+@export var use_heightmap := false
 
 @export_group("Параметри процедурної генерації")
 @export var noise: FastNoiseLite
@@ -33,6 +35,8 @@ var chunk_module: ChunkManager
 var structure_module: StructureGenerator
 var lod_module: LODManager
 var threading_module: ThreadingManager
+var vegetation_module: VegetationManager
+var heightmap_module: HeightmapLoader
 
 var is_initialized := false
 
@@ -80,6 +84,16 @@ func initialize_modules():
 	if use_threading:
 		threading_module = ThreadingManager.new()
 		add_child(threading_module)
+
+	# Vegetation менеджер
+	if use_vegetation:
+		vegetation_module = VegetationManager.new()
+		add_child(vegetation_module)
+
+	# Heightmap лоадер
+	if use_heightmap:
+		heightmap_module = HeightmapLoader.new()
+		add_child(heightmap_module)
 
 	is_initialized = true
 	print("TerrainGenerator: Модулі ініціалізовані")
