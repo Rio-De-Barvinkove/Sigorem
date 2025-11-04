@@ -18,12 +18,8 @@ shadow_enabled = true
 shadow_normal_bias = 1.0
 
 [node name="GridMap" type="GridMap" parent="."]
-script = ExtResource("1_5j1ce")
 cell_size = Vector3(1, 1, 1)
-cell_octant_size = 8
-cell_center_x = true
-cell_center_y = true
-cell_center_z = true
+script = ExtResource("1_5j1ce")
 
 [node name="Player" parent="." instance=ExtResource("2_p6w2a")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 6, 25)
