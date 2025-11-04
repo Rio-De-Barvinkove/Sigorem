@@ -20,6 +20,10 @@ class_name TerrainGenerator
 @export var use_splat_mapping := false
 @export var use_detail_layers := false
 @export var use_optimization := true
+@export var use_save_load := false
+@export var use_native_optimization := false
+@export var use_precomputed_patterns := false
+@export var use_best_practices := true
 
 @export_group("Параметри процедурної генерації")
 @export var noise: FastNoiseLite
@@ -43,6 +47,10 @@ var heightmap_module: HeightmapLoader
 var splat_module: SplatMapManager
 var detail_module: DetailLayerManager
 var optimization_module: OptimizationManager
+var save_load_module: SaveLoadManager
+var native_optimizer: NativeOptimizer
+var pattern_manager: PrecomputedPatterns
+var best_practices: BestPractices
 
 var is_initialized := false
 
@@ -116,6 +124,26 @@ func initialize_modules():
 		optimization_module = OptimizationManager.new()
 		add_child(optimization_module)
 
+	# Save/Load manager
+	if use_save_load:
+		save_load_module = SaveLoadManager.new()
+		add_child(save_load_module)
+
+	# Native optimizer
+	if use_native_optimization:
+		native_optimizer = NativeOptimizer.new()
+		add_child(native_optimizer)
+
+	# Precomputed patterns
+	if use_precomputed_patterns:
+		pattern_manager = PrecomputedPatterns.new()
+		add_child(pattern_manager)
+
+	# Best practices
+	if use_best_practices:
+		best_practices = BestPractices.new()
+		add_child(best_practices)
+
 	is_initialized = true
 	print("TerrainGenerator: Модулі ініціалізовані")
 
@@ -172,3 +200,45 @@ func _show_performance_report():
 		print(optimization_module.get_performance_report())
 	else:
 		print("Оптимізація вимкнена")
+
+@export_tool_button("Зберегти світ", "Save")
+func _save_world():
+	if save_load_module:
+		save_load_module.save_world_metadata()
+		save_load_module.auto_save()
+		print("Світ збережено!")
+	else:
+		print("Save/Load модуль вимкнено")
+
+@export_tool_button("Завантажити світ", "Load")
+func _load_world():
+	if save_load_module:
+		var metadata = save_load_module.load_world_metadata()
+		if metadata.size() > 0:
+			# Відновлюємо налаштування
+			if metadata.has("world_seed"):
+				noise.seed = metadata["world_seed"]
+			print("Світ завантажено!")
+		else:
+			print("Немає збережених даних світу")
+	else:
+		print("Save/Load модуль вимкнено")
+
+@export_tool_button("Показати best practices", "Help")
+func _show_best_practices():
+	if best_practices:
+		var practices = best_practices.get_generation_best_practices()
+		print("=== BEST PRACTICES ===")
+		for key in practices.keys():
+			print(key, ": ", practices[key])
+	else:
+		print("Best practices модуль вимкнено")
+
+@export_tool_button("Експортувати звіт", "Save")
+func _export_performance_report():
+	if best_practices:
+		var report_path = "user://performance_report.md"
+		best_practices.save_performance_report(report_path)
+		print("Звіт експортовано в ", report_path)
+	else:
+		print("Best practices модуль вимкнено")

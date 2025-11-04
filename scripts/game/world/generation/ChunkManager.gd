@@ -95,7 +95,31 @@ func generate_chunk(gridmap: GridMap, chunk_pos: Vector2i):
 		get_parent().detail_module.update_detail_layer(chunk_pos, gridmap)
 
 	active_chunks[chunk_pos] = true
+
+	# Зберігаємо дані чанка для швидкого завантаження
+	if get_parent().save_load_module and get_parent().use_save_load:
+		var chunk_data = collect_chunk_data(chunk_pos)
+		get_parent().save_load_module.save_chunk_data(chunk_pos, chunk_data)
+
 	print("ChunkManager: Згенеровано чанк ", chunk_pos, " з LOD рівнем ", optimization.get("resolution", 1.0))
+
+func collect_chunk_data(chunk_pos: Vector2i) -> Dictionary:
+	"""Збір даних чанка для збереження"""
+	var chunk_data = {}
+	var chunk_size = Vector2i(50, 50)
+	var chunk_start = chunk_pos * chunk_size
+
+	# Зберігаємо блоки чанка
+	if get_parent().target_gridmap:
+		for x in range(chunk_start.x, chunk_start.x + chunk_size.x):
+			for z in range(chunk_start.y, chunk_start.y + chunk_size.y):
+				for y in range(-10, 20):  # Діапазон висоти
+					var cell_item = get_parent().target_gridmap.get_cell_item(Vector3i(x, y, z))
+					if cell_item >= 0:
+						var key = str(x) + "_" + str(y) + "_" + str(z)
+						chunk_data[key] = cell_item
+
+	return chunk_data
 
 func regenerate_chunks_around_player(gridmap: GridMap):
 	"""Регенерація чанків навколо гравця"""
