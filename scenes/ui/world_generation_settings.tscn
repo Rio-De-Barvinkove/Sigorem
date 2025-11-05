@@ -1,0 +1,330 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8v1qkq6t6v7b"]
+
+[ext_resource type="Script" path="res://scripts/ui/WorldGenerationSettings.gd" id="1_0q4p6"]
+
+[node name="WorldGenerationSettings" type="Control"]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -250.0
+offset_right = 400.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_0q4p6")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 4
+
+[node name="TitleLabel" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Налаштування генерації світу"
+horizontal_alignment = 1
+
+[node name="TabContainer" type="TabContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CoreModules" type="ScrollContainer" parent="Panel/VBoxContainer/TabContainer"]
+layout_mode = 2
+
+[node name="ModulesVBox" type="VBoxContainer" parent="Panel/VBoxContainer/TabContainer/CoreModules"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 3
+
+[node name="ProceduralGeneration" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox"]
+layout_mode = 2
+text = "Процедурна генерація"
+button_pressed = true
+
+[node name="Chunking" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox"]
+layout_mode = 2
+text = "Chunking система"
+button_pressed = true
+
+[node name="Optimization" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox"]
+layout_mode = 2
+text = "Оптимізація"
+button_pressed = true
+
+[node name="BestPractices" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox"]
+layout_mode = 2
+text = "Best Practices"
+button_pressed = true
+
+[node name="HSeparator1" type="HSeparator" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox"]
+layout_mode = 2
+
+[node name="ParamsGrid" type="GridContainer" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox"]
+layout_mode = 2
+columns = 2
+
+[node name="ChunkSizeLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+text = "Розмір чанка:"
+
+[node name="ChunkSizeHBox" type="HBoxContainer" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+
+[node name="ChunkSizeX" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/ChunkSizeHBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(70, 18)
+min_value = 16.0
+max_value = 128.0
+value = 50.0
+step = 1.0
+
+[node name="ChunkSizeY" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/ChunkSizeHBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(70, 18)
+min_value = 16.0
+max_value = 128.0
+value = 50.0
+step = 1.0
+
+[node name="ChunkRadiusLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+text = "Радіус чанків:"
+
+[node name="ChunkRadius" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+min_value = 1.0
+max_value = 20.0
+value = 5.0
+step = 1.0
+
+[node name="HeightAmplitudeLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+text = "Амплітуда висоти:"
+
+[node name="HeightAmplitude" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+min_value = 1.0
+max_value = 20.0
+value = 5.0
+
+[node name="BaseHeightLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+text = "Базова висота:"
+
+[node name="BaseHeight" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+min_value = 0.0
+max_value = 20.0
+value = 5.0
+
+[node name="AdvancedModules" type="ScrollContainer" parent="Panel/VBoxContainer/TabContainer"]
+layout_mode = 2
+
+[node name="AdvancedVBox" type="VBoxContainer" parent="Panel/VBoxContainer/TabContainer/AdvancedModules"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 3
+
+[node name="Structures" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Структури"
+
+[node name="StructureDensityLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Щільність структур:"
+
+[node name="StructureDensity" type="HSlider" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+min_value = 0.0
+max_value = 1.0
+value = 0.1
+step = 0.01
+
+[node name="LOD" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "LOD (Level of Detail)"
+
+[node name="Threading" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Багатопоточність"
+
+[node name="Vegetation" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Рослинність"
+
+[node name="VegetationRadiusLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Радіус рослинності:"
+
+[node name="VegetationRadius" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+min_value = 1.0
+max_value = 20.0
+value = 6.0
+
+[node name="Heightmap" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Heightmap"
+
+[node name="HeightmapScaleLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Масштаб heightmap:"
+
+[node name="HeightmapScale" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+min_value = 0.1
+max_value = 20.0
+value = 5.0
+step = 0.1
+
+[node name="HeightmapSizeLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Розмір mesh heightmap:"
+
+[node name="HeightmapSizeHBox" type="HBoxContainer" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+
+[node name="HeightmapSizeX" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox/HeightmapSizeHBox"]
+layout_mode = 2
+min_value = 10.0
+max_value = 500.0
+value = 100.0
+
+[node name="HeightmapSizeY" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox/HeightmapSizeHBox"]
+layout_mode = 2
+min_value = 10.0
+max_value = 500.0
+value = 100.0
+
+[node name="HeightmapSubdividesLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Підрозділи heightmap:"
+
+[node name="HeightmapSubdivides" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+min_value = 10.0
+max_value = 200.0
+value = 50.0
+step = 1.0
+
+[node name="SplatMapping" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Splat Mapping"
+
+[node name="DetailLayers" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Detail Layers"
+
+[node name="SaveLoad" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Збереження/Завантаження"
+
+[node name="NativeOptimization" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Native оптимізація"
+
+[node name="PrecomputedPatterns" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox"]
+layout_mode = 2
+text = "Попередньо обчислені патерни"
+
+[node name="Optimization" type="ScrollContainer" parent="Panel/VBoxContainer/TabContainer"]
+layout_mode = 2
+
+[node name="OptimizationVBox" type="VBoxContainer" parent="Panel/VBoxContainer/TabContainer/Optimization"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 3
+
+[node name="MaxGenerationTimeLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/Optimization/OptimizationVBox"]
+layout_mode = 2
+text = "Макс. час генерації (мс):"
+
+[node name="MaxGenerationTime" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/Optimization/OptimizationVBox"]
+layout_mode = 2
+min_value = 1.0
+max_value = 500.0
+value = 100.0
+
+[node name="TargetFPSLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/Optimization/OptimizationVBox"]
+layout_mode = 2
+text = "Цільовий FPS:"
+
+[node name="TargetFPS" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/Optimization/OptimizationVBox"]
+layout_mode = 2
+min_value = 30.0
+max_value = 144.0
+value = 60.0
+step = 1.0
+
+[node name="MaxActiveChunksLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/Optimization/OptimizationVBox"]
+layout_mode = 2
+text = "Макс. активних чанків:"
+
+[node name="MaxActiveChunks" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/Optimization/OptimizationVBox"]
+layout_mode = 2
+min_value = 10.0
+max_value = 200.0
+value = 50.0
+step = 1.0
+
+[node name="EnableChunkCulling" type="CheckBox" parent="Panel/VBoxContainer/TabContainer/Optimization/OptimizationVBox"]
+layout_mode = 2
+text = "Увімкнути culling чанків"
+button_pressed = true
+
+[node name="MaxChunkDistanceLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/Optimization/OptimizationVBox"]
+layout_mode = 2
+text = "Макс. відстань чанка:"
+
+[node name="MaxChunkDistance" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/Optimization/OptimizationVBox"]
+layout_mode = 2
+min_value = 10.0
+max_value = 500.0
+value = 100.0
+
+[node name="ButtonsHBox" type="HBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="AutoUpdate" type="CheckBox" parent="Panel/VBoxContainer/ButtonsHBox"]
+layout_mode = 2
+text = "Автооновлення"
+button_pressed = false
+
+[node name="GenerateButton" type="Button" parent="Panel/VBoxContainer/ButtonsHBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Згенерувати світ"
+
+[node name="CloseButton" type="Button" parent="Panel/VBoxContainer/ButtonsHBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Закрити"
+
+[connection signal="pressed" from="Panel/VBoxContainer/ButtonsHBox/GenerateButton" to="." method="_on_generate_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/ButtonsHBox/CloseButton" to="." method="_on_close_pressed"]
+[connection signal="toggled" from="Panel/VBoxContainer/ButtonsHBox/AutoUpdate" to="." method="_on_auto_update_toggled"]

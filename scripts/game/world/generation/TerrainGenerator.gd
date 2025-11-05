@@ -35,6 +35,11 @@ class_name TerrainGenerator
 @export var enable_chunk_culling := true
 @export var max_chunk_distance := 100.0
 
+@export_group("Параметри heightmap")
+@export var heightmap_scale: float = 5.0
+@export var heightmap_size: Vector2 = Vector2(100.0, 100.0)
+@export var heightmap_subdivides: int = 50
+
 # Посилання на модулі
 var procedural_module
 var chunk_module
@@ -62,6 +67,9 @@ func _ready():
 
 func initialize_modules():
 	"""Ініціалізація всіх модулів генерації"""
+	
+	# Очищаємо старі модулі перед ініціалізацією нових
+	cleanup_modules()
 
 	# Процедурна генерація (базова)
 	if use_procedural_generation:
@@ -106,6 +114,9 @@ func initialize_modules():
 	# Heightmap лоадер
 	if use_heightmap:
 		heightmap_module = HeightmapLoader.new()
+		heightmap_module.height_scale = heightmap_scale
+		heightmap_module.mesh_size = heightmap_size
+		heightmap_module.subdivides = heightmap_subdivides
 		add_child(heightmap_module)
 
 	# Splat mapping
@@ -144,7 +155,33 @@ func initialize_modules():
 		add_child(best_practices)
 
 	is_initialized = true
+	add_to_group("terrain_generator")
 	print("TerrainGenerator: Модулі ініціалізовані")
+
+func cleanup_modules():
+	"""Очищення всіх модулів перед реініціалізацією"""
+	# Видаляємо всі дочірні вузли (модулі)
+	for child in get_children():
+		if child != target_gridmap:  # Не видаляємо GridMap якщо він дочірній
+			child.queue_free()
+	
+	# Очищаємо посилання
+	procedural_module = null
+	chunk_module = null
+	structure_module = null
+	lod_module = null
+	threading_module = null
+	vegetation_module = null
+	heightmap_module = null
+	splat_module = null
+	detail_module = null
+	optimization_module = null
+	save_load_module = null
+	native_optimizer = null
+	pattern_manager = null
+	best_practices = null
+	
+	print("TerrainGenerator: Модулі очищено")
 
 func generate_initial_terrain():
 	"""Генерація початкового терейну"""
