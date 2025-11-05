@@ -1,4 +1,3 @@
-@tool
 extends Node
 class_name TerrainGenerator
 
@@ -37,20 +36,20 @@ class_name TerrainGenerator
 @export var max_chunk_distance := 100.0
 
 # Посилання на модулі
-var procedural_module: ProceduralGeneration
-var chunk_module: ChunkManager
-var structure_module: StructureGenerator
-var lod_module: LODManager
-var threading_module: ThreadingManager
-var vegetation_module: VegetationManager
-var heightmap_module: HeightmapLoader
-var splat_module: SplatMapManager
-var detail_module: DetailLayerManager
-var optimization_module: OptimizationManager
-var save_load_module: SaveLoadManager
-var native_optimizer: NativeOptimizer
-var pattern_manager: PrecomputedPatterns
-var best_practices: BestPractices
+var procedural_module
+var chunk_module
+var structure_module
+var lod_module
+var threading_module
+var vegetation_module
+var heightmap_module
+var splat_module
+var detail_module
+var optimization_module
+var save_load_module
+var native_optimizer
+var pattern_manager
+var best_practices
 
 var is_initialized := false
 
@@ -161,6 +160,10 @@ func generate_initial_terrain():
 			procedural_module.generate_terrain(target_gridmap, Vector2i(-chunk_size.x, -chunk_size.y), chunk_size)
 
 	print("TerrainGenerator: Початкова генерація завершена")
+	
+	# Позначаємо, що початкова генерація завершена
+	if optimization_module:
+		optimization_module.set_initial_generation_complete()
 
 func _process(delta):
 	if not is_initialized or Engine.is_editor_hint():
@@ -181,28 +184,27 @@ func regenerate_terrain():
 		target_gridmap.clear()
 		generate_initial_terrain()
 
-# Editor tools
-@export_tool_button("Генерувати терейн", "WorldEnvironment")
-func _generate_terrain_editor():
+# Editor tools (використовувати через консоль або скрипти)
+func generate_terrain_editor():
+	"""Генерація терейну в редакторі"""
 	if not target_gridmap:
 		push_error("TerrainGenerator: GridMap не встановлений!")
 		return
-
 	regenerate_terrain()
 
-@export_tool_button("Генерувати структури", "Node3D")
-func _generate_structures_editor():
+func generate_structures_editor():
+	"""Генерація структур в редакторі"""
 	generate_structures()
 
-@export_tool_button("Показати звіт продуктивності", "Info")
-func _show_performance_report():
+func show_performance_report():
+	"""Показати звіт продуктивності"""
 	if optimization_module:
 		print(optimization_module.get_performance_report())
 	else:
 		print("Оптимізація вимкнена")
 
-@export_tool_button("Зберегти світ", "Save")
-func _save_world():
+func save_world():
+	"""Зберегти світ"""
 	if save_load_module:
 		save_load_module.save_world_metadata()
 		save_load_module.auto_save()
@@ -210,13 +212,13 @@ func _save_world():
 	else:
 		print("Save/Load модуль вимкнено")
 
-@export_tool_button("Завантажити світ", "Load")
-func _load_world():
+func load_world():
+	"""Завантажити світ"""
 	if save_load_module:
 		var metadata = save_load_module.load_world_metadata()
 		if metadata.size() > 0:
 			# Відновлюємо налаштування
-			if metadata.has("world_seed"):
+			if metadata.has("world_seed") and noise:
 				noise.seed = metadata["world_seed"]
 			print("Світ завантажено!")
 		else:
@@ -224,8 +226,8 @@ func _load_world():
 	else:
 		print("Save/Load модуль вимкнено")
 
-@export_tool_button("Показати best practices", "Help")
-func _show_best_practices():
+func show_best_practices():
+	"""Показати best practices"""
 	if best_practices:
 		var practices = best_practices.get_generation_best_practices()
 		print("=== BEST PRACTICES ===")
@@ -234,8 +236,8 @@ func _show_best_practices():
 	else:
 		print("Best practices модуль вимкнено")
 
-@export_tool_button("Експортувати звіт", "Save")
-func _export_performance_report():
+func export_performance_report():
+	"""Експортувати звіт продуктивності"""
 	if best_practices:
 		var report_path = "user://performance_report.md"
 		best_practices.save_performance_report(report_path)

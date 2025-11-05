@@ -15,7 +15,7 @@ var rules: Resource
 @export var structure_types: Array[String] = ["house", "cave", "ruins"]
 
 var generated_structures: Array = []
-var wfc_integrator: WFCIntegrator
+var wfc_integrator
 
 func _ready():
 	# Ініціалізація WFC компонентів
@@ -23,7 +23,9 @@ func _ready():
 
 func setup_wfc_components():
 	"""Налаштування WFC генератора"""
-	wfc_integrator = WFCIntegrator.new()
+	var wfc_node = Node.new()
+	wfc_node.set_script(load("res://scripts/game/world/generation/WFCIntegrator.gd"))
+	wfc_integrator = wfc_node
 	add_child(wfc_integrator)
 
 	print("StructureGenerator: WFC компоненти ініціалізовані")

@@ -10,6 +10,13 @@ var mapper: Node
 @export var wfc_scene: PackedScene  # Сцена з WFC генератором
 @export var rules_resource: Resource  # WFC правила
 
+# Ймовірності блоків для WFC генерації
+@export var tile_probabilities: Dictionary = {
+	"0": 0.6, # Air
+	"1": 0.3, # Dirt
+	"2": 0.1  # Stone
+}
+
 func _ready():
 	setup_wfc()
 
@@ -46,8 +53,10 @@ func generate_structure_with_wfc(gridmap: GridMap, rect: Rect2i, rules_override:
 	print("WFCIntegrator: Запущено WFC генерацію для області ", rect, " з ймовірностями")
 	return true
 
-func create_rules_with_probabilities(base_rules: WFCRules2D, rect: Rect2i) -> WFCRules2D:
+func create_rules_with_probabilities(base_rules: Resource, rect: Rect2i) -> Resource:
 	"""Створює правила з урахуванням ймовірностей блоків"""
+	if not base_rules:
+		return null
 	var enhanced_rules = base_rules.duplicate()
 
 	# Розраховуємо початковий стан з ймовірностями
@@ -81,8 +90,10 @@ func create_initial_state_with_probabilities(rect: Rect2i) -> Array:
 
 	return initial_state
 
-func apply_probabilities_to_rules(rules: WFCRules2D, initial_state: Array):
+func apply_probabilities_to_rules(rules: Resource, initial_state: Array):
 	"""Застосовує ймовірності до правил генерації"""
+	if not rules:
+		return
 	# Розширюємо правила додатковою інформацією про ймовірності
 	if not rules.has_meta("tile_probabilities"):
 		rules.set_meta("tile_probabilities", tile_probabilities.duplicate())
@@ -91,23 +102,27 @@ func apply_probabilities_to_rules(rules: WFCRules2D, initial_state: Array):
 	var enhanced_rules = create_enhanced_rules_with_probabilities(rules)
 
 	# Замінюємо оригінальні правила
-	for property in enhanced_rules.keys():
-		if rules.has_property(property):
-			rules.set(property, enhanced_rules[property])
+	if enhanced_rules:
+		for property in enhanced_rules.keys():
+			if rules.has("get") and rules.has("set"):
+				if rules.get(property) != null:
+					rules.set(property, enhanced_rules[property])
 
-func create_enhanced_rules_with_probabilities(base_rules: WFCRules2D) -> Dictionary:
+func create_enhanced_rules_with_probabilities(base_rules: Resource) -> Dictionary:
 	"""Створює розширені правила з ймовірностями"""
 	var enhanced = {}
+	if not base_rules:
+		return enhanced
 
-	# Копіюємо існуючі правила
-	if base_rules.axis_matrices:
+	# Копіюємо існуючі правила (якщо вони є)
+	if base_rules.has("axis_matrices"):
 		enhanced["axis_matrices"] = base_rules.axis_matrices.duplicate()
 
 	# Додаємо інформацію про ймовірності
 	enhanced["tile_probabilities"] = tile_probabilities.duplicate()
 
 	# Створюємо ймовірнісні матриці сумісності
-	if base_rules.axis_matrices:
+	if base_rules.has("axis_matrices"):
 		enhanced["probability_matrices"] = create_probability_matrices(base_rules.axis_matrices)
 
 	return enhanced
@@ -180,14 +195,19 @@ func setup_gridmap_mapper(gridmap: GridMap, rect: Rect2i):
 	if not wfc_generator:
 		return
 
-	# Створюємо GridMap mapper
-	var gridmap_mapper = WFCGridMapMapper2D.new()
-	gridmap_mapper.mesh_library = get_mesh_library_from_gridmap(gridmap)
-	gridmap_mapper.base_point = Vector3i(rect.position.x, 0, rect.position.y)
+	# Створюємо GridMap mapper (якщо клас доступний)
+	var gridmap_mapper
+	if ClassDB.class_exists("WFCGridMapMapper2D"):
+		gridmap_mapper = ClassDB.instantiate("WFCGridMapMapper2D")
+		if gridmap_mapper:
+			gridmap_mapper.mesh_library = get_mesh_library_from_gridmap(gridmap)
+			if gridmap_mapper.has("base_point"):
+				gridmap_mapper.base_point = Vector3i(rect.position.x, 0, rect.position.y)
 
-	# Налаштовуємо правила для роботи з GridMap
-	if wfc_generator.rules:
-		wfc_generator.rules.mapper = gridmap_mapper
+			# Налаштовуємо правила для роботи з GridMap
+			if wfc_generator.has("rules") and wfc_generator.rules:
+				if wfc_generator.rules.has("mapper"):
+					wfc_generator.rules.mapper = gridmap_mapper
 
 func get_mesh_library_from_gridmap(gridmap: GridMap) -> MeshLibrary:
 	"""Отримати MeshLibrary з GridMap"""
@@ -209,14 +229,21 @@ func learn_patterns_from_sample(sample_gridmap: GridMap, sample_rect: Rect2i) ->
 
 	# Тут буде логіка навчання з прикладу
 	# Зараз заглушка
-	var new_rules = WFCRules2D.new()
+	var new_rules
+	if ClassDB.class_exists("WFCRules2D"):
+		new_rules = ClassDB.instantiate("WFCRules2D")
+	else:
+		new_rules = Resource.new()
 
-	# Створюємо простий mapper для навчання
-	var sample_mapper = WFCGridMapMapper2D.new()
-	sample_mapper.mesh_library = get_mesh_library_from_gridmap(sample_gridmap)
-	sample_mapper.base_point = Vector3i(sample_rect.position.x, 0, sample_rect.position.y)
-
-	new_rules.mapper = sample_mapper
+	# Створюємо простий mapper для навчання (якщо клас доступний)
+	if ClassDB.class_exists("WFCGridMapMapper2D"):
+		var sample_mapper = ClassDB.instantiate("WFCGridMapMapper2D")
+		if sample_mapper:
+			sample_mapper.mesh_library = get_mesh_library_from_gridmap(sample_gridmap)
+			if sample_mapper.has("base_point"):
+				sample_mapper.base_point = Vector3i(sample_rect.position.x, 0, sample_rect.position.y)
+			if new_rules and new_rules.has("mapper"):
+				new_rules.mapper = sample_mapper
 
 	# Навчаємо правила (спрощена версія)
 	learn_simple_rules(new_rules, sample_gridmap, sample_rect)
@@ -224,26 +251,35 @@ func learn_patterns_from_sample(sample_gridmap: GridMap, sample_rect: Rect2i) ->
 	print("WFCIntegrator: Правила навчено")
 	return new_rules
 
-func learn_simple_rules(rules: WFCRules2D, sample_gridmap: GridMap, sample_rect: Rect2i):
+func learn_simple_rules(rules: Resource, sample_gridmap: GridMap, sample_rect: Rect2i):
 	"""Простий алгоритм навчання правил"""
+	if not rules:
+		return
 	# Це спрощена заглушка - в реальності треба аналізувати сусідні блоки
 
 	# Створюємо базові правила для простих блоків
-	rules.axes = [
-		Vector2i(0, 1),  # Вниз
-		Vector2i(1, 0)   # Вправо
-	]
+	if rules.has("axes"):
+		rules.axes = [
+			Vector2i(0, 1),  # Вниз
+			Vector2i(1, 0)   # Вправо
+		]
 
 	# Створюємо bit matrices для кожного напрямку
-	var axis_matrices: Array[WFCBitMatrix] = []
+	var axis_matrices: Array = []
 
-	for axis in rules.axes:
-		var bit_matrix = WFCBitMatrix.new()
-		# Спрощена ініціалізація - всі блоки можуть стояти поруч
-		# В реальності треба аналізувати навчальну карту
-		axis_matrices.append(bit_matrix)
+	if rules.has("axes"):
+		for axis in rules.axes:
+			var bit_matrix
+			if ClassDB.class_exists("WFCBitMatrix"):
+				bit_matrix = ClassDB.instantiate("WFCBitMatrix")
+			else:
+				bit_matrix = {}
+			# Спрощена ініціалізація - всі блоки можуть стояти поруч
+			# В реальності треба аналізувати навчальну карту
+			axis_matrices.append(bit_matrix)
 
-	rules.axis_matrices = axis_matrices
+	if rules.has("axis_matrices"):
+		rules.axis_matrices = axis_matrices
 
 func generate_dungeon(gridmap: GridMap, center: Vector2i, size: Vector2i) -> bool:
 	"""Генерація підземелля"""

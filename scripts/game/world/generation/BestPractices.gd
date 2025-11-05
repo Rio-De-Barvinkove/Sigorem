@@ -216,17 +216,19 @@ func benchmark_generation_speed() -> Dictionary:
 
 	# Тестова генерація
 	for i in range(100):
-		var test_pos = Vector2i(i, 0)
-		# Симулюємо генерацію
+		# Симулюємо генерацію - простий обчислювальний цикл
+		var dummy = i * i
+		dummy += 1  # Додаткове обчислення
 
 	var end_time = Time.get_ticks_usec()
 	var total_time = end_time - start_time
 
-	return {
+	var result = {
 		"total_time_us": total_time,
-		"average_time_per_chunk_us": total_time / 100,
-		"chunks_per_second": 1000000.0 / (total_time / 100)
+		"average_time_per_chunk_us": total_time / 100.0,
+		"chunks_per_second": 1000000.0 / (total_time / 100.0)
 	}
+	return result
 
 func get_optimization_suggestions() -> Array:
 	"""Отримання пропозицій оптимізації на основі поточного стану"""
@@ -237,7 +239,7 @@ func get_optimization_suggestions() -> Array:
 	if fps < 30:
 		suggestions.append("FPS нижче 30 - зменшіть chunk_radius або увімкніть LOD")
 
-	var memory = OS.get_static_memory_usage() / 1024 / 1024
+	var memory = OS.get_static_memory_usage() / 1024.0 / 1024.0
 	if memory > 500:
 		suggestions.append("Використання пам'яті > 500MB - увімкніть cleanup")
 
@@ -253,7 +255,7 @@ func export_performance_report() -> String:
 	report += "- Godot Version: " + Engine.get_version_info()["string"] + "\n"
 	report += "- OS: " + OS.get_name() + "\n"
 	report += "- CPU Cores: " + str(OS.get_processor_count()) + "\n"
-	report += "- Memory: " + str(OS.get_static_memory_usage() / 1024 / 1024) + " MB\n\n"
+	report += "- Memory: " + str(OS.get_static_memory_usage() / 1024.0 / 1024.0) + " MB\n\n"
 
 	report += "## Generation Stats\n"
 	for key in performance_stats.keys():

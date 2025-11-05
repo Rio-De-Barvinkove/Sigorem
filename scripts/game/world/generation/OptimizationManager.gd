@@ -4,15 +4,20 @@ class_name OptimizationManager
 # Модуль для оптимізації генерації терейну
 
 @export_group("Performance Settings")
-@export var max_generation_time_per_frame := 16.0  # ms
+@export var max_generation_time_per_frame := 100.0  # ms (збільшено для початкової генерації)
+@export var max_initial_generation_time := 500.0  # ms для початкової генерації
 @export var target_fps := 60
 @export var max_active_chunks := 50
 @export var lod_distances := [25.0, 50.0, 100.0, 200.0]
 @export var lod_resolutions := [1.0, 0.8, 0.6, 0.4]
+@export var enable_initial_generation_override := true  # Дозволити тривалу генерацію на старті
+@export var log_performance_warnings := false  # Вимкнути зайві логи
 
 var generation_start_time: int
 var frame_start_time: int
 var performance_stats: Dictionary = {}
+var is_initial_generation := true
+var initial_generation_complete := false
 
 func _ready():
 	frame_start_time = Time.get_ticks_msec()
@@ -30,7 +35,8 @@ func start_generation_timer():
 
 func check_generation_time() -> bool:
 	"""Перевірка, чи не перевищено час генерації на кадр"""
-	if Time.get_ticks_msec() - generation_start_time > max_generation_time_per_frame:
+	var time_limit = max_initial_generation_time if (is_initial_generation and enable_initial_generation_override) else max_generation_time_per_frame
+	if Time.get_ticks_msec() - generation_start_time > time_limit:
 		return false  # Перевищено час
 	return true  # Можна продовжувати
 
@@ -44,8 +50,8 @@ func monitor_performance():
 	performance_stats["frame_time"] = frame_time
 	performance_stats["memory"] = OS.get_static_memory_usage()
 
-	# Логування проблем з продуктивністю
-	if frame_time > 1000.0 / target_fps:
+	# Логування проблем з продуктивністю (тільки якщо увімкнено)
+	if log_performance_warnings and frame_time > 1000.0 / target_fps:
 		print("OptimizationManager: Низький FPS - ", performance_stats["fps"])
 
 func adaptive_optimization():
@@ -55,11 +61,13 @@ func adaptive_optimization():
 	if fps < 30:
 		# Агресивна оптимізація
 		reduce_quality_settings()
-		print("OptimizationManager: Агресивна оптимізація активована")
+		if log_performance_warnings:
+			print("OptimizationManager: Агресивна оптимізація активована")
 	elif fps < 50:
 		# Помірна оптимізація
 		moderate_quality_reduction()
-		print("OptimizationManager: Помірна оптимізація активована")
+		if log_performance_warnings:
+			print("OptimizationManager: Помірна оптимізація активована")
 
 func reduce_quality_settings():
 	"""Зменшення якості для покращення продуктивності"""
@@ -170,12 +178,17 @@ func is_chunk_loaded(chunk_pos: Vector2i) -> bool:
 		return get_parent().chunk_module.active_chunks.has(chunk_pos)
 	return false
 
+func set_initial_generation_complete():
+	"""Позначити, що початкова генерація завершена"""
+	is_initial_generation = false
+	initial_generation_complete = true
+
 func get_performance_report() -> String:
 	"""Отримати звіт про продуктивність"""
 	var report = "=== PERFORMANCE REPORT ===\n"
 	report += "FPS: " + str(performance_stats.get("fps", 0)) + "\n"
 	report += "Frame Time: " + str(performance_stats.get("frame_time", 0)) + "ms\n"
-	report += "Memory: " + str(performance_stats.get("memory", 0) / 1024 / 1024) + "MB\n"
+	report += "Memory: " + str(performance_stats.get("memory", 0) / 1024.0 / 1024.0) + "MB\n"
 	report += "Active Chunks: " + str(get_active_chunk_count()) + "\n"
 	report += "Cache Size: " + str(terrain_cache.size()) + "\n"
 	return report

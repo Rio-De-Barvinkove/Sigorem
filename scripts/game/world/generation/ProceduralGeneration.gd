@@ -61,10 +61,16 @@ func generate_terrain(gridmap: GridMap, start_pos: Vector2i, size: Vector2i):
 				if mesh_index >= 0:
 					gridmap.set_cell_item(Vector3i(x, y, z), mesh_index)
 
-func generate_chunk(gridmap: GridMap, chunk_pos: Vector2i):
-	"""Генерація окремого чанка"""
+func generate_chunk(gridmap: GridMap, chunk_pos: Vector2i, optimization: Dictionary = {}):
+	"""Генерація окремого чанка з оптимізацією"""
 	var chunk_start = chunk_pos * Vector2i(50, 50)  # Припускаємо chunk_size = 50x50
 	var chunk_size = Vector2i(50, 50)
+	
+	# Застосовуємо оптимізацію якщо вона є
+	var resolution = optimization.get("resolution", 1.0)
+	if resolution < 1.0:
+		# Зменшуємо розмір чанка або деталізацію
+		chunk_size = Vector2i(int(chunk_size.x * resolution), int(chunk_size.y * resolution))
 
 	generate_terrain(gridmap, chunk_start, chunk_size)
 

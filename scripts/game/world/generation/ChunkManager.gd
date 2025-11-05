@@ -3,7 +3,7 @@ class_name ChunkManager
 
 # Модуль для управління чанками (адаптовано з infinite_heightmap_terrain)
 
-var player: Node3D
+@export var player: Node3D
 var chunk_size := Vector2i(50, 50)
 var chunk_radius := 5
 var enable_culling := true
@@ -13,12 +13,17 @@ var active_chunks: Dictionary = {}  # Vector2i -> GridMap chunk
 var current_player_chunk: Vector2i
 
 func _ready():
-	if not player:
-		push_warning("ChunkManager: Player не встановлений!")
+	pass  # Гравець може бути встановлений через @export або динамічно
 
-func _process(delta):
+func set_player(new_player: Node3D):
+	"""Динамічне встановлення гравця"""
+	player = new_player
+	if player:
+		update_player_chunk_position()
+
+func _process(_delta):
 	if player and enable_culling:
-		update_chunk_culling()
+		update_chunk_culling(get_parent().target_gridmap)
 
 func generate_initial_chunks(gridmap: GridMap):
 	"""Генерація початкових чанків навколо гравця"""
@@ -80,10 +85,12 @@ func generate_chunk(gridmap: GridMap, chunk_pos: Vector2i):
 	if get_parent().procedural_module:
 		get_parent().procedural_module.generate_chunk(gridmap, chunk_pos, optimization)
 
-		# Перевіряємо, чи не перевищено час
+		# Перевіряємо, чи не перевищено час (тільки якщо не початкова генерація)
 		if get_parent().optimization_module and get_parent().use_optimization:
 			if not get_parent().optimization_module.check_generation_time():
-				print("ChunkManager: Генерація перервана через ліміт часу для чанка ", chunk_pos)
+				# Пропускаємо повідомлення під час початкової генерації
+				if not get_parent().optimization_module.is_initial_generation:
+					print("ChunkManager: Генерація перервана через ліміт часу для чанка ", chunk_pos)
 				return
 
 	# Генеруємо рослинність для чанка
@@ -145,9 +152,9 @@ func cull_distant_chunks(gridmap: GridMap):
 	for chunk_pos in chunks_to_remove:
 		remove_chunk(gridmap, chunk_pos)
 
-	# Видаляємо рослинність для чанка
-	if get_parent().vegetation_module and get_parent().use_vegetation:
-		get_parent().vegetation_module.remove_multimesh_for_chunk(chunk_pos)
+		# Видаляємо рослинність для чанка
+		if get_parent().vegetation_module and get_parent().use_vegetation:
+			get_parent().vegetation_module.remove_multimesh_for_chunk(chunk_pos)
 
 func remove_chunk(gridmap: GridMap, chunk_pos: Vector2i):
 	"""Видалення чанка"""
@@ -173,6 +180,17 @@ func get_chunk_distance(chunk_pos: Vector2i) -> int:
 
 	var player_chunk = get_player_chunk_position()
 	return max(abs(chunk_pos.x - player_chunk.x), abs(chunk_pos.y - player_chunk.y))
+
+func update_chunk_culling(gridmap: GridMap):
+	"""Оновлення culling чанків"""
+	if not gridmap:
+		return
+
+	# Перевіряємо, чи потрібно перегенерувати чанки навколо гравця
+	var current_chunk = get_player_chunk_position()
+	if current_chunk != current_player_chunk:
+		current_player_chunk = current_chunk
+		regenerate_chunks_around_player(gridmap)
 
 func get_active_chunk_count() -> int:
 	"""Отримати кількість активних чанків"""
