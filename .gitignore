@@ -1,3 +1,6 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Removed incompatible addons
+addons/dialogue_nodes/
