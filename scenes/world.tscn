@@ -1,6 +1,7 @@
-[gd_scene load_steps=20 format=3 uid="uid://c6v2wih236026"]
+[gd_scene load_steps=22 format=3 uid="uid://c6v2wih236026"]
 
 [ext_resource type="Script" uid="uid://dh7eiekt4eerp" path="res://scripts/game/world/WorldGenerator.gd" id="1_5j1ce"]
+[ext_resource type="Texture2D" uid="uid://bbas0v448jcam" path="res://assets/textures/Solo_draw/Terrain_Grass_Top.png" id="1_w7kh3"]
 [ext_resource type="PackedScene" uid="uid://dps3xrk1e80j7" path="res://scenes/player.tscn" id="2_p6w2a"]
 [ext_resource type="Script" uid="uid://bgxhog0gtcg6q" path="res://scripts/game/player/CameraController.gd" id="3_q7w8e"]
 [ext_resource type="PackedScene" uid="uid://dsv2wih236027" path="res://scenes/ui/inventory.tscn" id="4_inventory"]
@@ -12,6 +13,7 @@
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4mrxx"]
 albedo_color = Color(0.4, 0.8, 0.2, 1)
+albedo_texture = ExtResource("1_w7kh3")
 
 [sub_resource type="BoxMesh" id="BoxMesh_7r4gi"]
 material = SubResource("StandardMaterial3D_4mrxx")

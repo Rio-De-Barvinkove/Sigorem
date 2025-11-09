@@ -23,6 +23,9 @@ BlockRegistry="*res://scripts/autoload/BlockRegistry.gd"
 InventorySystem="*res://scripts/inventory/inventory_system.gd"
 CraftingSystem="*res://scripts/game/systems/crafting_system.gd"
 VoxelPhysics="*res://scripts/game/world/voxel_physics.gd"
+Panku="*res://addons/panku_console/console.tscn"
+Questify="*res://addons/questify/quest_manager.gd"
+DialogueManager="*res://addons/dialogue_manager/dialogue_manager.gd"
 
 [display]
 
@@ -31,6 +34,10 @@ window/size/viewport_height=720
 window/size/window_width_override=1920
 window/size/window_height_override=1080
 window/stretch/mode="viewport"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/day_and_night_cycle/plugin.cfg", "res://addons/dialogue_manager/plugin.cfg", "res://addons/health_hitbox_hurtbox/plugin.cfg", "res://addons/massimo/plugin.cfg", "res://addons/net.yarvis.pixel_pen/plugin.cfg", "res://addons/panku_console/plugin.cfg", "res://addons/proto_shape/plugin.cfg", "res://addons/questify/plugin.cfg", "res://addons/road-generator/plugin.cfg", "res://addons/rubonnek.inventory_manager/plugin.cfg", "res://addons/wfc/plugin.cfg")
 
 [input]
 
@@ -74,6 +81,12 @@ camera_rotate_right={
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":82,"physical_keycode":0,"key_label":0,"unicode":114,"location":0,"echo":false,"script":null)
 ]
 }
+
+[questify]
+
+general/update_polling=true
+general/update_interval=0.5
+general/add_quests_to_pot_generation=false
 
 [rendering]
 
