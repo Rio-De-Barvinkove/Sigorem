@@ -201,3 +201,165 @@ func get_active_chunk_count() -> int:
 
 # Кеш для зберігання даних терейну
 var terrain_cache: Dictionary = {}
+
+# Mesh Optimization - Cull Hidden Faces
+@export_group("Mesh Optimization")
+@export var enable_cull_hidden_faces := true
+@export var enable_greedy_meshing := false  # Зарезервовано для майбутнього
+@export var enable_occlusion_culling := true  # Occlusion culling для закритих чанків
+
+# Статистика оптимізації
+var optimization_stats: Dictionary = {
+	"faces_culled": 0,
+	"total_faces": 0,
+	"optimization_ratio": 0.0
+}
+
+func optimize_chunk_mesh(chunk_pos: Vector2i, chunk_data: Dictionary) -> Dictionary:
+	"""Оптимізація mesh чанка через cull hidden faces"""
+	if not enable_cull_hidden_faces:
+		return chunk_data
+
+	var optimized_data = {}
+	var chunk_size = get_parent().chunk_size if get_parent() and get_parent().chunk_size else Vector2i(50, 50)
+	var chunk_start = chunk_pos * chunk_size
+
+	optimization_stats["total_faces"] += chunk_data.size() * 6  # 6 граней на блок
+	var original_face_count = chunk_data.size() * 6
+
+	for block_key in chunk_data.keys():
+		var coords = block_key.split("_")
+		if coords.size() < 3:
+			continue
+
+		var x = int(coords[0])
+		var y = int(coords[1])
+		var z = int(coords[2])
+
+		var visible_faces = _get_visible_faces(x, y, z, chunk_data, chunk_size, chunk_start)
+
+		if visible_faces.size() > 0:
+			optimized_data[block_key] = {
+				"mesh_index": chunk_data[block_key],
+				"visible_faces": visible_faces
+			}
+
+	var optimized_face_count = 0
+	for block in optimized_data.values():
+		optimized_face_count += block["visible_faces"].size()
+
+	optimization_stats["faces_culled"] += (original_face_count - optimized_face_count)
+	optimization_stats["optimization_ratio"] = float(optimization_stats["faces_culled"]) / float(optimization_stats["total_faces"]) if optimization_stats["total_faces"] > 0 else 0.0
+
+	return optimized_data
+
+func _get_visible_faces(x: int, y: int, z: int, chunk_data: Dictionary, chunk_size: Vector2i, chunk_start: Vector2i) -> Array:
+	"""Визначення видимих граней для блоку"""
+	var visible_faces = []
+	var directions = [
+		{"name": "north", "offset": Vector3i(0, 0, -1), "face": 0},
+		{"name": "south", "offset": Vector3i(0, 0, 1), "face": 1},
+		{"name": "east", "offset": Vector3i(1, 0, 0), "face": 2},
+		{"name": "west", "offset": Vector3i(-1, 0, 0), "face": 3},
+		{"name": "up", "offset": Vector3i(0, 1, 0), "face": 4},
+		{"name": "down", "offset": Vector3i(0, -1, 0), "face": 5}
+	]
+
+	for direction in directions:
+		var neighbor_pos = Vector3i(x, y, z) + direction["offset"]
+		var neighbor_key = str(neighbor_pos.x) + "_" + str(neighbor_pos.y) + "_" + str(neighbor_pos.z)
+
+		# Перевіряємо чи є сусідній блок у цьому чанку
+		if chunk_data.has(neighbor_key):
+			continue  # Грань прихована
+
+		# Для границь чанка перевіряємо сусідні чанки (якщо вони завантажені)
+		if _is_chunk_boundary(neighbor_pos, chunk_start, chunk_size):
+			if _has_neighbor_block_in_adjacent_chunk(neighbor_pos, direction["offset"]):
+				continue  # Грань прихована блоком з сусіднього чанка
+
+		# Грань видима
+		visible_faces.append(direction["face"])
+
+	return visible_faces
+
+func _is_chunk_boundary(pos: Vector3i, chunk_start: Vector2i, chunk_size: Vector2i) -> bool:
+	"""Перевірка чи позиція знаходиться на границі чанка"""
+	var local_x = pos.x - chunk_start.x
+	var local_z = pos.z - chunk_start.y
+	return local_x <= 0 or local_x >= chunk_size.x - 1 or local_z <= 0 or local_z >= chunk_size.y - 1
+
+func _has_neighbor_block_in_adjacent_chunk(pos: Vector3i, offset: Vector3i) -> bool:
+	"""Перевірка чи є блок у сусідньому чанку"""
+	# Спрощена версія - перевіряємо тільки якщо сусідній чанк завантажений
+	# В повній реалізації треба отримати дані з ChunkManager
+	if not get_parent() or not get_parent().chunk_module:
+		return false
+
+	var neighbor_chunk_pos = _get_chunk_pos_for_world_pos(pos + offset)
+	if get_parent().chunk_module.active_chunks.has(neighbor_chunk_pos):
+		# Тут можна додати перевірку конкретного блоку в сусідньому чанку
+		# Зараз повертаємо false для спрощення
+		return false
+
+	return false
+
+func _get_chunk_pos_for_world_pos(world_pos: Vector3i) -> Vector2i:
+	"""Отримати позицію чанка для світової позиції"""
+	var chunk_size = get_parent().chunk_size if get_parent() and get_parent().chunk_size else Vector2i(50, 50)
+	return Vector2i(world_pos.x / chunk_size.x, world_pos.z / chunk_size.y)
+
+func get_mesh_optimization_stats() -> Dictionary:
+	"""Отримати статистику mesh оптимізації"""
+	return optimization_stats.duplicate()
+
+func is_chunk_occluded(chunk_pos: Vector2i, active_chunks: Dictionary, chunk_size: Vector2i) -> bool:
+	"""Перевіряє чи чанк повністю закритий (occlusion culling)"""
+	if not enable_occlusion_culling:
+		return false
+
+	# Простий occlusion culling: перевіряємо чи є чанки зверху
+	# В повній реалізації треба перевіряти чи всі сусідні чанки вище по висоті
+
+	# Перевіряємо чи всі 8 сусідніх чанків існують і вище
+	var neighbors_above = [
+		chunk_pos + Vector2i(0, -1),   # Північ
+		chunk_pos + Vector2i(1, -1),   # Північний-схід
+		chunk_pos + Vector2i(1, 0),    # Схід
+		chunk_pos + Vector2i(1, 1),    # Південний-схід
+		chunk_pos + Vector2i(0, 1),    # Південь
+		chunk_pos + Vector2i(-1, 1),   # Південний-захід
+		chunk_pos + Vector2i(-1, 0),   # Захід
+		chunk_pos + Vector2i(-1, -1),  # Північний-захід
+	]
+
+	var all_neighbors_exist = true
+	for neighbor_pos in neighbors_above:
+		if not active_chunks.has(neighbor_pos):
+			all_neighbors_exist = false
+			break
+
+	# Якщо всі сусідні чанки існують, можливо цей чанк повністю закритий
+	# Спрощена версія - якщо всі сусіди є, вважаємо що чанк може бути occluded
+	# В повній реалізації треба перевіряти висоти блоків
+
+	return all_neighbors_exist
+
+func optimize_rendering_for_chunk(chunk_pos: Vector2i, active_chunks: Dictionary, chunk_size: Vector2i) -> bool:
+	"""Загальна оптимізація рендерингу для чанка"""
+	# Комбінуємо frustum culling та occlusion culling
+	var is_occluded = is_chunk_occluded(chunk_pos, active_chunks, chunk_size)
+
+	# Якщо чанк occluded, можна його не рендерити
+	if is_occluded:
+		return false  # Не рендерити
+
+	return true  # Рендерити
+
+func reset_mesh_optimization_stats():
+	"""Скинути статистику оптимізації"""
+	optimization_stats = {
+		"faces_culled": 0,
+		"total_faces": 0,
+		"optimization_ratio": 0.0
+	}

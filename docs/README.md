@@ -159,11 +159,10 @@
 ### 2.1 Перевірка Autoload систем
 1. Перейдіть **Project → Project Settings → Autoload**
 2. Переконайтеся що є такі системи:
-   - ✅ `GameEvents` → `res://scripts/systems/game_events.gd`
-   - ✅ `TextureManager` → `res://scripts/world/texture_manager.gd`
-   - ✅ `InventorySystem` → `res://scripts/inventory/inventory_system.gd`
-   - ✅ `CraftingSystem` → `scripts/systems/crafting_system.gd`
-   - ✅ `VoxelPhysics` → `res://scripts/world/voxel_physics.gd`
+   - ✅ `GameEvents` → `res://scripts/game/systems/game_events.gd`
+   - ✅ `InventorySystem` → `res://scripts/game/systems/inventory_system.gd`
+   - ✅ `CraftingSystem` → `res://scripts/game/systems/crafting_system.gd`
+   - ✅ `VoxelPhysics` → `res://scripts/game/world/voxel_physics.gd`
 
 ### 2.2 Перевірка Input Map
 1. **Project → Project Settings → Input Map**
@@ -202,19 +201,13 @@
 ### 3.3 Налаштування GridMap (Terrain)
 1. **Виберіть `GridMap`** в сцені
 2. В **Inspector** знайдіть налаштування:
-   - **Mesh Library**: має бути `res://resources/terrain_meshlib.tres`
-   - **Script**: `res://scripts/world/tile_map.gd`
+   - **Mesh Library**: встановлюється автоматично через `WorldGenerator.gd`
+   - **Script**: `res://scripts/game/world/WorldGenerator.gd`
 
 3. **Налаштування генерації:**
-   - **Use Procedural**: ☑️ (увімкніть для рельєфу) або ☐ (вимкніть для плоскої карти)
-   - **Flat Height**: 5 (висота плоскої карти)
-   - **Noise Amplitude**: 5 (амплітуда рельєфу)
-   - **Base Height**: 5 (базова висота)
-   - **Grass Block Id**: 0
-   - **Dirt Block Id**: 1
-   - **Stone Block Id**: 2
+   - Генерація тепер керується через `TerrainGenerator` (див. розділ про налаштування світу)
 
-**💡 Порада:** Для першого тесту вимкніть `Use Procedural` щоб отримати плоску карту
+**💡 Порада:** Налаштування генерації тепер доступні через меню `WorldGenerationSettings` в грі
 
 ### 3.4 Налаштування Camera3D
 1. **Виберіть `Camera3D`**
@@ -270,7 +263,7 @@
 ## Крок 5: Фінальна перевірка та виправлення помилок
 
 ### 5.1 Перевірка VoxelPhysics
-1. Відкрийте `scripts/world/voxel_physics.gd`
+1. Відкрийте `scripts/game/world/voxel_physics.gd`
 2. **Знайдіть рядок 22:** `grid_map = get_node("/root/World/GridMap")`
 3. **Закоментуйте connect**, змініть на:
 `func _ready():`

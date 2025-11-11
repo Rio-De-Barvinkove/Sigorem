@@ -1,3 +1,4 @@
+@tool
 extends Node
 class_name TerrainGenerator
 
@@ -67,7 +68,7 @@ func _ready():
 
 func initialize_modules():
 	"""Ініціалізація всіх модулів генерації"""
-	
+
 	# Очищаємо старі модулі перед ініціалізацією нових
 	cleanup_modules()
 
@@ -164,7 +165,7 @@ func cleanup_modules():
 	for child in get_children():
 		if child != target_gridmap:  # Не видаляємо GridMap якщо він дочірній
 			child.queue_free()
-	
+
 	# Очищаємо посилання
 	procedural_module = null
 	chunk_module = null
@@ -180,7 +181,7 @@ func cleanup_modules():
 	native_optimizer = null
 	pattern_manager = null
 	best_practices = null
-	
+
 	print("TerrainGenerator: Модулі очищено")
 
 func generate_initial_terrain():
@@ -197,7 +198,7 @@ func generate_initial_terrain():
 			procedural_module.generate_terrain(target_gridmap, Vector2i(-chunk_size.x, -chunk_size.y), chunk_size)
 
 	print("TerrainGenerator: Початкова генерація завершена")
-	
+
 	# Позначаємо, що початкова генерація завершена
 	if optimization_module:
 		optimization_module.set_initial_generation_complete()

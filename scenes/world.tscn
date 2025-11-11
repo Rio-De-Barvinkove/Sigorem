@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://c6v2wih236026"]
+[gd_scene load_steps=21 format=3 uid="uid://c6v2wih236026"]
 
 [ext_resource type="Script" uid="uid://dh7eiekt4eerp" path="res://scripts/game/world/WorldGenerator.gd" id="1_5j1ce"]
 [ext_resource type="Texture2D" uid="uid://bbas0v448jcam" path="res://assets/textures/Solo_draw/Terrain_Grass_Top.png" id="1_w7kh3"]
@@ -8,7 +8,6 @@
 [ext_resource type="PackedScene" uid="uid://dsv2wih236028" path="res://scenes/ui/pause_menu.tscn" id="5_pause"]
 [ext_resource type="PackedScene" uid="uid://dsv2wih23603a" path="res://scenes/ui/character_menu.tscn" id="6_char"]
 [ext_resource type="PackedScene" uid="uid://c8v1qkq6t6v7b" path="res://scenes/ui/world_generation_settings.tscn" id="7_world_settings"]
-[ext_resource type="Script" uid="uid://8b4ihqwx0ma" path="res://scripts/world/world_objects.gd" id="8_world_objects"]
 [ext_resource type="Script" uid="uid://dnkdy3jxy7cuy" path="res://scripts/ui/game_hud.gd" id="9_hud"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4mrxx"]
@@ -108,6 +107,15 @@ offset_bottom = -10.0
 grow_vertical = 0
 text = "Controls"
 
+[node name="DebugLabel" type="Label" parent="GameHUD"]
+anchors_preset = 0
+anchor_right = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 30.0
+horizontal_alignment = 1
+
 [node name="BuildModeLabel" type="Label" parent="GameHUD"]
 anchors_preset = 1
 anchor_left = 1.0
@@ -118,8 +126,5 @@ offset_right = -10.0
 offset_bottom = 30.0
 grow_horizontal = 0
 horizontal_alignment = 2
-
-[node name="WorldObjects" type="Node3D" parent="."]
-script = ExtResource("8_world_objects")
 
 [node name="Node3D" type="Node3D" parent="."]

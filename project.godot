@@ -17,10 +17,10 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GameEvents="*res://scripts/systems/game_events.gd"
+GameEvents="*res://scripts/game/systems/game_events.gd"
 ResourceManager="*res://scripts/autoload/ResourceManager.gd"
 BlockRegistry="*res://scripts/autoload/BlockRegistry.gd"
-InventorySystem="*res://scripts/inventory/inventory_system.gd"
+InventorySystem="*res://scripts/game/systems/inventory_system.gd"
 CraftingSystem="*res://scripts/game/systems/crafting_system.gd"
 VoxelPhysics="*res://scripts/game/world/voxel_physics.gd"
 Panku="*res://addons/panku_console/console.tscn"

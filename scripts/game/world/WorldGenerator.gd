@@ -75,6 +75,12 @@ func _setup_terrain_generator():
 		# Чекаємо один кадр, щоб скрипт встиг завантажитися
 		await get_tree().process_frame
 
+		# Знаходимо гравця в сцені та встановлюємо його для генератора
+		var player = get_node("/root/World/Player")
+		if player and terrain_generator:
+			terrain_generator.player = player
+			print("WorldGenerator: Встановлено гравця для TerrainGenerator")
+
 		# Налаштовуємо базові параметри (тільки в грі)
 		if terrain_generator and terrain_generator.has_method("set"):
 			if "use_procedural_generation" in terrain_generator:

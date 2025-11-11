@@ -7,6 +7,11 @@ extends Node
 @export var support_radius = 1
 @export var max_unsupported_distance = 3
 
+# Physics Optimization - налаштування
+@export var enable_chunk_physics_optimization := true
+@export var max_physics_updates_per_frame := 20
+@export var physics_update_distance_limit := 50.0  # Відстань від гравця для фізики
+
 var grid_map: GridMap
 var falling_blocks = {}
 var block_support_map = {}
@@ -23,9 +28,6 @@ func get_gridmap():
 		if world_node:
 			grid_map = world_node.get_node_or_null("GridMap")
 	return grid_map
-
-func _physics_process(delta):
-	_process_falling_blocks(delta)
 
 func _on_cell_changed(position: Vector3i):
 	check_stability_around(position)
@@ -128,5 +130,87 @@ func excavate_area(center: Vector3i, radius: int):
 						grid_map.set_cell_item(pos, -1)
 						await get_tree().create_timer(0.05).timeout
 	check_stability_around(center)
+
+# Physics Optimization - методи для оптимізації
+
+var physics_updates_this_frame := 0
+var player_position := Vector3.ZERO
+
+func _physics_process(delta):
+	_process_falling_blocks(delta)
+	physics_updates_this_frame = 0  # Скидаємо лічильник на початку кадру
+
+	# Оновлюємо позицію гравця для оптимізації
+	update_player_position()
+
+func update_player_position():
+	"""Оновлення позиції гравця для оптимізації"""
+	var player = get_tree().get_root().get_node_or_null("World/Player")
+	if player:
+		player_position = player.global_position
+
+func can_process_physics_at_position(position: Vector3i) -> bool:
+	"""Перевірка чи можна обробляти фізику в цій позиції"""
+	if not enable_chunk_physics_optimization:
+		return true
+
+	# Перевіряємо відстань до гравця
+	var distance = Vector3(position).distance_to(player_position)
+	if distance > physics_update_distance_limit:
+		return false
+
+	# Перевіряємо ліміт оновлень на кадр
+	if physics_updates_this_frame >= max_physics_updates_per_frame:
+		return false
+
+	physics_updates_this_frame += 1
+	return true
+
+func check_stability_around_optimized(position: Vector3i):
+	"""Оптимізована перевірка стабільності з обмеженнями"""
+	if not can_process_physics_at_position(position):
+		return
+
+	check_stability_around(position)
+
+func is_block_supported_optimized(position: Vector3i) -> bool:
+	"""Оптимізована перевірка підтримки блоку"""
+	if not can_process_physics_at_position(position):
+		return true  # Вважаємо підтриманим щоб уникнути зайвих перевірок
+
+	return is_block_supported(position)
+
+# Memory Pooling - заготовка для майбутнього
+
+var physics_objects_pool = []
+var max_pool_size = 100
+
+func get_physics_object_from_pool() -> Dictionary:
+	"""Отримати об'єкт фізики з пулу"""
+	if physics_objects_pool.size() > 0:
+		return physics_objects_pool.pop_back()
+	return {}
+
+func return_physics_object_to_pool(obj: Dictionary):
+	"""Повернути об'єкт фізики в пул"""
+	if physics_objects_pool.size() < max_pool_size:
+		physics_objects_pool.append(obj)
+
+# Future features - заготовки
+
+func enable_physics_for_chunk(chunk_pos: Vector2i):
+	"""Увімкнути фізику для чанка"""
+	# В майбутньому: активувати фізику при завантаженні чанка
+	pass
+
+func disable_physics_for_chunk(chunk_pos: Vector2i):
+	"""Вимкнути фізику для чанка"""
+	# В майбутньому: деактивувати фізику при вивантаженні чанка
+	pass
+
+func preload_physics_data_for_chunk(chunk_pos: Vector2i):
+	"""Попереднє завантаження даних фізики для чанка"""
+	# В майбутньому: кешувати дані підтримки блоків
+	pass
 
 

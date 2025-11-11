@@ -19,6 +19,14 @@ var auto_update_enabled := false
 @onready var height_amplitude = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/HeightAmplitude
 @onready var base_height = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/BaseHeight
 
+# Noise parameters
+@onready var seed = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/SeedHBox/Seed
+@onready var randomize_seed = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/SeedHBox/RandomizeSeed
+@onready var frequency = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/Frequency
+@onready var noise_type = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/NoiseType
+@onready var fractal_type = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/FractalType
+@onready var octaves = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/Octaves
+
 # Розширені модулі
 @onready var structures = $Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox/Structures
 @onready var structure_density = $Panel/VBoxContainer/TabContainer/AdvancedModules/AdvancedVBox/StructureDensity
@@ -84,6 +92,20 @@ func connect_signals():
 		height_amplitude.value_changed.connect(_on_setting_changed)
 	if base_height:
 		base_height.value_changed.connect(_on_setting_changed)
+
+	# Noise parameters
+	if seed:
+		seed.value_changed.connect(_on_setting_changed)
+	if randomize_seed:
+		randomize_seed.pressed.connect(_on_randomize_seed_pressed)
+	if frequency:
+		frequency.value_changed.connect(_on_setting_changed)
+	if noise_type:
+		noise_type.item_selected.connect(_on_setting_changed)
+	if fractal_type:
+		fractal_type.item_selected.connect(_on_setting_changed)
+	if octaves:
+		octaves.value_changed.connect(_on_setting_changed)
 	
 	# Розширені модулі
 	if structures:
@@ -158,6 +180,14 @@ func load_current_settings():
 	height_amplitude.value = terrain_generator.height_amplitude
 	base_height.value = terrain_generator.base_height
 
+	# Noise parameters
+	if terrain_generator.noise:
+		seed.value = terrain_generator.noise.seed
+		frequency.value = terrain_generator.noise.frequency
+		noise_type.selected = terrain_generator.noise.noise_type
+		fractal_type.selected = terrain_generator.noise.fractal_type
+		octaves.value = terrain_generator.noise.fractal_octaves
+
 	# Розширені модулі
 	structures.button_pressed = terrain_generator.use_structures
 	lod.button_pressed = terrain_generator.use_lod
@@ -223,6 +253,14 @@ func apply_settings():
 	terrain_generator.chunk_radius = chunk_radius.value
 	terrain_generator.height_amplitude = height_amplitude.value
 	terrain_generator.base_height = base_height.value
+
+	# Noise parameters
+	if terrain_generator.noise:
+		terrain_generator.noise.seed = int(seed.value)
+		terrain_generator.noise.frequency = frequency.value
+		terrain_generator.noise.noise_type = noise_type.selected
+		terrain_generator.noise.fractal_type = fractal_type.selected
+		terrain_generator.noise.fractal_octaves = int(octaves.value)
 
 	# Розширені модулі
 	terrain_generator.use_structures = structures.button_pressed
@@ -307,6 +345,12 @@ func _on_generate_pressed():
 func _on_close_pressed():
 	"""Обробник натискання кнопки закриття"""
 	hide()
+
+func _on_randomize_seed_pressed():
+	"""Обробник натискання кнопки рандомізації seed"""
+	var random_seed = randi()
+	seed.value = random_seed
+	_on_setting_changed()
 
 func _on_auto_update_toggled(button_pressed: bool):
 	"""Обробник перемикання автоматичного оновлення"""

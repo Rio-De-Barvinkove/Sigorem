@@ -140,6 +140,90 @@ min_value = 0.0
 max_value = 20.0
 value = 5.0
 
+[node name="SeedLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+text = "Seed:"
+
+[node name="SeedHBox" type="HBoxContainer" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+
+[node name="Seed" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/SeedHBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 18)
+min_value = 0.0
+max_value = 999999.0
+value = 0.0
+step = 1.0
+
+[node name="RandomizeSeed" type="Button" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/SeedHBox"]
+layout_mode = 2
+text = "🎲 Randomize"
+
+[node name="FrequencyLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+text = "Frequency:"
+
+[node name="Frequency" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+min_value = 0.001
+max_value = 0.2
+value = 0.05
+step = 0.001
+
+[node name="NoiseTypeLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+text = "Noise Type:"
+
+[node name="NoiseType" type="OptionButton" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+selected = 0
+item_count = 4
+popup/item_0/text = "Simplex"
+popup/item_0/id = 0
+popup/item_1/text = "SimplexSmooth"
+popup/item_1/id = 1
+popup/item_2/text = "Cellular"
+popup/item_2/id = 2
+popup/item_3/text = "Perlin"
+popup/item_3/id = 3
+
+[node name="FractalTypeLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+text = "Fractal Type:"
+
+[node name="FractalType" type="OptionButton" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+selected = 0
+item_count = 4
+popup/item_0/text = "None"
+popup/item_0/id = 0
+popup/item_1/text = "FBM"
+popup/item_1/id = 1
+popup/item_2/text = "Ridged"
+popup/item_2/id = 2
+popup/item_3/text = "PingPong"
+popup/item_3/id = 3
+
+[node name="OctavesLabel" type="Label" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+text = "Octaves:"
+
+[node name="Octaves" type="SpinBox" parent="Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+min_value = 1.0
+max_value = 9.0
+value = 5.0
+step = 1.0
+
 [node name="AdvancedModules" type="ScrollContainer" parent="Panel/VBoxContainer/TabContainer"]
 layout_mode = 2
 

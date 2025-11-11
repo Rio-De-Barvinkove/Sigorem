@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 @onready var info_label = $InfoLabel
+@onready var debug_label = $DebugLabel
 @onready var build_mode_label = $BuildModeLabel
 @onready var world_gen_settings = get_node_or_null("../UI/WorldGenerationSettings")
 
@@ -31,3 +32,35 @@ func _process(_delta):
 			build_mode_label.text = "BUILD MODE: ON | LMB - поставити блок | RMB - видалити блок"
 		else:
 			build_mode_label.text = ""
+
+	# Показуємо debug інформацію про генерацію
+	update_terrain_debug_info()
+
+func update_terrain_debug_info():
+	"""Оновлення debug інформації про генерацію терейну"""
+	var debug_text = ""
+
+	# Знаходимо TerrainGenerator
+	var terrain_generator = get_node_or_null("/root/World/GridMap/TerrainGenerator")
+	if terrain_generator:
+		# Інформація про seed
+		if terrain_generator.noise:
+			debug_text += "Seed: %d | " % terrain_generator.noise.seed
+
+		# Інформація про chunk_size
+		debug_text += "Chunk: %dx%d | " % [terrain_generator.chunk_size.x, terrain_generator.chunk_size.y]
+
+		# Інформація про активні чанки
+		if terrain_generator.chunk_module:
+			var active_chunks_count = terrain_generator.chunk_module.active_chunks.size()
+			debug_text += "Active Chunks: %d | " % active_chunks_count
+
+			# Поточний чанк гравця
+			var player = get_node_or_null("/root/World/Player")
+			if player and terrain_generator.chunk_module.current_player_chunk != Vector2i.ZERO:
+				debug_text += "Player Chunk: (%d, %d)" % [
+					terrain_generator.chunk_module.current_player_chunk.x,
+					terrain_generator.chunk_module.current_player_chunk.y
+				]
+
+	debug_label.text = debug_text
