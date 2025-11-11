@@ -31,6 +31,7 @@ class_name TerrainGenerator
 @export var chunk_radius := 5
 @export var height_amplitude := 5
 @export var base_height := 5
+@export var max_height := 64
 
 @export_group("Параметри chunking")
 @export var enable_chunk_culling := true
@@ -72,12 +73,18 @@ func initialize_modules():
 	# Очищаємо старі модулі перед ініціалізацією нових
 	cleanup_modules()
 
+	# Нормалізуємо параметри висоти
+	height_amplitude = int(max(height_amplitude, 1))
+	base_height = int(max(base_height, 0))
+	max_height = int(max(max_height, base_height + 1))
+
 	# Процедурна генерація (базова)
 	if use_procedural_generation:
 		procedural_module = ProceduralGeneration.new()
 		procedural_module.noise = noise
 		procedural_module.height_amplitude = height_amplitude
 		procedural_module.base_height = base_height
+		procedural_module.max_height = max_height
 		add_child(procedural_module)
 
 	# Chunking система
@@ -221,6 +228,12 @@ func regenerate_terrain():
 	if target_gridmap:
 		target_gridmap.clear()
 		generate_initial_terrain()
+
+func get_chunk_size() -> Vector2i:
+	return chunk_size
+
+func get_max_height() -> int:
+	return max_height
 
 # Editor tools (використовувати через консоль або скрипти)
 func generate_terrain_editor():

@@ -150,7 +150,7 @@ func collect_chunk_data(chunk_pos: Vector2i) -> Dictionary:
 	if get_parent().target_gridmap:
 		for x in range(chunk_start.x, chunk_start.x + chunk_size.x):
 			for z in range(chunk_start.y, chunk_start.y + chunk_size.y):
-				for y in range(-10, 20):  # Діапазон висоти
+				for y in range(_get_min_height(), _get_max_height()):
 					var cell_item = get_parent().target_gridmap.get_cell_item(Vector3i(x, y, z))
 					if cell_item >= 0:
 						var key = str(x) + "_" + str(y) + "_" + str(z)
@@ -216,7 +216,7 @@ func _rebuild_chunk_with_optimized_mesh(gridmap: GridMap, chunk_pos: Vector2i, o
 
 	for x in range(chunk_start.x, chunk_end.x):
 		for z in range(chunk_start.y, chunk_end.y):
-			for y in range(-50, 50):
+			for y in range(_get_min_height(), _get_max_height()):
 				gridmap.set_cell_item(Vector3i(x, y, z), -1)
 
 	# Потім додаємо тільки оптимізовані блоки
@@ -244,7 +244,7 @@ func remove_chunk(gridmap: GridMap, chunk_pos: Vector2i):
 
 	for x in range(chunk_start.x, chunk_end.x):
 		for z in range(chunk_start.y, chunk_end.y):
-			for y in range(-50, 50):  # Діапазон висоти
+			for y in range(_get_min_height(), _get_max_height()):
 				gridmap.set_cell_item(Vector3i(x, y, z), -1)
 
 	active_chunks.erase(chunk_pos)
@@ -257,8 +257,9 @@ func is_chunk_visible(camera: Camera3D, chunk_pos: Vector2i) -> bool:
 
 	# Розраховуємо bounding box чанка
 	var chunk_world_pos = chunk_pos * chunk_size
-	var chunk_center = Vector3(chunk_world_pos.x + chunk_size.x/2.0, 10, chunk_world_pos.y + chunk_size.y/2.0)  # Припускаємо середню висоту
-	var chunk_size_3d = Vector3(chunk_size.x, 20, chunk_size.y)  # Висота чанка
+	var vertical_span = float(_get_max_height() - _get_min_height())
+	var chunk_center = Vector3(chunk_world_pos.x + chunk_size.x/2.0, _get_min_height() + vertical_span / 2.0, chunk_world_pos.y + chunk_size.y/2.0)
+	var chunk_size_3d = Vector3(chunk_size.x, max(vertical_span, 1.0), chunk_size.y)
 
 	# Створюємо AABB для чанка
 	var aabb = AABB(chunk_center - chunk_size_3d/2.0, chunk_size_3d)
@@ -377,6 +378,16 @@ func _get_chunk_pos_for_world_pos(world_pos: Vector3i) -> Vector2i:
 func get_modified_blocks_count() -> int:
 	"""Отримати кількість змінених блоків в черзі"""
 	return modified_blocks.size()
+
+func _get_max_height() -> int:
+	var height = 64
+	if get_parent() and get_parent().has_method("get_max_height"):
+		height = get_parent().get_max_height()
+	return max(height, _get_min_height() + 1)
+
+func _get_min_height() -> int:
+	# Тимчасово фіксоване значення для глибинних шарів
+	return -10
 
 # Preloading Buffer - методи для попереднього завантаження
 
