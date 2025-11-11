@@ -18,6 +18,7 @@ var auto_update_enabled := false
 @onready var chunk_radius = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/ChunkRadius
 @onready var height_amplitude = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/HeightAmplitude
 @onready var base_height = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/BaseHeight
+@onready var max_height = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/MaxHeight
 
 # Noise parameters
 @onready var seed = $Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/SeedHBox/Seed
@@ -92,6 +93,8 @@ func connect_signals():
 		height_amplitude.value_changed.connect(_on_setting_changed)
 	if base_height:
 		base_height.value_changed.connect(_on_setting_changed)
+	if max_height:
+		max_height.value_changed.connect(_on_setting_changed)
 
 	# Noise parameters
 	if seed:
@@ -179,6 +182,7 @@ func load_current_settings():
 	chunk_radius.value = terrain_generator.chunk_radius
 	height_amplitude.value = terrain_generator.height_amplitude
 	base_height.value = terrain_generator.base_height
+	max_height.value = terrain_generator.max_height
 
 	# Noise parameters
 	if terrain_generator.noise:
@@ -249,10 +253,11 @@ func apply_settings():
 	terrain_generator.use_best_practices = best_practices.button_pressed
 
 	# Параметри
-	terrain_generator.chunk_size = Vector2i(chunk_size_x.value, chunk_size_y.value)
-	terrain_generator.chunk_radius = chunk_radius.value
-	terrain_generator.height_amplitude = height_amplitude.value
-	terrain_generator.base_height = base_height.value
+	terrain_generator.chunk_size = Vector2i(int(chunk_size_x.value), int(chunk_size_y.value))
+	terrain_generator.chunk_radius = int(chunk_radius.value)
+	terrain_generator.height_amplitude = int(height_amplitude.value)
+	terrain_generator.base_height = int(base_height.value)
+	terrain_generator.max_height = int(max_height.value)
 
 	# Noise parameters
 	if terrain_generator.noise:

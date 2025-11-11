@@ -13,7 +13,7 @@ This document outlines the core survival elements and crafting recipes for the g
 ## Interaction System
 
 - Player approaches a resource node.
-- An interaction prompt (e.g., 'E' to gather) appears.
+- An interaction prompt (e.g., 'F' to gather) appears.
 - Player holds the interaction key. A timer/progress bar appears.
 - Upon completion, the resource is added to the player's inventory.
 - Tool usage will be checked. Using the correct tool speeds up gathering. Using no tool or the wrong tool is slow or impossible.

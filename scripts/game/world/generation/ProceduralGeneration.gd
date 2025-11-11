@@ -6,6 +6,7 @@ class_name ProceduralGeneration
 var noise: FastNoiseLite
 var height_amplitude := 5
 var base_height := 5
+var max_height := 64
 
 # Додаткові шари шуму (з infinite_heightmap_terrain)
 @export var extra_terrain_noise_layers: Array[FastNoiseLite] = []
@@ -54,7 +55,7 @@ func generate_terrain(gridmap: GridMap, start_pos: Vector2i, size: Vector2i):
 
 	for x in range(start_pos.x, start_pos.x + size.x):
 		for z in range(start_pos.y, start_pos.y + size.y):
-			var height = int(noise.get_noise_2d(x, z) * height_amplitude) + base_height
+			var height = _clamp_height(int(noise.get_noise_2d(x, z) * height_amplitude) + base_height)
 
 			for y in range(height):
 				var block_id: String
@@ -94,8 +95,8 @@ func generate_chunk(gridmap: GridMap, chunk_pos: Vector2i, optimization: Diction
 func get_height_at(x: int, z: int) -> int:
 	"""Отримати висоту терейну в точці"""
 	if not noise:
-		return base_height
-	return int(sample_2dv(Vector2(x, z)) * height_amplitude) + base_height
+		return _clamp_height(base_height)
+	return _clamp_height(int(sample_2dv(Vector2(x, z)) * height_amplitude) + base_height)
 
 func sample_2dv(point: Vector2) -> float:
 	"""Семплінг шуму з додатковими шарами (з infinite_heightmap_terrain)"""
@@ -178,13 +179,13 @@ func _get_neighbor_chunk_heights(gridmap: GridMap, neighbor_chunk_pos: Vector2i,
 func _sample_height_from_existing_terrain(gridmap: GridMap, x: int, z: int) -> int:
 	"""Визначає висоту з існуючих блоків у GridMap"""
 	# Шукаємо найвищий блок у цій позиції
-	for y in range(20, -1, -1):  # Перевіряємо зверху вниз
+	for y in range(_get_max_height(), -1, -1):  # Перевіряємо зверху вниз
 		var cell_item = gridmap.get_cell_item(Vector3i(x, y, z))
 		if cell_item >= 0:  # Блок існує
 			return y + 1  # Висота поверхні
 
 	# Якщо блоки не знайдені, повертаємо базову висоту
-	return base_height
+	return _clamp_height(base_height)
 
 func _is_boundary_block(x: int, z: int, chunk_start: Vector2i, chunk_size: Vector2i) -> bool:
 	"""Перевіряє чи блок знаходиться на границі чанка"""
@@ -196,7 +197,7 @@ func _is_boundary_block(x: int, z: int, chunk_start: Vector2i, chunk_size: Vecto
 
 func _get_height_with_boundary_smoothing(x: int, z: int, neighbor_heights: Dictionary) -> int:
 	"""Обчислює висоту з smoothing для граничних блоків"""
-	var base_height = int(noise.get_noise_2d(x, z) * height_amplitude) + self.base_height
+	var base_height = _clamp_height(int(noise.get_noise_2d(x, z) * height_amplitude) + self.base_height)
 
 	# Якщо є дані сусідів, використовуємо їх для smoothing
 	if neighbor_heights.size() > 0:
@@ -204,7 +205,7 @@ func _get_height_with_boundary_smoothing(x: int, z: int, neighbor_heights: Dicti
 		# Змішуємо висоту з середнім значенням сусідів (70% власна, 30% сусідів)
 		base_height = int(base_height * 0.7 + neighbor_avg * 0.3)
 
-	return base_height
+	return _clamp_height(base_height)
 
 func _calculate_neighbor_average_height(neighbor_heights: Dictionary) -> float:
 	"""Обчислює середню висоту з даних сусідніх чанків"""
@@ -223,14 +224,15 @@ func _set_blocks_at_position(gridmap: GridMap, x: int, z: int, surface_height: i
 	"""Встановлює блоки в позиції (x, z) до заданої висоти поверхні з врахуванням біомів"""
 	# Отримуємо біом та його характеристики
 	var biome_data = get_biome_at_position(x, z)
+	var clamped_height = _clamp_height(surface_height)
 
-	for y in range(surface_height):
+	for y in range(clamped_height):
 		var block_id: String
 
 		# Визначення типу блоку залежно від висоти та біому
-		if y < surface_height - 2:
+		if y < clamped_height - 2:
 			block_id = biome_data["stone_block"]
-		elif y < surface_height - 1:
+		elif y < clamped_height - 1:
 			block_id = biome_data["dirt_block"]
 		else:
 			block_id = biome_data["surface_block"]
@@ -238,6 +240,14 @@ func _set_blocks_at_position(gridmap: GridMap, x: int, z: int, surface_height: i
 		var mesh_index = get_mesh_index_for_block(gridmap, block_id)
 		if mesh_index >= 0:
 			gridmap.set_cell_item(Vector3i(x, y, z), mesh_index)
+
+func _clamp_height(value: int) -> int:
+	return clamp(value, 0, _get_max_height())
+
+func _get_max_height() -> int:
+	if get_parent() and get_parent().has_method("get_max_height"):
+		return max(get_parent().get_max_height(), 1)
+	return max_height
 
 func get_mesh_index_for_block(gridmap: GridMap, block_name: String) -> int:
 	"""Fallback функція для отримання mesh index з пріоритетом:
@@ -256,10 +266,11 @@ func get_mesh_index_for_block(gridmap: GridMap, block_name: String) -> int:
 
 	# Спроба 2: Пошук у mesh_library за ім’ям
 	if gridmap.mesh_library:
-		for i in range(gridmap.mesh_library.get_item_count()):
-			var item_name = gridmap.mesh_library.get_item_name(i)
+		var item_ids := gridmap.mesh_library.get_item_list()
+		for item_id in item_ids:
+			var item_name = gridmap.mesh_library.get_item_name(item_id)
 			if item_name.to_lower().contains(block_name.to_lower()):
-				return i
+				return item_id
 
 	# Спроба 3: Жорстка мапа як резерв
 	var fallback_map = {
