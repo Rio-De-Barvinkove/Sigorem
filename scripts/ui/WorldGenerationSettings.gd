@@ -53,7 +53,8 @@ func _ready():
 	tab_container.set_tab_title(0, "Основні модулі")
 	tab_container.set_tab_title(1, "Розширені модулі")
 	tab_container.set_tab_title(2, "Оптимізація")
-	
+
+	hide()
 	# Завантажуємо поточні налаштування
 	load_current_settings()
 	

@@ -1,13 +1,19 @@
 [gd_scene load_steps=5 format=3 uid="uid://dps3xrk1e80j7"]
 
 [ext_resource type="Script" path="res://scripts/game/player/PlayerController.gd" id="1_445gr"]
-[ext_resource type="Texture2D" path="res://icon.svg" id="2_6y7h8"]
 [ext_resource type="Script" path="res://scripts/game/player/BuildController.gd" id="3_buildmode"]
 [ext_resource type="Script" path="res://scripts/game/player/PlayerStats.gd" id="4_stats"]
 [ext_resource type="Script" path="res://scripts/game/systems/needs_system.gd" id="5_needs"]
 [ext_resource type="Script" path="res://scripts/game/systems/status_effects.gd" id="6_effects"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_fghij"]
+radius = 0.35
+height = 1.6
+[sub_resource type="CapsuleMesh" id="CapsuleMesh3D_body"]
+radius = 0.35
+mid_height = 1.0
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_player"]
+albedo_color = Color(0.2, 0.45, 0.85, 1)
 
 [node name="Player" type="CharacterBody3D"]
 script = ExtResource("1_445gr")
@@ -16,12 +22,13 @@ script = ExtResource("1_445gr")
 script = ExtResource("3_buildmode")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
 shape = SubResource("CapsuleShape3D_fghij")
 
-[node name="Sprite3D" type="Sprite3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-billboard = 1
-texture = ExtResource("2_6y7h8")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+mesh = SubResource("CapsuleMesh3D_body")
+surface_material_override/0 = SubResource("StandardMaterial3D_player")
 
 [node name="PlayerStats" type="Node" parent="."]
 script = ExtResource("4_stats")

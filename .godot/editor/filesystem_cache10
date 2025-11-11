@@ -1,5 +1,5 @@
 f098f8d3115d962055284dee314b4f89
-::res://::1762638856
+::res://::1762773639
 BUILD_MODE_FIX.md::TextFile::-1::1761770539::0::1::::<><><>0<>0<><>::
 create_meshlib.gd::GDScript::7704605527390299233::1761496242::0::1::::<>EditorScript<><>0<>1<><>::
 GAME_CONTROLS.md::TextFile::-1::1761754044::0::1::::<><><>0<>0<><>::
@@ -230,7 +230,7 @@ LICENSE.md::TextFile::-1::1760542276::0::1::::<><><>0<>0<><>::
 LOGO_LICENSE.md::TextFile::-1::1760542276::0::1::::<><><>0<>0<><>::
 README.md::TextFile::-1::1760542276::0::1::::<><><>0<>0<><>::
 version.txt::TextFile::-1::1760542278::0::1::::<><><>0<>0<><>::
-::res://addons/limboai/bin/::1762638848
+::res://addons/limboai/bin/::1762773633
 limboai.gdextension::GDExtension::4250666890357371639::1760542278::0::1::::<><><>0<>0<><>::
 ::res://addons/limboai/bin/liblimboai.macos.editor.framework/::1762259415
 ::res://addons/limboai/bin/liblimboai.macos.template_release.framework/::1762259415
@@ -313,7 +313,7 @@ pixelpen.gdextension::GDExtension::4218635681296796558::1742533960::0::1::::<><>
 pixelpen_plugin.gd::GDScript::3123578074060734660::1742533960::0::1::::<>EditorPlugin<><>0<>1<><>::
 plugin.cfg::TextFile::-1::1742533960::0::1::::<><><>0<>0<><>::
 README.md::TextFile::-1::1742533959::0::1::::<><><>0<>0<><>::
-::res://addons/net.yarvis.pixel_pen/bin/::1762638848
+::res://addons/net.yarvis.pixel_pen/bin/::1762773633
 ::res://addons/net.yarvis.pixel_pen/bin/libpixelpen.macos.debug.framework/::1762259497
 ::res://addons/net.yarvis.pixel_pen/bin/libpixelpen.macos.release.framework/::1762259497
 ::res://addons/net.yarvis.pixel_pen/classes/::1762628835
@@ -424,8 +424,8 @@ shorcut_listener.gd::GDScript::3233378212719705276::1742533960::0::1::::<>LineEd
 startup_window.gd::GDScript::1218913537451266411::1742533960::0::1::::<>Window<><>0<>1<><>::
 ::res://addons/net.yarvis.pixel_pen/editor/window_reference/::1762259718
 window_reference.gd::GDScript::1040701610306632658::1742533960::0::1::::<>Window<><>0<>1<><>::
-::res://addons/net.yarvis.pixel_pen/resources/::1762638171
-default_theme.tres::Theme::3692116286402003585::1762638171::0::1::::<><><>0<>0<><>::uid://mcetkdnsuw5a::::res://addons/net.yarvis.pixel_pen/resources/fonts/inter/static/Inter-Regular.ttf
+::res://addons/net.yarvis.pixel_pen/resources/::1762772404
+default_theme.tres::Theme::3692116286402003585::1762772404::0::1::::<><><>0<>0<><>::uid://mcetkdnsuw5a::::res://addons/net.yarvis.pixel_pen/resources/fonts/inter/static/Inter-Regular.ttf
 editor_canvas.gdshader::Shader::7061313378993231767::1742533960::0::1::::<><><>0<>0<><>::
 editor_canvas_cursor.gdshader::Shader::6577959530935660837::1742533960::0::1::::<><><>0<>0<><>::
 editor_shorcut.tres::Resource/EditorShorcut::7835184283667627853::1762544765::0::1::::<><><>0<>0<><>::uid://dp4e07s0ucd51::::res://addons/net.yarvis.pixel_pen/classes/editor_shorcut.gd
@@ -537,7 +537,7 @@ tree_row.gd::GDScript::5457276090370277856::1742533960::0::1::::TreeRow<>Resourc
 ::res://addons/panku_console/::1762259802
 console.gd::GDScript::5160646746507290701::1715235841::0::1::::PankuConsole<>CanvasLayer<><>0<>0<><>::
 console.tscn::PackedScene::6468885623186101079::1715235841::0::1::::<><><>0<>0<><>::res://addons/panku_console/console.gd<>uid://bk18yfu0d77wk::::res://addons/panku_console/res/panku_console_theme.tres<>res://addons/panku_console/common/lynx_window2/lynx_windows_manager_2.gd
-default_panku_config.cfg::TextFile::-1::1762638110::0::1::::<><><>0<>0<><>::
+default_panku_config.cfg::TextFile::-1::1762690848::0::1::::<><><>0<>0<><>::
 logo.svg::CompressedTexture2D::1215273567287972993::1715235841::1762259802::1::::<><><>0<>0<>e3de6a5c300745cded8bbb7c8a1ab7df<>res://.godot/imported/logo.svg-5c6f042742ccac523c072414b9eb3caf.ctex::
 plugin.cfg::TextFile::-1::1715235841::0::1::::<><><>0<>0<><>::
 plugin.gd::GDScript::675142616560666082::1715235841::0::1::::PankuConsolePlugin<>EditorPlugin<><>0<>1<><>::
@@ -676,7 +676,7 @@ logger_view.tscn::PackedScene::4217036032205988396::1715235841::0::1::::<><><>0<
 log_overlay.tscn::PackedScene::5590441662404827567::1715235841::0::1::::<><><>0<>0<><>::uid://bk18yfu0d77wk::::res://addons/panku_console/res/panku_console_theme.tres
 log_view_tag.gd::GDScript::8002991645615232283::1715235841::0::1::::<>Control<><>0<>0<><>::
 log_view_tag.tscn::PackedScene::8254419958932460588::1715235841::0::1::::<><><>0<>0<><>::uid://bk18yfu0d77wk::::res://addons/panku_console/res/panku_console_theme.tres<>res://addons/panku_console/modules/native_logger/log_view_tag.gd<>uid://drn5t13m088fb::::res://addons/panku_console/common/panku_button.tscn<>uid://8g5afcuanbl6::::res://addons/panku_console/res/icons2/close.svg
-module.gd::GDScript::6825437613794532083::1715235841::0::1::::PankuModuleNativeLogger<>PankuModule<><>0<>0<><>::
+module.gd::GDScript::6825437613794532083::1762767587::0::1::::PankuModuleNativeLogger<>PankuModule<><>0<>0<><>::
 opt.gd::GDScript::5715858835982182000::1715235841::0::1::::<>ModuleOptions<><>0<>0<><>::
 ::res://addons/panku_console/modules/screen_crt_effect/::1762186270
 crt_effect_layer.tscn::PackedScene::6543347401682293693::1715235841::0::1::::<><><>0<>0<><>::res://addons/panku_console/res/shader/mattias_crt.gdshader
@@ -708,9 +708,9 @@ texture_viewer.tscn::PackedScene::7750132616475338843::1715235841::0::1::::<><><
 ::res://addons/panku_console/modules/variable_tracker/::1762186271
 module.gd::GDScript::7847286834043858307::1715235841::0::1::::PankuModuleVariableTracker<>PankuModule<><>0<>0<><>::
 opt.gd::GDScript::299810802618019305::1715235841::0::1::::<>ModuleOptions<><>0<>0<><>::
-::res://addons/panku_console/res/::1762638171
+::res://addons/panku_console/res/::1762772404
 green_gradient_1d.tres::Gradient::949485305027433995::1715235841::0::1::::<><><>0<>0<><>::
-panku_console_theme.tres::Theme::3144029756148019014::1762638171::0::1::::<><><>0<>0<><>::
+panku_console_theme.tres::Theme::3144029756148019014::1762772404::0::1::::<><><>0<>0<><>::
 ::res://addons/panku_console/res/effect/::1762259802
 square_shadow.png::CompressedTexture2D::8669949328537749897::1715235841::1762259802::1::::<><><>0<>0<>b42c054a10c41fbc3ff57c17776fc31a<>res://.godot/imported/square_shadow.png-0b7f91b74dd24247868957be13db72f4.ctex::
 ::res://addons/panku_console/res/icons2/::1762259802
@@ -2201,10 +2201,10 @@ block_types.gd::GDScript::9219670771910008368::1761247042::0::1::::BlockType<>Re
 ::res://resources/objects/::1761673936
 gatherable_object.gd::GDScript::248666007044988994::1761674447::0::1::::<>StaticBody3D<><>0<>0<><>::
 gatherable_resource.gd::GDScript::5145880310074100674::1761674587::0::1::::GatherableResource<>Resource<><>0<>1<><>::
-::res://scenes/::1762638171
+::res://scenes/::1762772404
 main_menu.tscn::PackedScene::3525791026056991370::1761752903::0::1::::<><><>0<>0<><>::uid://bda0lu6efr3c5::::res://scripts/ui/main_menu.gd<>res://scripts/ui/loading_screen_simple.gd
-player.tscn::PackedScene::8250995563813127742::1761771919::0::1::::<><><>0<>0<><>::res://scripts/game/player/PlayerController.gd<>res://icon.svg<>res://scripts/game/player/BuildController.gd<>res://scripts/game/player/PlayerStats.gd<>res://scripts/game/systems/needs_system.gd<>res://scripts/game/systems/status_effects.gd
-world.tscn::PackedScene::6993726531536917745::1762638171::0::1::::<><><>0<>0<><>::uid://dh7eiekt4eerp::::res://scripts/game/world/WorldGenerator.gd<>uid://bbas0v448jcam::::res://assets/textures/Solo_draw/Terrain_Grass_Top.png<>uid://dps3xrk1e80j7::::res://scenes/player.tscn<>uid://bgxhog0gtcg6q::::res://scripts/game/player/CameraController.gd<>uid://dsv2wih236027::::res://scenes/ui/inventory.tscn<>uid://dsv2wih236028::::res://scenes/ui/pause_menu.tscn<>uid://dsv2wih23603a::::res://scenes/ui/character_menu.tscn<>uid://c8v1qkq6t6v7b::::res://scenes/ui/world_generation_settings.tscn<>uid://8b4ihqwx0ma::::res://scripts/world/world_objects.gd<>uid://dnkdy3jxy7cuy::::res://scripts/ui/game_hud.gd
+player.tscn::PackedScene::8250995563813127742::1762773622::0::1::::<><><>0<>0<><>::res://scripts/game/player/PlayerController.gd<>res://scripts/game/player/BuildController.gd<>res://scripts/game/player/PlayerStats.gd<>res://scripts/game/systems/needs_system.gd<>res://scripts/game/systems/status_effects.gd
+world.tscn::PackedScene::6993726531536917745::1762772404::0::1::::<><><>0<>0<><>::uid://dh7eiekt4eerp::::res://scripts/game/world/WorldGenerator.gd<>uid://bbas0v448jcam::::res://assets/textures/Solo_draw/Terrain_Grass_Top.png<>uid://dps3xrk1e80j7::::res://scenes/player.tscn<>uid://bgxhog0gtcg6q::::res://scripts/game/player/CameraController.gd<>uid://dsv2wih236027::::res://scenes/ui/inventory.tscn<>uid://dsv2wih236028::::res://scenes/ui/pause_menu.tscn<>uid://dsv2wih23603a::::res://scenes/ui/character_menu.tscn<>uid://c8v1qkq6t6v7b::::res://scenes/ui/world_generation_settings.tscn<>uid://8b4ihqwx0ma::::res://scripts/world/world_objects.gd<>uid://dnkdy3jxy7cuy::::res://scripts/ui/game_hud.gd
 ::res://scenes/blocks/::1761496616
 dirt_block.tscn::PackedScene::8588806310726045524::1761495512::0::1::::<><><>0<>0<><>::
 grass_block.tscn::PackedScene::6506709078406667843::1761496600::0::1::::<><><>0<>0<><>::
@@ -2225,10 +2225,10 @@ BlockRegistry.gd::GDScript::2270959378116181879::1761843449::0::1::::<>Node<><>0
 ResourceManager.gd::GDScript::2595880181652083661::1762638443::0::1::::<>Node<><>0<>0<><>::
 ::res://scripts/core/::1761772609
 ::res://scripts/game/::1761771855
-::res://scripts/game/player/::1761773490
+::res://scripts/game/player/::1762772404
 BuildController.gd::GDScript::8793327255502457220::1761843450::0::1::::<>Node<><>0<>0<><>::
 CameraController.gd::GDScript::2855484807987004806::1761835945::0::1::::<>Camera3D<><>0<>0<><>::
-PlayerController.gd::GDScript::4730821294068762752::1761771919::0::1::::<>CharacterBody3D<><>0<>0<><>::
+PlayerController.gd::GDScript::4730821294068762752::1762773622::0::1::::<>CharacterBody3D<><>0<>0<><>::
 PlayerStats.gd::GDScript::3814253179836590626::1761771919::0::1::::<>Node<><>0<>0<><>::
 ::res://scripts/game/systems/::1761773490
 crafting_system.gd::GDScript::5492677830273773373::1761771919::0::1::::<>Node<><>0<>0<><>::
@@ -2263,7 +2263,7 @@ loading_screen_simple.gd::GDScript::4151364693548591662::1761752903::0::1::::<>C
 main_menu.gd::GDScript::2598525881704377450::1761752903::0::1::::<>Control<><>0<>0<><>::
 pause_menu.gd::GDScript::6652175189388385398::1761247042::0::1::::<>Control<><>0<>0<><>::
 recipe_button.gd::GDScript::6212674025912521097::1761247042::0::1::::<>Button<><>0<>0<><>::
-WorldGenerationSettings.gd::GDScript::1375854091348898504::1762369021::0::1::::WorldGenerationSettings<>Control<><>0<>0<><>::
+WorldGenerationSettings.gd::GDScript::1375854091348898504::1762771611::0::1::::WorldGenerationSettings<>Control<><>0<>0<><>::
 ::res://scripts/world/::1761771341
 block_system.gd::GDScript::4598836882935655373::1761247042::0::1::::<>Node<><>0<>0<><>::
 world_objects.gd::GDScript::68237402657712596::1762360657::0::1::::<>Node3D<><>0<>0<><>::

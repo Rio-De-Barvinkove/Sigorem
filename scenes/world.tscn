@@ -76,7 +76,7 @@ cell_size = Vector3(1, 1, 1)
 script = ExtResource("1_5j1ce")
 
 [node name="Player" parent="." instance=ExtResource("2_p6w2a")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 6, 25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 20, 25)
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 15, 15)
