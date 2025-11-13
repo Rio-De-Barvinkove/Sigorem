@@ -26,9 +26,11 @@ var max_height := 64
 @export var biome_scale := 100.0  # Масштаб біомів
 
 # Cave Generation - налаштування печер
-@export var enable_caves := false  # Вимкнено поки - заготовка
-@export var cave_density := 0.3    # Ймовірність печери в блоці
-@export var cave_noise_scale := 0.05  # Масштаб шуму печер
+@export var enable_caves := true  # УВІМКНЕНО - генерація печер через 3D шум
+@export var cave_density := 0.4    # Поріг шуму для печер (0.0-1.0, вище = більше печер)
+@export var cave_noise_scale := 0.03  # Масштаб шуму печер (менше = більші печери)
+@export var cave_min_height := 1  # Мінімальна висота для генерації печер
+@export var cave_max_height_offset := -3  # Відступ від поверхні (щоб не було дірок зверху)
 
 func _ready():
 	if not noise:
@@ -159,49 +161,61 @@ func _get_neighbor_chunk_heights(gridmap: GridMap, neighbor_chunk_pos: Vector2i,
 	"""Отримує висоти з сусіднього чанка"""
 	var heights = []
 
-	# Перевіряємо чи чанк існує (спрощена перевірка)
-	# В повній реалізації треба перевірити чи чанк завантажений
+	# ВИПРАВЛЕНО: використовуємо noise замість GridMap (детермінований результат)
 	var neighbor_chunk_start = neighbor_chunk_pos * chunk_size
 
 	# Збираємо висоти з краю сусіднього чанка (перші кілька блоків)
 	for i in range(min(3, chunk_size.x)):  # Беремо перші 3 блоки для smoothing
 		var world_x = neighbor_chunk_start.x + i
 		var world_z = neighbor_chunk_start.y + i
-		var height = _sample_height_from_existing_terrain(gridmap, world_x, world_z)
+		# Використовуємо noise для визначення висоти (той самий алгоритм що й для генерації)
+		var height = _clamp_height(int(noise.get_noise_2d(world_x, world_z) * height_amplitude) + base_height)
 		heights.append(height)
 
 	return heights
 
 func _sample_height_from_existing_terrain(gridmap: GridMap, x: int, z: int) -> int:
-	"""Визначає висоту з існуючих блоків у GridMap"""
-	# Шукаємо найвищий блок у цій позиції
-	for y in range(_get_max_height(), -1, -1):  # Перевіряємо зверху вниз
-		var cell_item = gridmap.get_cell_item(Vector3i(x, y, z))
-		if cell_item >= 0:  # Блок існує
-			return y + 1  # Висота поверхні
-
-	# Якщо блоки не знайдені, повертаємо базову висоту
-	return _clamp_height(base_height)
+	"""Визначає висоту з існуючих блоків у GridMap (ЗАСТАРІЛИЙ - використовувати тільки для fallback)"""
+	# ВИПРАВЛЕНО: використовуємо noise для детермінованого результату
+	# GridMap може ще не мати згенерованих блоків
+	return _clamp_height(int(noise.get_noise_2d(x, z) * height_amplitude) + base_height)
 
 func _is_boundary_block(x: int, z: int, chunk_start: Vector2i, chunk_size: Vector2i) -> bool:
-	"""Перевіряє чи блок знаходиться на границі чанка"""
+	"""Перевіряє чи блок знаходиться на границі чанка або в зоні smoothing"""
 	var local_x = x - chunk_start.x
 	var local_z = z - chunk_start.y
 
-	# Граничні блоки - це блоки на краю чанка (перші та останні рядки/стовпці)
-	return local_x <= 1 or local_x >= chunk_size.x - 2 or local_z <= 1 or local_z >= chunk_size.y - 2
+	# ВИПРАВЛЕНО: розширена зона smoothing (3 блоки від краю для кращого blending)
+	var smoothing_width = 3
+	return (local_x < smoothing_width or local_x >= chunk_size.x - smoothing_width or 
+			local_z < smoothing_width or local_z >= chunk_size.y - smoothing_width)
 
 func _get_height_with_boundary_smoothing(x: int, z: int, neighbor_heights: Dictionary) -> int:
 	"""Обчислює висоту з smoothing для граничних блоків"""
-	var base_height = _clamp_height(int(noise.get_noise_2d(x, z) * height_amplitude) + self.base_height)
+	var base_height_val = _clamp_height(int(noise.get_noise_2d(x, z) * height_amplitude) + self.base_height)
 
-	# Якщо є дані сусідів, використовуємо їх для smoothing
+	# ВИПРАВЛЕНО: покращений smoothing алгоритм
+	# Використовуємо noise з сусідніх позицій для плавного переходу
 	if neighbor_heights.size() > 0:
 		var neighbor_avg = _calculate_neighbor_average_height(neighbor_heights)
-		# Змішуємо висоту з середнім значенням сусідів (70% власна, 30% сусідів)
-		base_height = int(base_height * 0.7 + neighbor_avg * 0.3)
+		# Додатково беремо середнє з 4 сусідніх блоків через noise
+		var nearby_heights = []
+		for dx in [-1, 0, 1]:
+			for dz in [-1, 0, 1]:
+				if dx == 0 and dz == 0:
+					continue
+				var nearby_height = _clamp_height(int(noise.get_noise_2d(x + dx, z + dz) * height_amplitude) + self.base_height)
+				nearby_heights.append(nearby_height)
+		
+		var nearby_avg = 0.0
+		for h in nearby_heights:
+			nearby_avg += h
+		nearby_avg /= nearby_heights.size()
+		
+		# Змішуємо: 50% власна висота, 25% сусідні чанки, 25% сусідні блоки
+		base_height_val = int(base_height_val * 0.5 + neighbor_avg * 0.25 + nearby_avg * 0.25)
 
-	return _clamp_height(base_height)
+	return _clamp_height(base_height_val)
 
 func _calculate_neighbor_average_height(neighbor_heights: Dictionary) -> float:
 	"""Обчислює середню висоту з даних сусідніх чанків"""
@@ -430,7 +444,7 @@ func _blend_biomes(biome_weights: Dictionary) -> Dictionary:
 # Cave Generation - методи для генерації печер
 
 func generate_caves_in_chunk(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: Vector2i):
-	"""Генерація печер в чанку"""
+	"""Генерація печер в чанку через 3D шум"""
 	if not enable_caves:
 		return
 
@@ -440,17 +454,26 @@ func generate_caves_in_chunk(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: 
 	var cave_noise = FastNoiseLite.new()
 	cave_noise.seed = noise.seed + 1000  # Різний seed від основного шуму
 	cave_noise.frequency = cave_noise_scale
+	cave_noise.noise_type = FastNoiseLite.TYPE_PERLIN  # Perlin для плавних печер
+	cave_noise.fractal_octaves = 2  # Деталізація печер
 
-	# Проходимо по всіх блоках чанка
+	# Проходимо по всіх блоках чанка в 3D
 	for x in range(chunk_start.x, chunk_start.x + chunk_size.x):
 		for z in range(chunk_start.y, chunk_start.y + chunk_size.y):
-			# Генеруємо печери тільки під землею (нижче рівня 8)
-			for y in range(8):
+			var surface_height = get_height_at(x, z)
+			# ВИПРАВЛЕНО: генеруємо печери тільки нижче поверхні з відступом
+			var max_cave_height = max(cave_min_height, surface_height + cave_max_height_offset)
+			
+			for y in range(cave_min_height, max_cave_height):
+				# Використовуємо 3D шум для визначення печер
 				var cave_value = cave_noise.get_noise_3d(x, y, z)
 
-				# Якщо шум перевищує поріг cave_density, створюємо порожнечу
-				if cave_value > cave_density:
-					gridmap.set_cell_item(Vector3i(x, y, z), -1)  # Видаляємо блок
+				# Додаємо градієнт по висоті - менше печер близько до поверхні
+				var height_factor = 1.0 - (float(y) / max(1, max_cave_height))
+				var adjusted_threshold = cave_density - (height_factor * 0.2)
+				
+				if cave_value > adjusted_threshold:
+					gridmap.set_cell_item(Vector3i(x, y, z), -1)  # Видаляємо блок (створюємо печеру)
 
 func carve_cave_tunnel(gridmap: GridMap, start_pos: Vector3i, length: int, radius: float):
 	"""Заготовка для генерації тунелів печер"""

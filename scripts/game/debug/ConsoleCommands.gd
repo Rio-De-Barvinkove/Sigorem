@@ -138,17 +138,69 @@ func get_player_position() -> String:
 	var pos = player.global_position
 	return "Позиція гравця: (" + str(pos.x) + ", " + str(pos.y) + ", " + str(pos.z) + ")"
 
+func toggle_xray() -> String:
+	"""Перемкнути X-ray режим для підсвітки печер"""
+	if not player:
+		return "Помилка: Гравець не знайдено"
+	
+	var build_controller = player.get_node_or_null("BuildMode")
+	if build_controller and "enable_xray_mode" in build_controller:
+		build_controller.enable_xray_mode = not build_controller.enable_xray_mode
+		build_controller._apply_xray_mode()
+		var status = "увімкнено" if build_controller.enable_xray_mode else "вимкнено"
+		return "X-ray режим " + status
+	return "Помилка: BuildController не знайдено"
+
+func toggle_first_person() -> String:
+	"""Перемкнути камеру від першої особи"""
+	var camera = get_viewport().get_camera_3d()
+	if not camera:
+		return "Помилка: Камера не знайдена"
+	
+	if "is_first_person_active" in camera:
+		camera.is_first_person_active = not camera.is_first_person_active
+		if camera.is_first_person_active:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			return "Камера від першої особи увімкнена (V для вимкнення)"
+		else:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			camera.first_person_rotation = Vector2.ZERO
+			return "Камера від третьої особи увімкнена"
+	return "Помилка: Камера не підтримує FPS режим"
+
+func set_break_radius(radius: int) -> String:
+	"""Встановити радіус ламання блоків (1-10)"""
+	if not player:
+		return "Помилка: Гравець не знайдено"
+	
+	var build_controller = player.get_node_or_null("BuildMode")
+	if build_controller and "break_radius" in build_controller:
+		build_controller.break_radius = clamp(radius, 1, 10)
+		return "Радіус ламання встановлено: " + str(build_controller.break_radius) + " блоків"
+	return "Помилка: BuildController не знайдено"
+
 func help() -> String:
 	"""Показати список доступних команд"""
 	return """Доступні команди:
+  === Переміщення ===
   Debug.teleport(x, y, z) - телепортувати гравця
   Debug.teleport_to_starting_area() - телепорт на стартову зону
+  Debug.get_player_position() - позиція гравця
+  
+  === Рух та камера ===
   Debug.set_speed(multiplier) - встановити швидкість (0.1-10.0)
-  Debug.toggle_flight() - перемкнути польотний режим
+  Debug.toggle_flight() - перемкнути польотний режим (F)
+  Debug.toggle_first_person() - камера від першої особи (V)
+  
+  === Креативний режим ===
+  Debug.toggle_xray() - X-ray режим для печер (X)
+  Debug.set_break_radius(radius) - радіус ламання блоків (1-10)
+  
+  === Генерація світу ===
   Debug.regenerate_chunk(x, z) - перегенерувати чанк
   Debug.regenerate_world() - перегенерувати весь світ
   Debug.get_performance_report() - звіт про продуктивність
   Debug.toggle_profiling() - увімкнути/вимкнути профілювання
-  Debug.get_player_position() - позиція гравця
+  
   Debug.help() - показати цю довідку"""
 

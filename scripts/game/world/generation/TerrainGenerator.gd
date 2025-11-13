@@ -34,6 +34,11 @@ class_name TerrainGenerator
 @export var base_height := 16
 @export var max_height := 128
 
+@export_group("Параметри печер")
+@export var enable_caves := true
+@export var cave_density := 0.4
+@export var cave_noise_scale := 0.03
+
 @export_group("Параметри chunking")
 @export var enable_chunk_culling := true
 @export var max_chunk_distance := 100.0
@@ -95,6 +100,10 @@ func initialize_modules():
 		procedural_module.height_amplitude = height_amplitude
 		procedural_module.base_height = base_height
 		procedural_module.max_height = max_height
+		# Печери
+		procedural_module.enable_caves = enable_caves
+		procedural_module.cave_density = cave_density
+		procedural_module.cave_noise_scale = cave_noise_scale
 		add_child(procedural_module)
 
 	# Chunking система
