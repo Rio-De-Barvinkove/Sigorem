@@ -13,6 +13,11 @@ var enable_frustum_culling := true
 var active_chunks: Dictionary = {}  # Vector2i -> GridMap chunk
 var current_player_chunk: Vector2i
 
+# Захист від занадто частого видалення чанків
+var last_cull_time: float = 0.0
+var min_cull_interval: float = 0.5  # Мінімальний інтервал між видаленнями (секунди)
+var max_chunks_to_remove_per_frame: int = 3  # Максимум чанків для видалення за кадр
+
 # Preloading Buffer - завантаження чанків наперед
 var enable_preloading := true
 var preload_radius := 3  # Радіус попереднього завантаження (за основним радіусом)
@@ -65,7 +70,19 @@ func update_chunks(gridmap: GridMap):
 	var new_player_chunk = get_player_chunk_position()
 	if new_player_chunk != current_player_chunk:
 		current_player_chunk = new_player_chunk
-		regenerate_chunks_around_player(gridmap)
+		# Видаляємо далекі чанки (з обмеженням частоти)
+		if enable_culling:
+			var current_time = Time.get_ticks_msec() / 1000.0
+			if current_time - last_cull_time >= min_cull_interval:
+				cull_distant_chunks(gridmap)
+				last_cull_time = current_time
+		
+		# Генеруємо нові чанки (тільки ті, що ще не існують)
+		for x in range(-chunk_radius, chunk_radius + 1):
+			for z in range(-chunk_radius, chunk_radius + 1):
+				var chunk_pos = current_player_chunk + Vector2i(x, z)
+				if not active_chunks.has(chunk_pos):
+					generate_chunk(gridmap, chunk_pos)
 
 func update_player_chunk_position():
 	"""Оновлення позиції чанка гравця"""
@@ -95,38 +112,45 @@ func generate_chunk(gridmap: GridMap, chunk_pos: Vector2i):
 
 	# Розраховуємо оптимізацію для цього чанка
 	var distance_to_player = get_chunk_distance(chunk_pos)
-	var optimization = {}
+	var optimization := {}
+	var use_optimization: bool = get_parent().optimization_module != null and get_parent().use_optimization
 
-	if get_parent().optimization_module and get_parent().use_optimization:
+	if use_optimization:
 		optimization = get_parent().optimization_module.optimize_chunk_generation(chunk_pos, distance_to_player)
-
-	# Перевіряємо ліміт часу генерації
-	if get_parent().optimization_module and get_parent().use_optimization:
 		get_parent().optimization_module.start_generation_timer()
 
-		# Тут викликаємо процедурну генерацію для чанка
-		if get_parent().procedural_module:
-			get_parent().procedural_module.generate_chunk(gridmap, chunk_pos, optimization)
+	# Генеруємо блоки (з оптимізацією або без)
+	if get_parent().procedural_module:
+		get_parent().procedural_module.generate_chunk(gridmap, chunk_pos, optimization)
 
-			# Перевіряємо, чи не перевищено час (тільки якщо не початкова генерація)
-			if get_parent().optimization_module and get_parent().use_optimization:
-				if not get_parent().optimization_module.check_generation_time():
-					# Пропускаємо повідомлення під час початкової генерації
-					if not get_parent().optimization_module.is_initial_generation:
-						print("ChunkManager: Генерація перервана через ліміт часу для чанка ", chunk_pos)
-					return
+	# Якщо активна оптимізація, перевіряємо ліміт часу та виконуємо додаткові кроки
+	if use_optimization:
+		if not get_parent().optimization_module.check_generation_time():
+			if not get_parent().optimization_module.is_initial_generation:
+				print("ChunkManager: Генерація перервана через ліміт часу для чанка ", chunk_pos)
+			return
 
-		# Застосовуємо mesh оптимізацію після генерації
-		if get_parent().optimization_module and get_parent().optimization_module.enable_cull_hidden_faces:
+		if get_parent().optimization_module.enable_cull_hidden_faces:
+			# УВАГА: Ця оптимізація може гальмувати через подвійну роботу (збір + перебудова)
+			# Рекомендація: вимкнути enable_cull_hidden_faces якщо продуктивність падає
+			var collect_start = Time.get_ticks_msec() if get_parent().optimization_module.enable_profiling else 0
 			var chunk_data = collect_chunk_data(chunk_pos)
+			if get_parent().optimization_module.enable_profiling:
+				var collect_time = Time.get_ticks_msec() - collect_start
+				get_parent().optimization_module.profiling_data["collect_chunk_data_calls"] += 1
+				get_parent().optimization_module.profiling_data["collect_chunk_data_time"] += collect_time
+			
+			var rebuild_start = Time.get_ticks_msec() if get_parent().optimization_module.enable_profiling else 0
 			var optimized_data = get_parent().optimization_module.optimize_chunk_mesh(chunk_pos, chunk_data)
-
-			# Перебудовуємо чанк з оптимізованими даними
 			_rebuild_chunk_with_optimized_mesh(gridmap, chunk_pos, optimized_data)
+			if get_parent().optimization_module.enable_profiling:
+				var rebuild_time = Time.get_ticks_msec() - rebuild_start
+				get_parent().optimization_module.profiling_data["rebuild_chunk_calls"] += 1
+				get_parent().optimization_module.profiling_data["rebuild_chunk_time"] += rebuild_time
 
-		# Генеруємо рослинність для чанка
-		if get_parent().vegetation_module and get_parent().use_vegetation:
-			get_parent().vegetation_module.generate_multimesh_for_chunk(chunk_pos, gridmap)
+	# Генеруємо рослинність тільки якщо дозволено
+	if get_parent().vegetation_module and get_parent().use_vegetation:
+		get_parent().vegetation_module.generate_multimesh_for_chunk(chunk_pos, gridmap)
 
 	# Генеруємо detail layers
 	if get_parent().detail_module and get_parent().use_detail_layers:
@@ -164,11 +188,12 @@ func regenerate_chunks_around_player(gridmap: GridMap):
 	if enable_culling:
 		cull_distant_chunks(gridmap)
 
-	# Генеруємо нові чанки
+	# Генеруємо нові чанки (тільки ті, що ще не існують)
 	for x in range(-chunk_radius, chunk_radius + 1):
 		for z in range(-chunk_radius, chunk_radius + 1):
 			var chunk_pos = current_player_chunk + Vector2i(x, z)
-			generate_chunk(gridmap, chunk_pos)
+			if not active_chunks.has(chunk_pos):
+				generate_chunk(gridmap, chunk_pos)
 
 func cull_distant_chunks(gridmap: GridMap):
 	"""Видалення далеких чанків з урахуванням frustum та occlusion culling"""
@@ -180,9 +205,10 @@ func cull_distant_chunks(gridmap: GridMap):
 	for chunk_pos in active_chunks.keys():
 		var should_remove = false
 
-		# Перевірка відстані
+		# Перевірка відстані (з додатковим буфером, щоб уникнути занадто частого видалення)
 		var distance = get_chunk_distance(chunk_pos)
-		if distance > chunk_radius:
+		var cull_threshold = chunk_radius + 1  # Додатковий буфер перед видаленням
+		if distance > cull_threshold:
 			should_remove = true
 
 		# Frustum culling (якщо відстань в межах)
@@ -198,8 +224,14 @@ func cull_distant_chunks(gridmap: GridMap):
 		if should_remove:
 			chunks_to_remove.append(chunk_pos)
 
+	# Обмежуємо кількість чанків для видалення за кадр
+	var chunks_removed_this_frame = 0
 	for chunk_pos in chunks_to_remove:
+		if chunks_removed_this_frame >= max_chunks_to_remove_per_frame:
+			break
+		
 		remove_chunk(gridmap, chunk_pos)
+		chunks_removed_this_frame += 1
 
 		# Видаляємо рослинність для чанка
 		if get_parent().vegetation_module and get_parent().use_vegetation:
@@ -386,8 +418,7 @@ func _get_max_height() -> int:
 	return max(height, _get_min_height() + 1)
 
 func _get_min_height() -> int:
-	# Тимчасово фіксоване значення для глибинних шарів
-	return -10
+	return 0
 
 # Preloading Buffer - методи для попереднього завантаження
 

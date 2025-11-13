@@ -12,6 +12,7 @@ class_name TerrainGenerator
 @export_group("Модулі генерації")
 @export var use_procedural_generation := true
 @export var use_chunking := true
+@export var use_starting_area := true
 @export var use_structures := false
 @export var use_lod := false
 @export var use_threading := false
@@ -19,7 +20,7 @@ class_name TerrainGenerator
 @export var use_heightmap := false
 @export var use_splat_mapping := false
 @export var use_detail_layers := false
-@export var use_optimization := true
+@export var use_optimization := false
 @export var use_save_load := false
 @export var use_native_optimization := false
 @export var use_precomputed_patterns := false
@@ -27,15 +28,17 @@ class_name TerrainGenerator
 
 @export_group("Параметри процедурної генерації")
 @export var noise: FastNoiseLite
-@export var chunk_size := Vector2i(50, 50)
-@export var chunk_radius := 5
-@export var height_amplitude := 5
-@export var base_height := 5
-@export var max_height := 64
+@export var chunk_size := Vector2i(32, 32)
+@export var chunk_radius := 3
+@export var height_amplitude := 32
+@export var base_height := 16
+@export var max_height := 128
 
 @export_group("Параметри chunking")
 @export var enable_chunk_culling := true
 @export var max_chunk_distance := 100.0
+@export var chunk_cull_interval := 0.5  # Мінімальний інтервал між видаленнями чанків (секунди)
+@export var max_chunks_removed_per_frame := 3  # Максимум чанків для видалення за кадр
 
 @export_group("Параметри heightmap")
 @export var heightmap_scale: float = 5.0
@@ -45,6 +48,7 @@ class_name TerrainGenerator
 # Посилання на модулі
 var procedural_module
 var chunk_module
+var starting_area_module
 var structure_module
 var lod_module
 var threading_module
@@ -63,6 +67,12 @@ var is_initialized := false
 func _ready():
 	if Engine.is_editor_hint():
 		return
+
+	# Якщо гравець не встановлений, спробуємо знайти його
+	if not player:
+		var world = get_tree().get_root().get_node_or_null("World")
+		if world:
+			player = world.get_node_or_null("Player")
 
 	initialize_modules()
 	generate_initial_terrain()
@@ -94,9 +104,17 @@ func initialize_modules():
 		chunk_module.chunk_radius = chunk_radius
 		chunk_module.enable_culling = enable_chunk_culling
 		chunk_module.max_distance = max_chunk_distance
+		chunk_module.min_cull_interval = chunk_cull_interval
+		chunk_module.max_chunks_to_remove_per_frame = max_chunks_removed_per_frame
 		if player:
 			chunk_module.player = player
 		add_child(chunk_module)
+
+	# Starting Area Generator
+	if use_starting_area:
+		starting_area_module = StartingAreaGenerator.new()
+		starting_area_module.starting_area_height = base_height
+		add_child(starting_area_module)
 
 	# Генерація структур (WFC)
 	if use_structures:
@@ -176,6 +194,7 @@ func cleanup_modules():
 	# Очищаємо посилання
 	procedural_module = null
 	chunk_module = null
+	starting_area_module = null
 	structure_module = null
 	lod_module = null
 	threading_module = null
@@ -196,6 +215,8 @@ func generate_initial_terrain():
 	if not is_initialized or not target_gridmap:
 		return
 
+	var center_chunk = Vector2i.ZERO
+
 	if use_chunking and chunk_module:
 		# Chunk-based генерація
 		chunk_module.generate_initial_chunks(target_gridmap)
@@ -204,11 +225,49 @@ func generate_initial_terrain():
 		if use_procedural_generation and procedural_module:
 			procedural_module.generate_terrain(target_gridmap, Vector2i(-chunk_size.x, -chunk_size.y), chunk_size)
 
+	# Генеруємо starting area після основної генерації, щоб перезаписати терейн у безпечній зоні
+	if use_starting_area and starting_area_module:
+		starting_area_module.generate_starting_area(target_gridmap, center_chunk, chunk_size)
+		print("TerrainGenerator: Starting area згенеровано")
+
 	print("TerrainGenerator: Початкова генерація завершена")
+
+	# Встановлюємо безпечну позицію гравця (використовуємо call_deferred для встановлення після оновлення GridMap)
+	if player and use_starting_area and starting_area_module:
+		if starting_area_module.always_spawn_on_starting_area:
+			call_deferred("_set_player_safe_position")
 
 	# Позначаємо, що початкова генерація завершена
 	if optimization_module:
 		optimization_module.set_initial_generation_complete()
+
+func _set_player_safe_position():
+	"""Встановити безпечну позицію гравця на стартовій зоні"""
+	# Якщо гравець ще не встановлений, спробуємо знайти його
+	if not player:
+		var world = get_tree().get_root().get_node_or_null("World")
+		if world:
+			player = world.get_node_or_null("Player")
+	
+	if not player or not use_starting_area or not starting_area_module or not target_gridmap:
+		# Якщо гравець все ще не знайдений, спробуємо ще раз через кадр
+		if not player:
+			call_deferred("_set_player_safe_position")
+		return
+	
+	if not starting_area_module.always_spawn_on_starting_area:
+		return
+	
+	var safe_pos = starting_area_module.find_safe_spawn_with_collision_check(target_gridmap, chunk_size)
+	if player and is_instance_valid(player):
+		player.global_position = safe_pos
+		print("TerrainGenerator: Гравець встановлено на безпечну позицію: ", safe_pos)
+
+func teleport_player_to_starting_area():
+	"""Телепортувати гравця на стартову зону (використовується при регенерації)"""
+	if player and use_starting_area and starting_area_module:
+		if starting_area_module.always_spawn_on_starting_area:
+			_set_player_safe_position()
 
 func _process(delta):
 	if not is_initialized or Engine.is_editor_hint():
@@ -228,6 +287,8 @@ func regenerate_terrain():
 	if target_gridmap:
 		target_gridmap.clear()
 		generate_initial_terrain()
+		# Телепортуємо гравця на стартову зону після регенерації
+		teleport_player_to_starting_area()
 
 func get_chunk_size() -> Vector2i:
 	return chunk_size

@@ -119,17 +119,13 @@ func generate_chunk_with_boundaries(gridmap: GridMap, chunk_pos: Vector2i, chunk
 	# Генеруємо терейн з врахуванням границь
 	for x in range(chunk_start.x, chunk_start.x + chunk_size.x):
 		for z in range(chunk_start.y, chunk_start.y + chunk_size.y):
-			# Визначаємо чи це граничний блок
-			var is_boundary = _is_boundary_block(x, z, chunk_start, chunk_size)
+			var height := _clamp_height(int(noise.get_noise_2d(x, z) * height_amplitude) + base_height)
 
-			if is_boundary:
-				# Для граничних блоків використовуємо дані сусідів
-				var height = _get_height_with_boundary_smoothing(x, z, neighbor_heights)
-				_set_blocks_at_position(gridmap, x, z, height)
-			else:
-				# Для внутрішніх блоків використовуємо звичайну генерацію
-				var height = int(noise.get_noise_2d(x, z) * height_amplitude) + base_height
-				_set_blocks_at_position(gridmap, x, z, height)
+			# Поки залишаємо однакову формулу й для меж чанків, щоб уникнути видимих стиків
+			if _is_boundary_block(x, z, chunk_start, chunk_size) and neighbor_heights.size() > 0:
+				height = _get_height_with_boundary_smoothing(x, z, neighbor_heights)
+
+			_set_blocks_at_position(gridmap, x, z, height)
 
 	# Генеруємо печери після основного терейну
 	if enable_caves:

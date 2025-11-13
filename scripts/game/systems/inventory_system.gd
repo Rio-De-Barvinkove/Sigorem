@@ -115,9 +115,12 @@ func _register_available_items():
 	if dir == null:
 		return
 	var item_paths: PackedStringArray = []
-	dir.list_dir_begin(true, true)
+	dir.list_dir_begin()
 	var file_name := dir.get_next()
 	while file_name != "":
+		if file_name == "." or file_name == "..":
+			file_name = dir.get_next()
+			continue
 		if not dir.current_is_dir() and (file_name.ends_with(".tres") or file_name.ends_with(".res")):
 			item_paths.push_back("res://resources/items".path_join(file_name))
 		file_name = dir.get_next()
@@ -171,7 +174,7 @@ func _update_slot(slot_index: int):
 		slot.quantity = 0
 		return
 	var numeric_id := _inventory_manager.get_slot_item_id(slot_index)
-	var resource := _numeric_to_resource.get(numeric_id, null)
+	var resource: ItemResource = _numeric_to_resource.get(numeric_id, null) as ItemResource
 	if resource == null:
 		slot.item = null
 		slot.quantity = 0

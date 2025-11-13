@@ -159,7 +159,10 @@ func connect_signals():
 func _on_setting_changed(_value = null):
 	"""Обробник зміни налаштування"""
 	if auto_update_enabled:
-		apply_and_generate()
+		# Для зміни noise_type або інших параметрів, що вимагають повної регенерації,
+		# застосовуємо налаштування без повної регенерації (тільки для нових чанків)
+		apply_settings()
+		# Повна регенерація тільки при явному натисканні кнопки "Generate"
 
 func load_current_settings():
 	"""Завантажити поточні налаштування з TerrainGenerator"""
@@ -322,8 +325,17 @@ func generate_world():
 		push_error("WorldGenerationSettings: TerrainGenerator не доступний!")
 		return
 
-	# Очищаємо старий світ
-	clear_world()
+	# Очищаємо старий світ (тільки активні чанки, щоб уникнути зависання)
+	if terrain_generator.chunk_module:
+		# Видаляємо чанки поступово
+		var chunks_to_remove = terrain_generator.chunk_module.active_chunks.keys()
+		for chunk_pos in chunks_to_remove:
+			terrain_generator.chunk_module.remove_chunk(terrain_generator.target_gridmap, chunk_pos)
+			# Чекаємо мікросекунду між видаленнями
+			await get_tree().process_frame
+	else:
+		# Якщо немає chunk_module, очищаємо все одразу
+		clear_world()
 	
 	# Чекаємо один кадр для очищення
 	await get_tree().process_frame
@@ -336,6 +348,9 @@ func generate_world():
 
 	# Генеруємо новий світ
 	terrain_generator.generate_initial_terrain()
+	
+	# Телепортуємо гравця на стартову зону після регенерації
+	terrain_generator.teleport_player_to_starting_area()
 
 	print("WorldGenerationSettings: Генерація світу розпочата")
 
