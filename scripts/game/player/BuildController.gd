@@ -151,10 +151,7 @@ func _apply_xray_mode():
 	if not get_grid_map():
 		return
 	
-	if enable_xray_mode:
-		# Зробити всі блоки напівпрозорими
-		grid_map.material_override = xray_material
-	else:
-		# Повернути нормальний вигляд
-		grid_map.material_override = null
-
+	# TODO: GridMap не підтримує material_override
+	# Для X-ray режиму потрібно змінювати матеріали в MeshLibrary
+	# або використовувати shader на всіх блоках
+	print("X-ray mode: feature not yet implemented for GridMap")

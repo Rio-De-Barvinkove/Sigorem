@@ -40,34 +40,43 @@ material = SubResource("StandardMaterial3D_o8fc1")
 item/0/name = "Grass Block"
 item/0/mesh = SubResource("BoxMesh_7r4gi")
 item/0/mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-item/0/mesh_cast_shadow = 1
+item/0/mesh_cast_shadow = 0
 item/0/shapes = [SubResource("BoxShape3D_w7kh3"), Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)]
 item/0/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 item/0/navigation_layers = 1
 item/1/name = "Dirt Block"
 item/1/mesh = SubResource("BoxMesh_q5onr")
 item/1/mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-item/1/mesh_cast_shadow = 1
+item/1/mesh_cast_shadow = 0
 item/1/shapes = [SubResource("BoxShape3D_jhx03"), Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)]
 item/1/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 item/1/navigation_layers = 1
 item/2/name = "Stone Block"
 item/2/mesh = SubResource("BoxMesh_xo05s")
 item/2/mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-item/2/mesh_cast_shadow = 1
+item/2/mesh_cast_shadow = 0
 item/2/shapes = [SubResource("BoxShape3D_dss4m"), Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)]
 item/2/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 item/2/navigation_layers = 1
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_4mrxx"]
 
+[sub_resource type="Environment" id="Environment_ambient"]
+background_mode = 1
+background_color = Color(0.15, 0.15, 0.2, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.7, 0.7, 0.8, 1)
+ambient_light_energy = 0.8
+
 [node name="World" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_ambient")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 20, 0)
-light_energy = 1.2
-shadow_enabled = true
-shadow_normal_bias = 1.0
+light_energy = 1.5
+shadow_enabled = false
 
 [node name="GridMap" type="GridMap" parent="."]
 mesh_library = SubResource("MeshLibrary_7t5mc")

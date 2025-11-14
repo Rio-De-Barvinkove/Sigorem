@@ -33,6 +33,7 @@ func _create_simple_block(block_id: String, color: Color):
 	block_mesh_library.set_item_name(next_mesh_index, block_id.capitalize() + " Block")
 	block_mesh_library.set_item_mesh(next_mesh_index, mesh)
 	block_mesh_library.set_item_shapes(next_mesh_index, [shape, Transform3D.IDENTITY])
+	# Примітка: Тіні контролюються через world.tscn (mesh_cast_shadow = 0)
 	id_to_mesh_index[block_id] = next_mesh_index
 	blocks[block_id] = {"id": block_id}
 	print("Created block: ", block_id, " with index: ", next_mesh_index)
@@ -43,5 +44,3 @@ func get_mesh_library() -> MeshLibrary:
 
 func get_mesh_index(block_id: String) -> int:
 	return id_to_mesh_index.get(block_id, -1)
-
-

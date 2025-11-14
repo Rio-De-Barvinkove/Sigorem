@@ -319,6 +319,33 @@ func clear_world():
 
 func generate_world():
 	"""Запустити генерацію світу з поточними налаштуваннями"""
+	
+	# Перевірка на безпечність налаштувань
+	var warning_messages = []
+	
+	if height_amplitude and height_amplitude.value > 32:
+		warning_messages.append("Амплітуда висоти > 32 може викликати краш!")
+	
+	if max_height and max_height.value > 128:
+		warning_messages.append("Макс. висота > 128 може викликати краш!")
+	
+	if chunk_radius and chunk_radius.value > 5:
+		warning_messages.append("Радіус чанків > 5 може викликати фризи!")
+	
+	# Оцінка приблизної кількості блоків
+	var total_chunks = (chunk_radius.value * 2 + 1) * (chunk_radius.value * 2 + 1) if chunk_radius else 121
+	var blocks_per_chunk = chunk_size_x.value * chunk_size_y.value * max_height.value if max_height else 100000
+	var total_blocks = total_chunks * blocks_per_chunk
+	
+	if total_blocks > 10000000:  # 10 мільйонів блоків
+		warning_messages.append("Світ ДУЖЕ великий (" + str(total_blocks / 1000000) + "M блоків)! Ризик краша!")
+	
+	if warning_messages.size() > 0:
+		print("ПОПЕРЕДЖЕННЯ генерації:")
+		for msg in warning_messages:
+			push_warning(msg)
+			print("  - " + msg)
+	
 	apply_settings()
 
 	if not terrain_generator:
