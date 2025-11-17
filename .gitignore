@@ -4,3 +4,4 @@
 
 # Removed incompatible addons
 addons/dialogue_nodes/
+addons/**/~*.dll

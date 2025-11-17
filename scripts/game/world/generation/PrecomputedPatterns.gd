@@ -156,10 +156,10 @@ func generate_house_layout() -> Array:
 			var block_type = "air"  # За замовчуванням повітря
 
 			# Стіни
-			if x == 0 or x == size.x - 1 or z == 0 or z == size.z - 1:
+			if x == 0 or x == size.x - 1 or z == 0 or z == size.y - 1:
 				block_type = "stone"
 			# Основа
-			elif x >= 1 and x <= size.x - 2 and z >= 1 and z <= size.z - 2:
+			elif x >= 1 and x <= size.x - 2 and z >= 1 and z <= size.y - 2:
 				block_type = "wood"  # Підлога з дерева
 
 			layout.append(block_type)

@@ -30,6 +30,17 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
 mesh = SubResource("CapsuleMesh3D_body")
 surface_material_override/0 = SubResource("StandardMaterial3D_player")
 
+[node name="PlayerLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+light_color = Color(1, 0.95, 0.8, 1)
+light_energy = 2.0
+light_indirect_energy = 1.5
+light_volumetric_fog_energy = 1.0
+omni_range = 10.0
+omni_attenuation = 1.5
+shadow_enabled = true
+shadow_bias = 0.1
+
 [node name="PlayerStats" type="Node" parent="."]
 script = ExtResource("4_stats")
 

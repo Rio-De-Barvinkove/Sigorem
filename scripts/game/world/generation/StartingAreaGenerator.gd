@@ -6,18 +6,19 @@ class_name StartingAreaGenerator
 
 @export_group("Starting Area Settings")
 @export var enable_starting_area := true
-@export var starting_area_radius := 3  # Радіус зони в чанках
+@export var starting_area_size := 5  # Розмір зони в блоках (5x5)
 @export var clear_trees_in_area := true
 @export var add_tutorial_structures := false  # Заготовка
 
 @export_group("Terrain Modifications")
 @export var flatten_starting_area := true
-@export var starting_area_height := 5
+@export var starting_area_height := 16  # Синхронізовано з base_height
 @export var create_paths := false  # Заготовка
 
 @export_group("Safety Features")
 @export var remove_hostile_mobs := true
 @export var add_basic_resources := false  # Заготовка
+@export var always_spawn_on_starting_area := true  # Завжди спавнити гравця на стартовій зоні
 
 var starting_area_chunks = []  # Список чанків що належать до starting area
 
@@ -28,39 +29,38 @@ func generate_starting_area(gridmap: GridMap, center_chunk: Vector2i, chunk_size
 
 	starting_area_chunks.clear()
 
-	# Позначити чанки як частина starting area
-	for x in range(-starting_area_radius, starting_area_radius + 1):
-		for z in range(-starting_area_radius, starting_area_radius + 1):
-			if abs(x) + abs(z) <= starting_area_radius:  # Ромбовидна форма
-				var chunk_pos = center_chunk + Vector2i(x, z)
-				starting_area_chunks.append(chunk_pos)
+	# Генеруємо плоску зону 5x5 блоків навколо центру (0, 0)
+	var center_world_x = center_chunk.x * chunk_size.x + chunk_size.x / 2
+	var center_world_z = center_chunk.y * chunk_size.y + chunk_size.y / 2
+	var half_size = starting_area_size / 2
+	
+	var start_x = int(center_world_x - half_size)
+	var end_x = int(center_world_x + half_size)
+	var start_z = int(center_world_z - half_size)
+	var end_z = int(center_world_z + half_size)
 
-	# Модифікувати кожен чанк starting area
-	for chunk_pos in starting_area_chunks:
-		modify_chunk_for_starting_area(gridmap, chunk_pos, chunk_size)
+	# Очищаємо всю область перед генерацією
+	for x in range(start_x, end_x + 1):
+		for z in range(start_z, end_z + 1):
+			# Очищаємо всі блоки вище starting_area_height
+			for y in range(starting_area_height, 256):  # Очищаємо до максимальної висоти
+				gridmap.set_cell_item(Vector3i(x, y, z), -1)
+			
+			# Створюємо плоску поверхню
+			for y in range(starting_area_height):
+				var block_type = "dirt" if y < starting_area_height - 1 else "grass"
+				var mesh_index = _get_mesh_index_for_block(block_type)
+				if mesh_index >= 0:
+					gridmap.set_cell_item(Vector3i(x, y, z), mesh_index)
+	
+	# Зберігаємо інформацію про starting area для подальшого використання
+	var center_pos = Vector2i(center_world_x, center_world_z)
+	starting_area_chunks.append(center_pos)
 
 func modify_chunk_for_starting_area(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: Vector2i):
-	"""Модифікувати чанк для starting area"""
-	var chunk_start = chunk_pos * chunk_size
-
-	# Спростити генерацію - зробити площу рівною
-	if flatten_starting_area:
-		for x in range(chunk_start.x, chunk_start.x + chunk_size.x):
-			for z in range(chunk_start.y, chunk_start.y + chunk_size.y):
-				# Зробити поверхню рівною
-				for y in range(starting_area_height):
-					var block_type = "dirt" if y < starting_area_height - 1 else "grass"
-					var mesh_index = _get_mesh_index_for_block(block_type)
-					if mesh_index >= 0:
-						gridmap.set_cell_item(Vector3i(x, y, z), mesh_index)
-
-				# Очистити блоки вище поверхні
-				for y in range(starting_area_height, 20):
-					gridmap.set_cell_item(Vector3i(x, y, z), -1)
-
-	# Додати базові структури (заготовка)
-	if add_tutorial_structures:
-		add_tutorial_structures_to_chunk(gridmap, chunk_pos, chunk_size)
+	"""Модифікувати чанк для starting area (застаріло, використовується generate_starting_area)"""
+	# Ця функція залишена для сумісності, але логіка перенесена в generate_starting_area
+	pass
 
 func add_tutorial_structures_to_chunk(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: Vector2i):
 	"""Додати навчальні структури до чанка (заготовка)"""
@@ -76,19 +76,64 @@ func get_starting_area_center() -> Vector2i:
 	if starting_area_chunks.is_empty():
 		return Vector2i.ZERO
 
-	# Повернути центр списку (спрощено)
-	return starting_area_chunks[starting_area_chunks.size() / 2]
+	# Повернути перший елемент (центр starting area)
+	return starting_area_chunks[0]
 
-func get_safe_spawn_position() -> Vector3:
+func get_safe_spawn_position(chunk_size_param: Vector2i) -> Vector3:
 	"""Отримати безпечну позицію для спавну гравця"""
-	var center_chunk = get_starting_area_center()
-	var chunk_size = Vector2i(50, 50)  # Спрощено, треба передати
-
-	var world_x = center_chunk.x * chunk_size.x + chunk_size.x / 2
-	var world_z = center_chunk.y * chunk_size.y + chunk_size.y / 2
+	if starting_area_chunks.is_empty():
+		# Fallback на центр
+		return Vector3(0, starting_area_height + 2, 0)
+	
+	var center_pos = starting_area_chunks[0]  # Vector2i з world координатами
 	var world_y = starting_area_height + 2  # Трохи вище поверхні
 
-	return Vector3(world_x, world_y, world_z)
+	return Vector3(center_pos.x, world_y, center_pos.y)
+
+func find_safe_spawn_with_collision_check(gridmap: GridMap, chunk_size_param: Vector2i, player_height: float = 2.0) -> Vector3:
+	"""Знайти безпечну позицію з перевіркою колізій"""
+	var base_pos = get_safe_spawn_position(chunk_size_param)
+	var check_positions = [
+		base_pos,
+		base_pos + Vector3(0, 1, 0),
+		base_pos + Vector3(1, 0, 0),
+		base_pos + Vector3(-1, 0, 0),
+		base_pos + Vector3(0, 0, 1),
+		base_pos + Vector3(0, 0, -1),
+	]
+	
+	for pos in check_positions:
+		if _is_position_safe(gridmap, pos, player_height):
+			return pos
+	
+	# Якщо не знайдено безпечної позиції, повертаємо базову
+	print("StartingAreaGenerator: Не знайдено ідеальної позиції, використовуємо базову")
+	return base_pos
+
+func _is_position_safe(gridmap: GridMap, pos: Vector3, player_height: float) -> bool:
+	"""Перевірити чи позиція безпечна для спавну"""
+	# Конвертуємо світову позицію в координати GridMap
+	var floor_cell = gridmap.local_to_map(gridmap.to_local(pos))
+	var head_cell = gridmap.local_to_map(gridmap.to_local(pos + Vector3(0, player_height, 0)))
+	var body_cell = gridmap.local_to_map(gridmap.to_local(pos + Vector3(0, player_height * 0.5, 0)))
+	
+	# Перевіряємо чи є блок під ногами (на рівні ніг або трохи нижче)
+	var floor_block = gridmap.get_cell_item(floor_cell)
+	var floor_below = gridmap.get_cell_item(Vector3i(floor_cell.x, floor_cell.y - 1, floor_cell.z))
+	if floor_block == -1 and floor_below == -1:
+		return false
+	
+	# Перевіряємо чи немає блоків у голові
+	var head_block = gridmap.get_cell_item(head_cell)
+	if head_block != -1:
+		return false
+	
+	# Перевіряємо чи немає блоків на рівні тіла
+	var body_block = gridmap.get_cell_item(body_cell)
+	if body_block != -1:
+		return false
+	
+	return true
 
 func clear_hostile_mobs_in_area():
 	"""Видалити ворожих мобів з starting area (заготовка)"""

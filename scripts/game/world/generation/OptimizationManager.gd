@@ -2,6 +2,12 @@ extends Node
 class_name OptimizationManager
 
 # Модуль для оптимізації генерації терейну
+# УВАГА: Зараз оптимізація може гальмувати через:
+# 1. collect_chunk_data сканує весь чанк (повільно для великих чанків)
+# 2. optimize_chunk_mesh робить перевірку граней для кожного блоку
+# 3. _rebuild_chunk_with_optimized_mesh очищає і перебудовує чанк (подвійна робота)
+# 4. _has_neighbor_block_in_adjacent_chunk завжди повертає false (не працює)
+# Рекомендація: вимкнути use_optimization за замовчуванням (вже зроблено)
 
 @export_group("Performance Settings")
 @export var max_generation_time_per_frame := 100.0  # ms (збільшено для початкової генерації)
@@ -12,12 +18,23 @@ class_name OptimizationManager
 @export var lod_resolutions := [1.0, 0.8, 0.6, 0.4]
 @export var enable_initial_generation_override := true  # Дозволити тривалу генерацію на старті
 @export var log_performance_warnings := false  # Вимкнути зайві логи
+@export var enable_profiling := false  # Увімкнути профілювання для діагностики
 
 var generation_start_time: int
 var frame_start_time: int
 var performance_stats: Dictionary = {}
 var is_initial_generation := true
 var initial_generation_complete := false
+
+# Профілювання
+var profiling_data: Dictionary = {
+	"optimize_chunk_mesh_calls": 0,
+	"optimize_chunk_mesh_time": 0.0,
+	"collect_chunk_data_calls": 0,
+	"collect_chunk_data_time": 0.0,
+	"rebuild_chunk_calls": 0,
+	"rebuild_chunk_time": 0.0
+}
 
 func _ready():
 	frame_start_time = Time.get_ticks_msec()
@@ -152,7 +169,10 @@ func get_distance_to_player(chunk_pos: Vector2i) -> float:
 	"""Отримати відстань від чанка до гравця"""
 	if get_parent() and get_parent().player:
 		var player_pos = get_parent().player.global_position
-		var chunk_world_pos = Vector2(chunk_pos.x * 50, chunk_pos.y * 50)  # Припускаємо chunk_size
+		var chunk_dimensions := Vector2i(32, 32)
+		if get_parent() and get_parent().chunk_size:
+			chunk_dimensions = get_parent().chunk_size
+		var chunk_world_pos = Vector2(chunk_pos.x * chunk_dimensions.x, chunk_pos.y * chunk_dimensions.y)
 		return chunk_world_pos.distance_to(Vector2(player_pos.x, player_pos.z))
 	return 0.0
 
@@ -191,6 +211,18 @@ func get_performance_report() -> String:
 	report += "Memory: " + str(performance_stats.get("memory", 0) / 1024.0 / 1024.0) + "MB\n"
 	report += "Active Chunks: " + str(get_active_chunk_count()) + "\n"
 	report += "Cache Size: " + str(terrain_cache.size()) + "\n"
+	
+	if enable_profiling:
+		report += "\n=== PROFILING DATA ===\n"
+		report += "optimize_chunk_mesh: " + str(profiling_data.get("optimize_chunk_mesh_calls", 0)) + " calls, "
+		report += str(profiling_data.get("optimize_chunk_mesh_time", 0.0)) + "ms total\n"
+		var avg_time = profiling_data.get("optimize_chunk_mesh_time", 0.0) / max(1, profiling_data.get("optimize_chunk_mesh_calls", 1))
+		report += "Average optimize_chunk_mesh time: " + str(avg_time) + "ms\n"
+		report += "collect_chunk_data: " + str(profiling_data.get("collect_chunk_data_calls", 0)) + " calls, "
+		report += str(profiling_data.get("collect_chunk_data_time", 0.0)) + "ms total\n"
+		var avg_collect = profiling_data.get("collect_chunk_data_time", 0.0) / max(1, profiling_data.get("collect_chunk_data_calls", 1))
+		report += "Average collect_chunk_data time: " + str(avg_collect) + "ms\n"
+	
 	return report
 
 func get_active_chunk_count() -> int:
@@ -220,8 +252,10 @@ func optimize_chunk_mesh(chunk_pos: Vector2i, chunk_data: Dictionary) -> Diction
 	if not enable_cull_hidden_faces:
 		return chunk_data
 
+	var start_time = Time.get_ticks_msec() if enable_profiling else 0
+	
 	var optimized_data = {}
-	var chunk_size = get_parent().chunk_size if get_parent() and get_parent().chunk_size else Vector2i(50, 50)
+	var chunk_size = get_parent().chunk_size if get_parent() and get_parent().chunk_size else Vector2i(32, 32)
 	var chunk_start = chunk_pos * chunk_size
 
 	optimization_stats["total_faces"] += chunk_data.size() * 6  # 6 граней на блок
@@ -250,6 +284,13 @@ func optimize_chunk_mesh(chunk_pos: Vector2i, chunk_data: Dictionary) -> Diction
 
 	optimization_stats["faces_culled"] += (original_face_count - optimized_face_count)
 	optimization_stats["optimization_ratio"] = float(optimization_stats["faces_culled"]) / float(optimization_stats["total_faces"]) if optimization_stats["total_faces"] > 0 else 0.0
+
+	if enable_profiling:
+		var elapsed = Time.get_ticks_msec() - start_time
+		profiling_data["optimize_chunk_mesh_calls"] += 1
+		profiling_data["optimize_chunk_mesh_time"] += elapsed
+		if elapsed > 10:  # Логуємо тільки повільні виклики
+			print("OptimizationManager: optimize_chunk_mesh зайняв ", elapsed, "ms для чанка ", chunk_pos)
 
 	return optimized_data
 
