@@ -39,8 +39,11 @@ func get_object(scene_path: String, parent: Node = null) -> Node:
 
 	# Створити новий об'єкт
 	var obj = _create_object(scene_path)
+	if obj:
 	stats["created"] += 1
 	stats["active"] += 1
+	else:
+		return null
 
 	if parent:
 		parent.add_child(obj)
@@ -67,7 +70,9 @@ func return_object(obj: Node):
 		return
 
 	# Повернути в пул
-	obj.get_parent().remove_child(obj)
+	var parent := obj.get_parent()
+	if parent:
+		parent.remove_child(obj)
 	pool.append(obj)
 	stats["active"] -= 1
 
@@ -78,7 +83,9 @@ func _create_object(scene_path: String) -> Node:
 	"""Створити новий об'єкт"""
 	var scene = load(scene_path)
 	if scene:
-		return scene.instantiate()
+		var instance = scene.instantiate()
+		instance.set_meta("pool_scene_path", scene_path)
+		return instance
 	else:
 		push_error("ObjectPool: Не вдалося завантажити сцену: " + scene_path)
 		return null
@@ -92,6 +99,9 @@ func _reset_object(obj: Node):
 		n3d.rotation = Vector3.ZERO
 		n3d.scale = Vector3.ONE
 		n3d.visible = true
+
+	# Повернути процесинг
+	obj.process_mode = Node.PROCESS_MODE_INHERIT
 
 	# Викликати метод reset якщо він є
 	if obj.has_method("reset"):
@@ -122,10 +132,24 @@ func _get_scene_path_from_object(obj: Node) -> String:
 
 func preload_objects(scene_path: String, count: int):
 	"""Попередньо створити об'єкти для пулу"""
-	for i in count:
+	if count <= 0:
+		return
+
+	if not object_pools.has(scene_path):
+		object_pools[scene_path] = []
+		pool_stats[scene_path] = {"created": 0, "reused": 0, "active": 0}
+
+	var pool = object_pools[scene_path]
+	var stats = pool_stats[scene_path]
+
+	for i in range(count):
 		var obj = _create_object(scene_path)
-		if obj:
-			return_object(obj)
+		if not obj:
+			continue
+
+		_deactivate_object(obj)
+		pool.append(obj)
+		stats["created"] += 1
 
 func get_pool_stats(scene_path: String = "") -> Dictionary:
 	"""Отримати статистику пулу"""

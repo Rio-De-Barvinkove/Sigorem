@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://c6v2wih236026"]
+[gd_scene load_steps=23 format=3 uid="uid://c6v2wih236026"]
 
 [ext_resource type="Script" uid="uid://dh7eiekt4eerp" path="res://scripts/game/world/WorldGenerator.gd" id="1_5j1ce"]
 [ext_resource type="Texture2D" uid="uid://bbas0v448jcam" path="res://assets/textures/Solo_draw/Terrain_Grass_Top.png" id="1_w7kh3"]
@@ -10,6 +10,13 @@
 [ext_resource type="PackedScene" uid="uid://c8v1qkq6t6v7b" path="res://scenes/ui/world_generation_settings.tscn" id="7_world_settings"]
 [ext_resource type="Script" uid="uid://dnkdy3jxy7cuy" path="res://scripts/ui/game_hud.gd" id="9_hud"]
 [ext_resource type="Script" uid="uid://b0a0qpcpkqt7m" path="res://scripts/game/debug/ConsoleCommands.gd" id="10_console_commands"]
+
+[sub_resource type="Environment" id="Environment_ambient"]
+background_mode = 1
+background_color = Color(0.15, 0.15, 0.2, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.7, 0.7, 0.8, 1)
+ambient_light_energy = 0.8
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4mrxx"]
 albedo_color = Color(0.4, 0.8, 0.2, 1)
@@ -61,13 +68,6 @@ item/2/navigation_layers = 1
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_4mrxx"]
 
-[sub_resource type="Environment" id="Environment_ambient"]
-background_mode = 1
-background_color = Color(0.15, 0.15, 0.2, 1)
-ambient_light_source = 2
-ambient_light_color = Color(0.7, 0.7, 0.8, 1)
-ambient_light_energy = 0.8
-
 [node name="World" type="Node3D"]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
@@ -76,7 +76,6 @@ environment = SubResource("Environment_ambient")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 20, 0)
 light_energy = 1.5
-shadow_enabled = false
 
 [node name="GridMap" type="GridMap" parent="."]
 mesh_library = SubResource("MeshLibrary_7t5mc")

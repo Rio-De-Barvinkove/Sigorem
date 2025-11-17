@@ -115,23 +115,91 @@ func generate_chunk_with_boundaries(gridmap: GridMap, chunk_pos: Vector2i, chunk
 		push_error("ProceduralGeneration: GridMap або noise не встановлені!")
 		return
 
-	# Збираємо дані про сусідні чанки для плавних границь
-	var neighbor_heights = _gather_neighbor_chunk_data(gridmap, chunk_pos, chunk_size)
+	var context = prepare_chunk_context(gridmap, chunk_pos, chunk_size)
 
 	# Генеруємо терейн з врахуванням границь
 	for x in range(chunk_start.x, chunk_start.x + chunk_size.x):
 		for z in range(chunk_start.y, chunk_start.y + chunk_size.y):
-			var height := _clamp_height(int(noise.get_noise_2d(x, z) * height_amplitude) + base_height)
-
-			# Поки залишаємо однакову формулу й для меж чанків, щоб уникнути видимих стиків
-			if _is_boundary_block(x, z, chunk_start, chunk_size) and neighbor_heights.size() > 0:
-				height = _get_height_with_boundary_smoothing(x, z, neighbor_heights)
-
-			_set_blocks_at_position(gridmap, x, z, height)
+			generate_column_with_context(gridmap, context, x, z)
 
 	# Генеруємо печери після основного терейну
 	if enable_caves:
-		generate_caves_in_chunk(gridmap, chunk_pos, chunk_size)
+		_carve_caves_full_with_context(gridmap, context)
+
+func prepare_chunk_context(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: Vector2i) -> Dictionary:
+	"""Готує контекст для поступової генерації чанка"""
+	var chunk_start = chunk_pos * chunk_size
+	var context: Dictionary = {
+		"chunk_pos": chunk_pos,
+		"chunk_size": chunk_size,
+		"chunk_start": chunk_start,
+		"neighbor_heights": _gather_neighbor_chunk_data(gridmap, chunk_pos, chunk_size),
+		"height_cache": {},
+		"caves_enabled": enable_caves
+	}
+
+	if enable_caves:
+		context["cave_noise"] = _create_cave_noise()
+
+	return context
+
+func generate_column_with_context(gridmap: GridMap, context: Dictionary, world_x: int, world_z: int):
+	if not gridmap or context.is_empty():
+		return
+
+	var chunk_start: Vector2i = context["chunk_start"]
+	var chunk_size: Vector2i = context["chunk_size"]
+	var neighbor_heights: Dictionary = context.get("neighbor_heights", {})
+
+	var height := _clamp_height(int(noise.get_noise_2d(world_x, world_z) * height_amplitude) + base_height)
+
+	if neighbor_heights.size() > 0 and _is_boundary_block(world_x, world_z, chunk_start, chunk_size):
+		height = _get_height_with_boundary_smoothing(world_x, world_z, neighbor_heights)
+
+	_set_blocks_at_position(gridmap, world_x, world_z, height)
+	context["height_cache"][_column_cache_key(world_x, world_z)] = height
+
+func carve_caves_column_with_context(gridmap: GridMap, context: Dictionary, world_x: int, world_z: int):
+	if not enable_caves or not gridmap or context.is_empty():
+		return
+
+	var cave_noise: FastNoiseLite = context.get("cave_noise", null)
+	if not cave_noise:
+		return
+
+	var column_key = _column_cache_key(world_x, world_z)
+	var surface_height = context["height_cache"].get(column_key, get_height_at(world_x, world_z))
+	context["height_cache"][column_key] = surface_height
+
+	var max_cave_height = max(cave_min_height, surface_height + cave_max_height_offset)
+	for y in range(cave_min_height, max_cave_height):
+		var cave_value = cave_noise.get_noise_3d(world_x, y, world_z)
+		var height_factor = 1.0 - (float(y) / max(1, max_cave_height))
+		var adjusted_threshold = cave_density - (height_factor * 0.2)
+
+		if cave_value > adjusted_threshold:
+			gridmap.set_cell_item(Vector3i(world_x, y, world_z), -1)
+
+func _carve_caves_full_with_context(gridmap: GridMap, context: Dictionary):
+	if not enable_caves:
+		return
+
+	var chunk_start: Vector2i = context["chunk_start"]
+	var chunk_size: Vector2i = context["chunk_size"]
+	for x in range(chunk_start.x, chunk_start.x + chunk_size.x):
+		for z in range(chunk_start.y, chunk_start.y + chunk_size.y):
+			carve_caves_column_with_context(gridmap, context, x, z)
+
+func _column_cache_key(x: int, z: int) -> String:
+	return str(x) + "_" + str(z)
+
+func _create_cave_noise() -> FastNoiseLite:
+	var cave_noise = FastNoiseLite.new()
+	cave_noise.seed = (noise.seed if noise else randi()) + 1000
+	cave_noise.frequency = cave_noise_scale
+	cave_noise.noise_type = FastNoiseLite.TYPE_PERLIN
+	cave_noise.fractal_octaves = 2
+	return cave_noise
 
 func _gather_neighbor_chunk_data(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: Vector2i) -> Dictionary:
 	"""Збирає дані про висоти з сусідніх чанків"""
@@ -448,32 +516,8 @@ func generate_caves_in_chunk(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: 
 	if not enable_caves:
 		return
 
-	var chunk_start = chunk_pos * chunk_size
-
-	# Створюємо окремий шум для печер
-	var cave_noise = FastNoiseLite.new()
-	cave_noise.seed = noise.seed + 1000  # Різний seed від основного шуму
-	cave_noise.frequency = cave_noise_scale
-	cave_noise.noise_type = FastNoiseLite.TYPE_PERLIN  # Perlin для плавних печер
-	cave_noise.fractal_octaves = 2  # Деталізація печер
-
-	# Проходимо по всіх блоках чанка в 3D
-	for x in range(chunk_start.x, chunk_start.x + chunk_size.x):
-		for z in range(chunk_start.y, chunk_start.y + chunk_size.y):
-			var surface_height = get_height_at(x, z)
-			# ВИПРАВЛЕНО: генеруємо печери тільки нижче поверхні з відступом
-			var max_cave_height = max(cave_min_height, surface_height + cave_max_height_offset)
-			
-			for y in range(cave_min_height, max_cave_height):
-				# Використовуємо 3D шум для визначення печер
-				var cave_value = cave_noise.get_noise_3d(x, y, z)
-
-				# Додаємо градієнт по висоті - менше печер близько до поверхні
-				var height_factor = 1.0 - (float(y) / max(1, max_cave_height))
-				var adjusted_threshold = cave_density - (height_factor * 0.2)
-				
-				if cave_value > adjusted_threshold:
-					gridmap.set_cell_item(Vector3i(x, y, z), -1)  # Видаляємо блок (створюємо печеру)
+	var context = prepare_chunk_context(gridmap, chunk_pos, chunk_size)
+	_carve_caves_full_with_context(gridmap, context)
 
 func carve_cave_tunnel(gridmap: GridMap, start_pos: Vector3i, length: int, radius: float):
 	"""Заготовка для генерації тунелів печер"""

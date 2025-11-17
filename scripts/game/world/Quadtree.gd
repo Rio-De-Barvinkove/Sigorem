@@ -19,6 +19,7 @@ class QuadtreeNode:
 	func _init(bounds: Rect2i, capacity: int = 4):
 		self.bounds = bounds
 		self.capacity = capacity
+		points = []
 
 	func insert(point: Vector2i) -> bool:
 		# Перевірити чи точка в межах цього вузла
@@ -35,10 +36,14 @@ class QuadtreeNode:
 			subdivide()
 
 		# Спробувати додати в дочірні вузли
-		if northwest.insert(point): return true
-		if northeast.insert(point): return true
-		if southwest.insert(point): return true
-		if southeast.insert(point): return true
+		if northwest.insert(point):
+			return true
+		if northeast.insert(point):
+			return true
+		if southwest.insert(point):
+			return true
+		if southeast.insert(point):
+			return true
 
 		return false
 
@@ -65,10 +70,14 @@ class QuadtreeNode:
 		points.clear()
 
 		for point in points_to_move:
-			if northwest.insert(point): continue
-			if northeast.insert(point): continue
-			if southwest.insert(point): continue
-			if southeast.insert(point): continue
+			if northwest.insert(point):
+				continue
+			if northeast.insert(point):
+				continue
+			if southwest.insert(point):
+				continue
+			if southeast.insert(point):
+				continue
 
 	func query_range(range_bounds: Rect2i) -> Array[Vector2i]:
 		"""Знайти всі точки в заданому діапазоні"""
@@ -123,6 +132,52 @@ class QuadtreeNode:
 			return [nearest, min_distance]
 		return []
 
+	func remove(point: Vector2i) -> bool:
+		"""Видалити точку з цього вузла"""
+		if not bounds.has_point(point):
+			return false
+
+		var idx = points.find(point)
+		if idx != -1:
+			points.remove_at(idx)
+			return true
+
+		if divided:
+			if northwest.remove(point):
+				_try_collapse()
+				return true
+			if northeast.remove(point):
+				_try_collapse()
+				return true
+			if southwest.remove(point):
+				_try_collapse()
+				return true
+			if southeast.remove(point):
+				_try_collapse()
+				return true
+
+		return false
+
+	func _try_collapse():
+		"""Скасувати поділ, якщо дочірні вузли порожні"""
+		if not divided:
+			return
+
+		var children = [northwest, northeast, southwest, southeast]
+		for child in children:
+			if child == null:
+				continue
+			if child.divided:
+				return
+			if child.points.size() > 0:
+				return
+
+		northwest = null
+		northeast = null
+		southwest = null
+		southeast = null
+		divided = false
+
 # Основний клас Quadtree
 
 @export var world_bounds := Rect2i(-1000, -1000, 2000, 2000)  # Великі межі світу
@@ -131,17 +186,27 @@ class QuadtreeNode:
 var root: QuadtreeNode
 
 func _ready():
+	if root == null:
+		configure(world_bounds, node_capacity)
+
+func configure(bounds: Rect2i, capacity: int = -1):
+	"""Налаштувати межі та ємність дерева"""
+	world_bounds = bounds
+	if capacity > 0:
+		node_capacity = capacity
 	root = QuadtreeNode.new(world_bounds, node_capacity)
 
 func insert_chunk(chunk_pos: Vector2i):
 	"""Додати чанк в quadtree"""
+	if not root:
+		configure(world_bounds, node_capacity)
 	root.insert(chunk_pos)
 
 func remove_chunk(chunk_pos: Vector2i):
 	"""Видалити чанк з quadtree"""
-	# Спрощена версія - поки що не реалізовуємо видалення
-	# В повній реалізації треба рекурсивно шукати та видаляти
-	pass
+	if not root:
+		return
+	root.remove(chunk_pos)
 
 func get_chunks_in_radius(center: Vector2i, radius: int) -> Array[Vector2i]:
 	"""Отримати всі чанки в радіусі від центру"""
