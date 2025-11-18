@@ -55,11 +55,60 @@ func setup_wfc_components():
 	print("StructureGenerator: WFC компоненти ініціалізовані")
 	return true
 
+func generate_structures_for_chunk(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: Vector2i):
+	"""Генерація структур для конкретного чанка
+	
+	ВИПРАВЛЕНО: Тепер працює з chunk-based системою.
+	Генерує структури тільки для чанків навколо гравця.
+	"""
+	if not gridmap:
+		gridmap = target_gridmap
+	if not gridmap:
+		push_error("StructureGenerator: GridMap не встановлений!")
+		return
+	
+	if not is_instance_valid(gridmap):
+		push_error("[StructureGenerator] generate_structures_for_chunk: GridMap не валідний!")
+		return
+
+	# Генеруємо прості будинки для чанка
+	generate_simple_houses_for_chunk(gridmap, chunk_pos, chunk_size)
+
+func generate_simple_houses_for_chunk(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: Vector2i):
+	"""Генерація простих будинків для конкретного чанка
+	
+	ВИПРАВЛЕНО: Генерує будинки тільки в межах чанка, використовуючи координати чанка.
+	"""
+	if not gridmap or not is_instance_valid(gridmap):
+		push_error("[StructureGenerator] generate_simple_houses_for_chunk: GridMap не валідний!")
+		return
+	
+	# ВИПРАВЛЕНО: Перевірка наявності procedural_module
+	if not get_parent() or not get_parent().procedural_module:
+		push_error("[StructureGenerator] generate_simple_houses_for_chunk: procedural_module не доступний! Не можу отримати висоту терейну.")
+		return
+	
+	# Генеруємо 1-2 будинки на чанк
+	var houses_per_chunk = randi_range(1, 2)
+	
+	for i in range(houses_per_chunk):
+		# Генеруємо позицію в межах чанка
+		var house_pos = Vector2i(
+			chunk_pos.x * chunk_size.x + randi_range(5, chunk_size.x - 5),
+			chunk_pos.y * chunk_size.y + randi_range(5, chunk_size.y - 5)
+		)
+
+		# Перевіряємо, чи не занадто близько до інших структур
+		if is_position_valid_for_structure(house_pos):
+			# Генеруємо простий будинок
+			generate_house(gridmap, house_pos)
+
 func generate_structures(gridmap: GridMap):
 	"""Генерація структур на існуючому терейні
 	
 	КРИТИЧНА ПРОБЛЕМА: Викликається один раз → структури тільки в одному місці.
 	Не працює з chunk-based системою.
+	ВИКОРИСТОВУЙТЕ generate_structures_for_chunk() замість цього методу.
 	"""
 	if not gridmap:
 		gridmap = target_gridmap
@@ -77,11 +126,11 @@ func generate_structures(gridmap: GridMap):
 	# ВИПРАВЛЕНО: Перевірка наявності WFC перед викликом
 	var wfc_success = false
 	if wfc_integrator:
-		wfc_success = generate_wfc_structures(gridmap)
+		wfc_success = await generate_wfc_structures(gridmap)
 
 	# Якщо WFC не працює, використовуємо простий генератор
 	if not wfc_success:
-		generate_simple_houses(gridmap)
+		await generate_simple_houses(gridmap)
 
 func generate_wfc_structures(gridmap: GridMap) -> bool:
 	"""Генерація структур з використанням WFC
@@ -98,7 +147,7 @@ func generate_wfc_structures(gridmap: GridMap) -> bool:
 
 	# Генеруємо підземелля
 	var dungeon_center = Vector2i(50, 50)  # Приклад центру карти
-	var success = wfc_integrator.generate_dungeon(gridmap, dungeon_center, Vector2i(20, 20))
+	var success = await wfc_integrator.generate_dungeon(gridmap, dungeon_center, Vector2i(20, 20))
 
 	if success:
 		generated_structures.append({"type": "dungeon", "position": dungeon_center, "size": Vector2i(20, 20)})
@@ -133,7 +182,7 @@ func generate_simple_houses(gridmap: GridMap):
 			# ВИПРАВЛЕНО: Перевірка наявності wfc_integrator перед викликом
 			var wfc_success = false
 			if wfc_integrator and wfc_integrator.has_method("generate_building"):
-				wfc_success = wfc_integrator.generate_building(gridmap, house_pos, "house")
+				wfc_success = await wfc_integrator.generate_building(gridmap, house_pos, "house")
 
 			if not wfc_success:
 				# Якщо WFC не працює, використовуємо простий генератор

@@ -251,7 +251,7 @@ func generate_dungeon(gridmap: GridMap, center: Vector2i, size: Vector2i) -> boo
 	ВИПРАВЛЕНО: Спрощено - залишено тільки виклик generate_structure_with_wfc + apply_result.
 	"""
 	var dungeon_rect = Rect2i(center - size/2, size)
-	return generate_structure_with_wfc(gridmap, dungeon_rect)
+	return await generate_structure_with_wfc(gridmap, dungeon_rect)
 
 func generate_building(gridmap: GridMap, position: Vector2i, building_type: String = "house") -> bool:
 	"""Генерація будівлі
@@ -263,7 +263,7 @@ func generate_building(gridmap: GridMap, position: Vector2i, building_type: Stri
 	# Можна мати різні правила для різних типів будівель
 	var building_rules = get_building_rules(building_type)
 
-	return generate_structure_with_wfc(gridmap, building_rect, building_rules)
+	return await generate_structure_with_wfc(gridmap, building_rect, building_rules)
 
 func get_building_rules(building_type: String) -> Resource:
 	"""Отримати правила для конкретного типу будівлі"""

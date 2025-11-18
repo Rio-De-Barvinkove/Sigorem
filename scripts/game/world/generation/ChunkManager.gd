@@ -147,19 +147,53 @@ func _log_chunk_statistics():
 		print("================================")
 
 func generate_initial_chunks(gridmap: GridMap):
-	"""Генерація початкових чанків навколо гравця"""
+	"""Генерація початкових чанків навколо гравця з пріоритетом для чанка гравця"""
 	if not player:
 		# Якщо немає гравця, генеруємо чанки навколо центру
 		current_player_chunk = Vector2i.ZERO
 	else:
 		update_player_chunk_position()
 
-	# ВИПРАВЛЕНО: Всі чанки генеруються асинхронно через чергу (без синхронної генерації)
+	# КРИТИЧНО: Спочатку генеруємо чанк гравця з найвищим пріоритетом
+	# Це запобігає падінню гравця в порожнечу
+	if not is_chunk_loaded_or_pending(current_player_chunk):
+		_queue_chunk_generation_priority(current_player_chunk, gridmap, true)
+		if debug_prints:
+			print("[ChunkManager] generate_initial_chunks: Додано чанк гравця ", current_player_chunk, " з найвищим пріоритетом")
+		
+		# КРИТИЧНО: Блокуємо рух гравця до завершення генерації чанка під ним
+		if player and is_instance_valid(player):
+			# Встановлюємо гравця на безпечну висоту (вище за можливий терейн)
+			var safe_height = _get_max_height() + 10
+			if player.global_position.y < safe_height:
+				player.global_position.y = safe_height
+				if debug_prints:
+					print("[ChunkManager] generate_initial_chunks: Встановлено гравця на безпечну висоту ", safe_height, " до завершення генерації чанка")
+
+	# Збираємо всі чанки та сортуємо за відстанню від гравця
+	var chunks_to_generate: Array[Dictionary] = []
 	for x in range(-chunk_radius, chunk_radius + 1):
 		for z in range(-chunk_radius, chunk_radius + 1):
 			var chunk_pos = current_player_chunk + Vector2i(x, z)
+			# Пропускаємо чанк гравця (вже додано)
+			if chunk_pos == current_player_chunk:
+				continue
 			if not is_chunk_loaded_or_pending(chunk_pos):
-				queue_chunk_generation(chunk_pos)
+				var distance = max(abs(x), abs(z))
+				chunks_to_generate.append({"pos": chunk_pos, "distance": distance})
+	
+	# Сортуємо за відстанню (найближчі першими)
+	chunks_to_generate.sort_custom(func(a, b): return a.distance < b.distance)
+	
+	# Додаємо чанки в чергу з пріоритетом (найближчі - пріоритетні)
+	for chunk_data in chunks_to_generate:
+		var chunk_pos = chunk_data.pos
+		var distance = chunk_data.distance
+		# Чанки в радіусі 2 від гравця - високий пріоритет
+		if distance <= 2:
+			_queue_chunk_generation_priority(chunk_pos, gridmap, true)
+		else:
+			queue_chunk_generation(chunk_pos)
 
 # Видалено update_chunks() - функція мертва, не викликається ніде
 
@@ -266,35 +300,34 @@ func regenerate_chunks_around_player(gridmap: GridMap):
 	if current_count >= warning_chunk_count:
 		push_warning("[ChunkManager] regenerate_chunks_around_player: Кількість активних чанків наближається до ліміту: " + str(current_count) + " / " + str(max_active_chunks))
 
-	# Отримуємо напрямок руху гравця (якщо можливо)
-	var forward_chunks: Array[Vector2i] = []
-	var other_chunks: Array[Vector2i] = []
-	
-	# Генеруємо нові чанки (тільки ті, що ще не існують)
+	# Збираємо всі чанки та сортуємо за відстанню від гравця
+	var chunks_to_generate: Array[Dictionary] = []
 	for x in range(-chunk_radius, chunk_radius + 1):
 		for z in range(-chunk_radius, chunk_radius + 1):
 			var chunk_pos = current_player_chunk + Vector2i(x, z)
 			if not is_chunk_loaded_or_pending(chunk_pos):
-				# Пріоритет для чанків перед гравцем (позитивний Z - вперед)
-				if z > 0 or (z == 0 and x != 0):
-					forward_chunks.append(chunk_pos)
-				else:
-					other_chunks.append(chunk_pos)
+				var distance = max(abs(x), abs(z))
+				chunks_to_generate.append({"pos": chunk_pos, "distance": distance})
 	
-	# Спочатку генеруємо чанки перед гравцем
-	var forward_count = 0
-	for chunk_pos in forward_chunks:
-		queue_chunk_generation(chunk_pos)
-		forward_count += 1
+	# Сортуємо за відстанню (найближчі першими)
+	chunks_to_generate.sort_custom(func(a, b): return a.distance < b.distance)
 	
-	# Потім інші чанки
-	var other_count = 0
-	for chunk_pos in other_chunks:
-		queue_chunk_generation(chunk_pos)
-		other_count += 1
+	# Додаємо чанки в чергу з пріоритетом (найближчі - пріоритетні)
+	var priority_count = 0
+	var normal_count = 0
+	for chunk_data in chunks_to_generate:
+		var chunk_pos = chunk_data.pos
+		var distance = chunk_data.distance
+		# Чанки в радіусі 2 від гравця - високий пріоритет
+		if distance <= 2:
+			_queue_chunk_generation_priority(chunk_pos, gridmap, true)
+			priority_count += 1
+		else:
+			queue_chunk_generation(chunk_pos)
+			normal_count += 1
 	
-	if debug_prints and (forward_count > 0 or other_count > 0):
-		print("[ChunkManager] regenerate_chunks_around_player: Додано в чергу - вперед: ", forward_count, ", інші: ", other_count)
+	if debug_prints and (priority_count > 0 or normal_count > 0):
+		print("[ChunkManager] regenerate_chunks_around_player: Додано в чергу - пріоритетних: ", priority_count, ", звичайних: ", normal_count)
 
 func _force_cull_excess_chunks(gridmap: GridMap):
 	"""КРИТИЧНО: Примусове видалення найдальших чанків коли досягнуто ліміту"""
@@ -516,11 +549,15 @@ func remove_chunk(gridmap: GridMap, chunk_pos: Vector2i):
 			push_warning("[ChunkManager] remove_chunk: detail_module не валідний для чанка " + str(chunk_pos))
 	
 	# ВИПРАВЛЕНО: Видаляємо POI для чанка (запобігає витокам пам'яті)
-	if get_parent() and get_parent().poi_module and get_parent().use_poi_generation:
-		if is_instance_valid(get_parent().poi_module):
-			get_parent().poi_module.remove_poi_for_chunk(chunk_pos)
-		else:
-			push_warning("[ChunkManager] remove_chunk: poi_module не валідний для чанка " + str(chunk_pos))
+	if get_parent() and get_parent().has("poi_module") and get_parent().has("use_poi_generation"):
+		if get_parent().poi_module and get_parent().use_poi_generation:
+			if is_instance_valid(get_parent().poi_module):
+				if get_parent().poi_module.has_method("remove_poi_for_chunk"):
+					get_parent().poi_module.remove_poi_for_chunk(chunk_pos)
+				else:
+					push_warning("[ChunkManager] remove_chunk: poi_module не має методу remove_poi_for_chunk")
+			else:
+				push_warning("[ChunkManager] remove_chunk: poi_module не валідний для чанка " + str(chunk_pos))
 	
 	# ВИПРАВЛЕНО: Видаляємо multimesh для чанка при unload для запобігання витоку пам'яті
 	if get_parent() and get_parent().vegetation_module and get_parent().use_vegetation:
@@ -792,6 +829,30 @@ func _get_min_height() -> int:
 	if get_parent() and get_parent().has_method("get_min_height"):
 		height = get_parent().get_min_height()
 	return min(height, -1)  # Завжди від'ємна або -1 мінімум
+
+func _get_surface_height_at(gridmap: GridMap, world_x: int, world_z: int, chunk_start: Vector2i) -> int:
+	"""Отримати висоту поверхні на позиції (world_x, world_z)"""
+	if not gridmap or not is_instance_valid(gridmap):
+		return 0
+	
+	# Шукаємо найвищий блок на позиції (x, z)
+	var max_height = _get_max_height()
+	var min_height = _get_min_height()
+	
+	# Шукаємо зверху вниз
+	for y in range(max_height, min_height - 1, -1):
+		var cell_item = gridmap.get_cell_item(Vector3i(world_x, y, world_z))
+		if cell_item >= 0:  # Якщо є блок
+			return y + 1  # Поверхня на один блок вище
+	
+	# Якщо не знайдено - повертаємо базову висоту
+	return _get_base_height()
+
+func _get_base_height() -> int:
+	"""Отримати базову висоту"""
+	if get_parent() and get_parent().has_method("get_base_height"):
+		return get_parent().get_base_height()
+	return 16  # Дефолт
 
 # ВИДАЛЕНО: Preloading Buffer - вся система видалена, оскільки не використовується ефективно
 # Чанки генеруються через основну чергу генерації (chunk_generation_jobs)
@@ -1431,6 +1492,50 @@ func _finalize_chunk_job(job: Dictionary, gridmap: GridMap):
 			push_warning("[ChunkManager] _finalize_chunk_job: detail_module не валідний")
 
 	_mark_chunk_active(chunk_pos)
+	
+	# КРИТИЧНО: Якщо це чанк гравця - перевіряємо чи потрібно встановити безпечну позицію
+	if player and is_instance_valid(player):
+		var player_chunk = get_player_chunk_position()
+		if chunk_pos == player_chunk:
+			# Чанк гравця згенеровано - перевіряємо чи гравець не в повітрі
+			var player_pos = player.global_position
+			var chunk_world_start = chunk_pos * chunk_size
+			var surface_height = _get_surface_height_at(gridmap, int(player_pos.x), int(player_pos.z), chunk_world_start)
+			
+			# Якщо гравець в повітрі або під землею - встановлюємо на поверхню
+			if surface_height > 0 and (player_pos.y < surface_height - 2 or player_pos.y > surface_height + 20):
+				player.global_position.y = surface_height + 2
+				if debug_prints:
+					print("[ChunkManager] _finalize_chunk_job: Встановлено гравця на поверхню чанка ", chunk_pos, " на висоті ", surface_height + 2)
+	
+	# ВИПРАВЛЕНО: Генеруємо структури тільки для чанків навколо гравця (в межах chunk_radius)
+	if get_parent():
+		var parent = get_parent()
+		# Перевіряємо наявність structure_module та use_structures
+		# Для TerrainGenerator ці властивості завжди існують (можуть бути null)
+		if parent.structure_module != null and parent.use_structures:
+			if is_instance_valid(parent.structure_module):
+				# Перевіряємо, чи чанк знаходиться навколо гравця
+				var player_chunk = get_player_chunk_position() if player else Vector2i.ZERO
+				var chunk_distance = max(abs(chunk_pos.x - player_chunk.x), abs(chunk_pos.y - player_chunk.y))
+				
+				# Генеруємо структури тільки для чанків в межах chunk_radius від гравця
+				if chunk_distance <= chunk_radius:
+					if parent.structure_module.has_method("generate_structures_for_chunk"):
+						# Викликаємо синхронно, щоб не блокувати генерацію інших чанків
+						parent.structure_module.generate_structures_for_chunk(gridmap, chunk_pos, chunk_size)
+					elif parent.structure_module.has_method("generate_structures"):
+						# Якщо метод не підтримує chunk-based генерацію, викликаємо загальний метод тільки один раз
+						if not parent.has_meta("structures_generated"):
+							parent.set_meta("structures_generated", true)
+							if debug_prints:
+								print("[ChunkManager] _finalize_chunk_job: Генеруємо структури (один раз для всього світу)")
+							# Викликаємо асинхронно в фоні, щоб не блокувати генерацію чанків
+							parent.structure_module.generate_structures(gridmap)
+				elif debug_prints:
+					print("[ChunkManager] _finalize_chunk_job: Пропускаємо генерацію структур для далекого чанка ", chunk_pos, " (відстань: ", chunk_distance, ")")
+			else:
+				push_warning("[ChunkManager] _finalize_chunk_job: structure_module не валідний")
 	
 	# ВИПРАВЛЕНО: Генеруємо стартову зону після завершення генерації чанка (0, 0)
 	if chunk_pos == Vector2i.ZERO and get_parent().starting_area_module and get_parent().use_starting_area:

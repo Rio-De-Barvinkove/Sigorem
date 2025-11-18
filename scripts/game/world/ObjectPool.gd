@@ -40,8 +40,8 @@ func get_object(scene_path: String, parent: Node = null) -> Node:
 	# Створити новий об'єкт
 	var obj = _create_object(scene_path)
 	if obj:
-	stats["created"] += 1
-	stats["active"] += 1
+		stats["created"] += 1
+		stats["active"] += 1
 	else:
 		return null
 

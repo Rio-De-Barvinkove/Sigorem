@@ -311,7 +311,7 @@ func _process(delta):
 func generate_structures():
 	"""Генерація структур на існуючому терейні"""
 	if use_structures and structure_module:
-		structure_module.generate_structures(target_gridmap)
+		await structure_module.generate_structures(target_gridmap)
 
 func regenerate_terrain():
 	"""Повна регенерація терейну"""
