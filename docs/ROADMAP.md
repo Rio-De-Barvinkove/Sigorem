@@ -97,7 +97,6 @@
 - [ ] Логування часу генерації/видалення (WorldLogger.performance)
 
 ### 1.2 Імпорт та налаштування асетів
-- [ ] Імпорт TheLazyStone Post-Apocalypse Pack
 - [ ] Y-sort для правильної глибини
 - [ ] Pixel snapping для спрайтів
 - [ ] Налаштування шарів (terrain, objects, player, UI)

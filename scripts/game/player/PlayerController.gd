@@ -16,6 +16,23 @@ extends CharacterBody3D
 
 func _ready():
 	_ensure_movement_actions()
+	_setup_voxel_viewer()
+
+func _setup_voxel_viewer():
+	# Ensure VoxelViewer exists for VoxelTerrain loading
+	if not has_node("VoxelViewer"):
+		var viewer = VoxelViewer.new()
+		viewer.name = "VoxelViewer"
+		add_child(viewer)
+		# viewer.view_distance = 128 # Default is usually fine
+		print("PlayerController: VoxelViewer added")
+
+func _on_voxel_terrain_block_loaded(pos):
+	# Check if this block is below player
+	var player_chunk = Vector3i(global_position) / 32 # Assuming 32 chunk size
+	if pos == player_chunk:
+		# Safe to enable gravity/physics fully or move player to surface
+		pass
 
 func _physics_process(delta: float):
 	if flight_mode:

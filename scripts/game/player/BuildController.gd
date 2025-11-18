@@ -1,14 +1,15 @@
 extends Node
 
 var build_mode = false
-var selected_block_id = 0 # ID from MeshLibrary
+var selected_block_id = 1 # Start with Stone (1)
 
 @export_group("Creative Mode Settings")
 @export var enable_area_breaking = true
-@export var break_radius = 2  # Радіус ламання блоків (1 = 3x3, 2 = 5x5 тощо)
+@export var break_radius = 2
 @export var enable_xray_mode = false
 
 var grid_map: GridMap
+var voxel_terrain: VoxelTerrain
 var camera: Camera3D
 var ghost_mesh: MeshInstance3D
 var xray_material: StandardMaterial3D
@@ -21,15 +22,22 @@ func _ready():
 	
 	ghost_mesh = MeshInstance3D.new()
 	ghost_mesh.material_override = ghost_material
+	# Default cube mesh for ghost
+	ghost_mesh.mesh = BoxMesh.new()
 	add_child(ghost_mesh)
 	ghost_mesh.hide()
 	
-	# X-ray материал для підсвітки блоків
+	# X-ray (not fully supported on VoxelTerrain yet without custom shader)
 	xray_material = StandardMaterial3D.new()
-	xray_material.albedo_color = Color(0.2, 1.0, 0.2, 0.3)  # Зелений напівпрозорий
+	xray_material.albedo_color = Color(0.2, 1.0, 0.2, 0.3)
 	xray_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	xray_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED  # Світиться
-	xray_material.disable_receive_shadows = true
+	xray_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+func get_voxel_terrain():
+	if not is_instance_valid(voxel_terrain):
+		# Try to find VoxelTerrain in the scene
+		voxel_terrain = get_tree().get_root().find_child("VoxelTerrain", true, false)
+	return voxel_terrain
 
 func get_grid_map():
 	if not is_instance_valid(grid_map):
@@ -44,114 +52,83 @@ func get_camera():
 	return camera
 
 func _unhandled_input(event):
-	# Перемикання X-ray режиму (клавіша X)
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == Key.KEY_X:
-			enable_xray_mode = not enable_xray_mode
-			_apply_xray_mode()
-			print("BuildController: X-ray mode ", "увімкнено" if enable_xray_mode else "вимкнено")
-	
+	# Toggle Build Mode
 	if event.is_action_pressed("build_mode"):
 		build_mode = !build_mode
 		print("Build mode: ", build_mode)
-		
 		if build_mode:
-			var mesh_lib = BlockRegistry.get_mesh_library()
-			if mesh_lib and mesh_lib.get_item_list().size() > selected_block_id:
-				ghost_mesh.mesh = mesh_lib.get_item_mesh(selected_block_id)
-				ghost_mesh.show()
-				print("Build mode enabled")
-			else:
-				print("No mesh library or invalid block id")
+			ghost_mesh.show()
+			print("Build mode enabled")
 		else:
 			ghost_mesh.hide()
 
+	# Cycle blocks (basic implementation)
+	if build_mode and event is InputEventKey and event.pressed:
+		if event.keycode >= Key.KEY_1 and event.keycode <= Key.KEY_4:
+			selected_block_id = event.keycode - Key.KEY_0
+			print("Selected block: ", selected_block_id)
+
 	if build_mode and event is InputEventMouseButton and event.is_pressed():
-		if not get_grid_map() or not get_camera():
-			return
+		var cam = get_camera()
+		if not cam: return
+		
+		var vt = null
+		if get_voxel_terrain():
+			vt = get_voxel_terrain().get_voxel_tool()
+		
 		var mouse_pos = get_viewport().get_mouse_position()
-		var from = camera.project_ray_origin(mouse_pos)
-		var to = from + camera.project_ray_normal(mouse_pos) * 1000
+		var from = cam.project_ray_origin(mouse_pos)
+		var to = from + cam.project_ray_normal(mouse_pos) * 1000
 		var space_state = get_parent().get_world_3d().direct_space_state
 		var query = PhysicsRayQueryParameters3D.create(from, to)
 		var result = space_state.intersect_ray(query)
 		
 		if result:
 			if event.button_index == MOUSE_BUTTON_LEFT:
-				# Place block ON the surface (+ normal)
-				var place_pos = grid_map.local_to_map(result.position + result.normal * 0.1)
-				
-				# Перевірка чи блок вже існує
-				if grid_map.get_cell_item(place_pos) != -1:
-					print("Block already exists at: ", place_pos)
-					return
-				
-				# Перевірка чи MeshLibrary готовий
-				if not grid_map.mesh_library:
-					print("Error: GridMap MeshLibrary is null!")
-					return
-				
-				var mesh_lib_item_count = grid_map.mesh_library.get_item_list().size()
-				if selected_block_id >= mesh_lib_item_count:
-					print("Error: Invalid block ID ", selected_block_id, ". Available: ", mesh_lib_item_count)
-					return
-				
-				grid_map.set_cell_item(place_pos, selected_block_id)
-				print("Placed block at: ", place_pos, " with mesh_index: ", selected_block_id)
+				# Place
+				if vt:
+					vt.channel = VoxelBuffer.CHANNEL_TYPE
+					vt.value = selected_block_id
+					# VoxelTool.do_point places at the position (handling normal internally if logic matches?)
+					# Usually do_point takes a position in world space and sets the voxel containing it.
+					# To place AGAINST a face, we need to move along normal.
+					vt.do_point(result.position + result.normal * 0.1)
+					print("Placed voxel ", selected_block_id)
+				elif get_grid_map():
+					var pos = grid_map.local_to_map(result.position + result.normal * 0.1)
+					grid_map.set_cell_item(pos, selected_block_id)
+					
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
-				# Destroy block FROM the surface (- normal)
-				var destroy_pos = grid_map.local_to_map(result.position - result.normal * 0.1)
-				
-				if enable_area_breaking:
-					# Лама блоки в області
-					_break_blocks_in_area(destroy_pos, break_radius)
-				else:
-					# Лама один блок
-					grid_map.set_cell_item(destroy_pos, -1)
-					print("Destroyed block at: ", destroy_pos)
+				# Destroy
+				if vt:
+					vt.channel = VoxelBuffer.CHANNEL_TYPE
+					vt.value = 0 # Air
+					# Move slightly inside the block to hit it
+					vt.do_point(result.position - result.normal * 0.1)
+					print("Destroyed voxel")
+				elif get_grid_map():
+					var pos = grid_map.local_to_map(result.position - result.normal * 0.1)
+					grid_map.set_cell_item(pos, -1)
 
 func _physics_process(_delta):
 	if build_mode:
-		if not get_grid_map() or not get_camera():
-			return
-		
-		# Перевірка чи MeshLibrary встановлений
-		if not grid_map.mesh_library:
-			return
+		var cam = get_camera()
+		if not cam: return
 		
 		var mouse_pos = get_viewport().get_mouse_position()
-		var from = camera.project_ray_origin(mouse_pos)
-		var to = from + camera.project_ray_normal(mouse_pos) * 1000
+		var from = cam.project_ray_origin(mouse_pos)
+		var to = from + cam.project_ray_normal(mouse_pos) * 1000
 		var space_state = get_parent().get_world_3d().direct_space_state
 		var query = PhysicsRayQueryParameters3D.create(from, to)
 		var result = space_state.intersect_ray(query)
-
+		
 		if result:
-			# Ghost mesh shows placement position (+ normal)
-			var target_pos = grid_map.map_to_local(grid_map.local_to_map(result.position + result.normal * 0.1))
-			ghost_mesh.global_transform.origin = target_pos
+			# Ghost mesh positioning
+			# Snap to grid?
+			var pos = result.position + result.normal * 0.5 # Offset half block size
+			# Snap to 1.0 grid
+			pos = pos.floor() + Vector3(0.5, 0.5, 0.5)
+			ghost_mesh.global_position = pos
 			ghost_mesh.show()
 		else:
 			ghost_mesh.hide()
-
-func _break_blocks_in_area(center: Vector3i, radius: int):
-	"""Ламає блоки в області навколо центру"""
-	var broken_count = 0
-	for x in range(-radius, radius + 1):
-		for y in range(-radius, radius + 1):
-			for z in range(-radius, radius + 1):
-				var pos = center + Vector3i(x, y, z)
-				if grid_map.get_cell_item(pos) != -1:
-					grid_map.set_cell_item(pos, -1)
-					broken_count += 1
-	print("Destroyed ", broken_count, " blocks in area around ", center)
-
-func _apply_xray_mode():
-	"""Застосовує або знімає X-ray материал з GridMap"""
-	if not get_grid_map():
-		return
-	
-	# TODO: GridMap не підтримує material_override
-	# Для X-ray режиму потрібно змінювати матеріали в MeshLibrary
-	# або використовувати shader на всіх блоках
-	print("X-ray mode: feature not yet implemented for GridMap")
