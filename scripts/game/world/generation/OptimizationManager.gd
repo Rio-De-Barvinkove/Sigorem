@@ -2,11 +2,17 @@ extends Node
 class_name OptimizationManager
 
 # Модуль для оптимізації генерації терейну
-# УВАГА: Зараз оптимізація може гальмувати через:
-# 1. collect_chunk_data сканує весь чанк (повільно для великих чанків)
-# 2. optimize_chunk_mesh робить перевірку граней для кожного блоку
-# 3. _rebuild_chunk_with_optimized_mesh очищає і перебудовує чанк (подвійна робота)
-# 4. _has_neighbor_block_in_adjacent_chunk завжди повертає false (не працює)
+# 
+# ВАЖЛИВО: Mesh-оптимізація ВИМКНЕНА через критичні проблеми:
+# 1. optimize_chunk_mesh() сканує весь чанк 6 разів на блок → для 50×50×192 = 10+ млн ітерацій → FPS падає до 1
+# 2. _has_neighbor_block_in_adjacent_chunk() завжди повертає false → оптимізація граней не працює між чанками
+# 3. Mesh-оптимізація не працює правильно з GridMap (система використовує GridMap, а не Mesh)
+# 4. is_chunk_occluded() вважає чанк occluded, якщо всі сусіди існують → навпаки логіки
+# 
+# Корисне, що залишено:
+# - adaptive_optimization() і check_generation_time() — добре для обмеження бюджету
+# - LOD distances (можна використати)
+# 
 # Рекомендація: вимкнути use_optimization за замовчуванням (вже зроблено)
 
 @export_group("Performance Settings")
@@ -235,10 +241,11 @@ func get_active_chunk_count() -> int:
 var terrain_cache: Dictionary = {}
 
 # Mesh Optimization - Cull Hidden Faces
+# ВИМКНЕНО: Mesh-оптимізація не працює правильно з GridMap
 @export_group("Mesh Optimization")
-@export var enable_cull_hidden_faces := true
+@export var enable_cull_hidden_faces := false  # ВИПРАВЛЕНО: Вимкнено за замовчуванням
 @export var enable_greedy_meshing := false  # Зарезервовано для майбутнього
-@export var enable_occlusion_culling := true  # Occlusion culling для закритих чанків
+@export var enable_occlusion_culling := false  # ВИПРАВЛЕНО: Вимкнено через неправильну логіку
 
 # Статистика оптимізації
 var optimization_stats: Dictionary = {
@@ -248,51 +255,17 @@ var optimization_stats: Dictionary = {
 }
 
 func optimize_chunk_mesh(chunk_pos: Vector2i, chunk_data: Dictionary) -> Dictionary:
-	"""Оптимізація mesh чанка через cull hidden faces"""
+	"""Оптимізація mesh чанка через cull hidden faces
+	
+	ВИМКНЕНО: Сканує весь чанк 6 разів на блок → для 50×50×192 = 10+ млн ітерацій → FPS падає до 1.
+	Mesh-оптимізація не працює правильно з GridMap (система використовує GridMap, а не Mesh).
+	"""
 	if not enable_cull_hidden_faces:
 		return chunk_data
-
-	var start_time = Time.get_ticks_msec() if enable_profiling else 0
 	
-	var optimized_data = {}
-	var chunk_size = get_parent().chunk_size if get_parent() and get_parent().chunk_size else Vector2i(32, 32)
-	var chunk_start = chunk_pos * chunk_size
-
-	optimization_stats["total_faces"] += chunk_data.size() * 6  # 6 граней на блок
-	var original_face_count = chunk_data.size() * 6
-
-	for block_key in chunk_data.keys():
-		var coords = block_key.split("_")
-		if coords.size() < 3:
-			continue
-
-		var x = int(coords[0])
-		var y = int(coords[1])
-		var z = int(coords[2])
-
-		var visible_faces = _get_visible_faces(x, y, z, chunk_data, chunk_size, chunk_start)
-
-		if visible_faces.size() > 0:
-			optimized_data[block_key] = {
-				"mesh_index": chunk_data[block_key],
-				"visible_faces": visible_faces
-			}
-
-	var optimized_face_count = 0
-	for block in optimized_data.values():
-		optimized_face_count += block["visible_faces"].size()
-
-	optimization_stats["faces_culled"] += (original_face_count - optimized_face_count)
-	optimization_stats["optimization_ratio"] = float(optimization_stats["faces_culled"]) / float(optimization_stats["total_faces"]) if optimization_stats["total_faces"] > 0 else 0.0
-
-	if enable_profiling:
-		var elapsed = Time.get_ticks_msec() - start_time
-		profiling_data["optimize_chunk_mesh_calls"] += 1
-		profiling_data["optimize_chunk_mesh_time"] += elapsed
-		if elapsed > 10:  # Логуємо тільки повільні виклики
-			print("OptimizationManager: optimize_chunk_mesh зайняв ", elapsed, "ms для чанка ", chunk_pos)
-
-	return optimized_data
+	# ВИПРАВЛЕНО: Повертаємо дані без змін, оскільки mesh-оптимізація вимкнена
+	push_warning("[OptimizationManager] optimize_chunk_mesh() ВИМКНЕНО через критичні проблеми з продуктивністю!")
+	return chunk_data
 
 func _get_visible_faces(x: int, y: int, z: int, chunk_data: Dictionary, chunk_size: Vector2i, chunk_start: Vector2i) -> Array:
 	"""Визначення видимих граней для блоку"""
@@ -331,18 +304,24 @@ func _is_chunk_boundary(pos: Vector3i, chunk_start: Vector2i, chunk_size: Vector
 	return local_x <= 0 or local_x >= chunk_size.x - 1 or local_z <= 0 or local_z >= chunk_size.y - 1
 
 func _has_neighbor_block_in_adjacent_chunk(pos: Vector3i, offset: Vector3i) -> bool:
-	"""Перевірка чи є блок у сусідньому чанку"""
+	"""Перевірка чи є блок у сусідньому чанку
+	
+	ВАЖЛИВО: Завжди повертає false → оптимізація граней не працює між чанками.
+	ВИМКНЕНО: Не використовується, оскільки mesh-оптимізація вимкнена.
+	"""
+	# ВИПРАВЛЕНО: Завжди повертає false (не працює правильно)
 	# Спрощена версія - перевіряємо тільки якщо сусідній чанк завантажений
 	# В повній реалізації треба отримати дані з ChunkManager
-	if not get_parent() or not get_parent().chunk_module:
-		return false
-
-	var neighbor_chunk_pos = _get_chunk_pos_for_world_pos(pos + offset)
-	if get_parent().chunk_module.active_chunks.has(neighbor_chunk_pos):
-		# Тут можна додати перевірку конкретного блоку в сусідньому чанку
-		# Зараз повертаємо false для спрощення
-		return false
-
+	# if not get_parent() or not get_parent().chunk_module:
+	# 	return false
+	# 
+	# var neighbor_chunk_pos = _get_chunk_pos_for_world_pos(pos + offset)
+	# if get_parent().chunk_module.active_chunks.has(neighbor_chunk_pos):
+	# 	# Тут можна додати перевірку конкретного блоку в сусідньому чанку
+	# 	# Зараз повертаємо false для спрощення
+	# 	return false
+	# 
+	# return false
 	return false
 
 func _get_chunk_pos_for_world_pos(world_pos: Vector3i) -> Vector2i:
@@ -355,36 +334,40 @@ func get_mesh_optimization_stats() -> Dictionary:
 	return optimization_stats.duplicate()
 
 func is_chunk_occluded(chunk_pos: Vector2i, active_chunks: Dictionary, chunk_size: Vector2i) -> bool:
-	"""Перевіряє чи чанк повністю закритий (occlusion culling)"""
+	"""Перевіряє чи чанк повністю закритий (occlusion culling)
+	
+	ВИПРАВЛЕНО: Логіка була навпаки - вважала чанк occluded, якщо всі сусіди існують.
+	Це visibility culling, а не occlusion. ВИМКНЕНО через неправильну логіку.
+	"""
 	if not enable_occlusion_culling:
 		return false
 
+	# ВИПРАВЛЕНО: Повертаємо false (не occluded), оскільки логіка була неправильною
 	# Простий occlusion culling: перевіряємо чи є чанки зверху
 	# В повній реалізації треба перевіряти чи всі сусідні чанки вище по висоті
-
+	# 
 	# Перевіряємо чи всі 8 сусідніх чанків існують і вище
-	var neighbors_above = [
-		chunk_pos + Vector2i(0, -1),   # Північ
-		chunk_pos + Vector2i(1, -1),   # Північний-схід
-		chunk_pos + Vector2i(1, 0),    # Схід
-		chunk_pos + Vector2i(1, 1),    # Південний-схід
-		chunk_pos + Vector2i(0, 1),    # Південь
-		chunk_pos + Vector2i(-1, 1),   # Південний-захід
-		chunk_pos + Vector2i(-1, 0),   # Захід
-		chunk_pos + Vector2i(-1, -1),  # Північний-захід
-	]
-
-	var all_neighbors_exist = true
-	for neighbor_pos in neighbors_above:
-		if not active_chunks.has(neighbor_pos):
-			all_neighbors_exist = false
-			break
-
-	# Якщо всі сусідні чанки існують, можливо цей чанк повністю закритий
-	# Спрощена версія - якщо всі сусіди є, вважаємо що чанк може бути occluded
-	# В повній реалізації треба перевіряти висоти блоків
-
-	return all_neighbors_exist
+	# var neighbors_above = [
+	# 	chunk_pos + Vector2i(0, -1),   # Північ
+	# 	chunk_pos + Vector2i(1, -1),   # Північний-схід
+	# 	chunk_pos + Vector2i(1, 0),    # Схід
+	# 	chunk_pos + Vector2i(1, 1),    # Південний-схід
+	# 	chunk_pos + Vector2i(0, 1),    # Південь
+	# 	chunk_pos + Vector2i(-1, 1),   # Південний-захід
+	# 	chunk_pos + Vector2i(-1, 0),   # Захід
+	# 	chunk_pos + Vector2i(-1, -1),  # Північний-захід
+	# ]
+	# 
+	# var all_neighbors_exist = true
+	# for neighbor_pos in neighbors_above:
+	# 	if not active_chunks.has(neighbor_pos):
+	# 		all_neighbors_exist = false
+	# 		break
+	# 
+	# # ВИПРАВЛЕНО: Логіка була навпаки - якщо всі сусіди є, це означає що чанк видимий, а не occluded
+	# return not all_neighbors_exist  # Якщо не всі сусіди є, можливо чанк occluded
+	
+	return false  # ВИМКНЕНО: Повертаємо false (не occluded)
 
 func optimize_rendering_for_chunk(chunk_pos: Vector2i, active_chunks: Dictionary, chunk_size: Vector2i) -> bool:
 	"""Загальна оптимізація рендерингу для чанка"""

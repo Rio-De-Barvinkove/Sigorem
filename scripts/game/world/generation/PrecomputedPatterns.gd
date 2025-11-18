@@ -2,7 +2,16 @@ extends Node
 class_name PrecomputedPatterns
 
 # Модуль для попередньо обчислених патернів
-# Best practice: зменшити CPU навантаження під час runtime
+# 
+# ВАЖЛИВО: Цей файл зараз НЕБЕЗПЕЧНИЙ і НЕ ВИКОРИСТОВУЄТЬСЯ в поточній системі.
+# 
+# Критичні проблеми:
+# 1. precompute_terrain_patterns() в _ready() робить 256×256×3×10 = ~6 млн ітерацій → зависання гри на 2-10 секунд при старті
+# 2. Зберігає всі патерни в RAM → при 256×256 float = 0.5 МБ на патерн × 30 патернів = 15+ МБ
+# 3. generate_pattern_noise() використовує Math синусоїди, а не FastNoiseLite → не збігається з ProceduralGeneration
+# 4. Ніде не використовується в поточній системі → мертвий код
+# 
+# Рекомендація: залишити use_precomputed_patterns = false (вже так) і не чіпати, поки не буде реальної потреби.
 
 @export var pattern_resolution := 256
 @export var num_patterns := 10
@@ -13,20 +22,28 @@ var structure_patterns: Array = []
 var biome_patterns: Array = []
 
 func _ready():
-	precompute_terrain_patterns()
-	precompute_structure_patterns()
-	precompute_biome_patterns()
-	print("PrecomputedPatterns: Обчислено ", terrain_patterns.size() + structure_patterns.size() + biome_patterns.size(), " патернів")
+	# ВИМКНЕНО: precompute_terrain_patterns() робить ~6 млн ітерацій → зависання гри на 2-10 секунд
+	# precompute_terrain_patterns()  # ВИМКНЕНО: Зависання гри при старті
+	# precompute_structure_patterns()  # ВИМКНЕНО: Не використовується
+	# precompute_biome_patterns()  # ВИМКНЕНО: Не використовується
+	push_warning("[PrecomputedPatterns] ВИМКНЕНО: precompute_terrain_patterns() робить ~6 млн ітерацій → зависання гри на 2-10 секунд!")
+	# print("PrecomputedPatterns: Обчислено ", terrain_patterns.size() + structure_patterns.size() + biome_patterns.size(), " патернів")
 
 func precompute_terrain_patterns():
-	"""Попереднє обчислення патернів місцевості"""
-	terrain_patterns.clear()
-
-	for i in range(num_patterns):
-		var pattern = create_terrain_pattern(i)
-		terrain_patterns.append(pattern)
-
-	print("PrecomputedPatterns: Створено ", terrain_patterns.size(), " патернів місцевості")
+	"""Попереднє обчислення патернів місцевості
+	
+	ВИМКНЕНО: Робить 256×256×3×10 = ~6 млн ітерацій → зависання гри на 2-10 секунд при старті.
+	Зберігає всі патерни в RAM → при 256×256 float = 0.5 МБ на патерн × 30 патернів = 15+ МБ.
+	"""
+	push_warning("[PrecomputedPatterns] precompute_terrain_patterns() ВИМКНЕНО через критичні проблеми з продуктивністю!")
+	# terrain_patterns.clear()
+	# 
+	# for i in range(num_patterns):
+	# 	var pattern = create_terrain_pattern(i)
+	# 	terrain_patterns.append(pattern)
+	# 
+	# print("PrecomputedPatterns: Створено ", terrain_patterns.size(), " патернів місцевості")
+	pass
 
 func create_terrain_pattern(seed_offset: int) -> Dictionary:
 	"""Створення одного патерну місцевості"""
@@ -65,7 +82,12 @@ func create_terrain_pattern(seed_offset: int) -> Dictionary:
 	return pattern
 
 func generate_pattern_noise(x: int, z: int, seed_offset: int, scale: float) -> float:
-	"""Генерація шуму для патерну"""
+	"""Генерація шуму для патерну
+	
+	ВАЖЛИВО: Використовує Math синусоїди, а не FastNoiseLite → не збігається з ProceduralGeneration.
+	ВИМКНЕНО: Не використовується, оскільки precompute_terrain_patterns() вимкнено.
+	"""
+	# ВИПРАВЛЕНО: Використовуємо простий шум (не збігається з FastNoiseLite!)
 	# Використовуємо кілька октав для реалістичного вигляду
 	var value = 0.0
 	var amplitude = 1.0

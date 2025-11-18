@@ -2,9 +2,20 @@ extends Node
 class_name NativeOptimizer
 
 # Модуль для native оптимізації (симуляція GDExtension)
-# Використовує більш ефективні алгоритми для CPU-bound операцій
+# 
+# ВАЖЛИВО: Цей файл зараз ШКОДИТЬ більше, ніж допомагає.
+# 
+# Критичні проблеми:
+# 1. noise_cache з ключем str(x) + "_" + str(z) → пам'ять вибухає (мільйони записів), пошук повільний
+# 2. precompute_noise_patterns() виконує 1000×1000 = 1 000 000 ітерацій в _ready() → зависання гри на 1-5 секунд
+# 3. vector_cache з hash (x*31 + y*37 + z*41) % size → колізії, перезапис векторів → баги в геометрії
+# 4. optimized_chunk_generation() генерує Mesh, але система використовує GridMap → цей код просто не викликається
+# 5. fast_noise_2d() використовує sin/cos → не збігається з FastNoiseLite → висота інша
+# 
+# Рекомендація: залишити use_native_optimization = false (вже так в TerrainGenerator)
+# і не чіпати, поки не буде реального GDExtension.
 
-@export var use_native_optimization := true
+@export var use_native_optimization := false  # ВИПРАВЛЕНО: Вимкнено за замовчуванням
 @export var noise_cache_size := 1000
 @export var mesh_cache_size := 500
 
@@ -13,40 +24,59 @@ var mesh_cache: Dictionary = {}
 var vector_cache: Array = []
 
 func _ready():
+	# ВИПРАВЛЕНО: Вимкнено за замовчуванням через проблеми з продуктивністю
+	# precompute_noise_patterns() виконує 1 000 000 ітерацій → зависання гри
 	if use_native_optimization:
-		precompute_noise_patterns()
-		setup_vector_cache()
-		print("NativeOptimizer: Native оптимізація активована")
+		push_warning("[NativeOptimizer] use_native_optimization ввімкнено, але модуль має критичні проблеми з продуктивністю!")
+		# precompute_noise_patterns()  # ВИМКНЕНО: Зависання гри на 1-5 секунд
+		# setup_vector_cache()  # ВИМКНЕНО: Колізії hash → баги в геометрії
+		print("NativeOptimizer: Native оптимізація активована (з обмеженнями)")
 
 func precompute_noise_patterns():
-	"""Попереднє обчислення шумових патернів для швидкого доступу"""
-	print("NativeOptimizer: Попереднє обчислення шумових патернів...")
-
-	# Створюємо сітку попередньо обчислених значень шуму
-	for x in range(-noise_cache_size/2, noise_cache_size/2):
-		for z in range(-noise_cache_size/2, noise_cache_size/2):
-			var key = str(x) + "_" + str(z)
-			var noise_val = fast_noise_2d(x, z)
-			noise_cache[key] = noise_val
-
-	print("NativeOptimizer: Обчислено ", noise_cache.size(), " шумових значень")
+	"""Попереднє обчислення шумових патернів для швидкого доступу
+	
+	ВИМКНЕНО: Виконує 1000×1000 = 1 000 000 ітерацій в _ready() → зависання гри на 1-5 секунд.
+	noise_cache з ключем str(x) + "_" + str(z) → пам'ять вибухає (мільйони записів), пошук повільний.
+	"""
+	push_warning("[NativeOptimizer] precompute_noise_patterns() ВИМКНЕНО через критичні проблеми з продуктивністю!")
+	# print("NativeOptimizer: Попереднє обчислення шумових патернів...")
+	# 
+	# # Створюємо сітку попередньо обчислених значень шуму
+	# for x in range(-noise_cache_size/2, noise_cache_size/2):
+	# 	for z in range(-noise_cache_size/2, noise_cache_size/2):
+	# 		var key = str(x) + "_" + str(z)
+	# 		var noise_val = fast_noise_2d(x, z)
+	# 		noise_cache[key] = noise_val
+	# 
+	# print("NativeOptimizer: Обчислено ", noise_cache.size(), " шумових значень")
+	pass
 
 func setup_vector_cache():
-	"""Налаштування кешу векторів для уникнення алокацій"""
-	vector_cache.resize(1000)  # Попередньо алоковані вектори
-	for i in range(vector_cache.size()):
-		vector_cache[i] = Vector3.ZERO
+	"""Налаштування кешу векторів для уникнення алокацій
+	
+	ВИМКНЕНО: vector_cache з hash (x*31 + y*37 + z*41) % size → колізії,
+	перезапис векторів → баги в геометрії.
+	"""
+	push_warning("[NativeOptimizer] setup_vector_cache() ВИМКНЕНО через колізії hash → баги в геометрії!")
+	# vector_cache.resize(1000)  # Попередньо алоковані вектори
+	# for i in range(vector_cache.size()):
+	# 	vector_cache[i] = Vector3.ZERO
+	pass
 
 func fast_noise_2d(x: int, z: int) -> float:
-	"""Швидка версія noise генерації з кешуванням"""
-	var key = str(x) + "_" + str(z)
-
-	if noise_cache.has(key):
-		return noise_cache[key]
-
-	# Fallback до звичайного шуму
+	"""Швидка версія noise генерації з кешуванням
+	
+	ВАЖЛИВО: Використовує sin/cos → не збігається з FastNoiseLite → висота інша.
+	noise_cache з ключем str(x) + "_" + str(z) → пам'ять вибухає, пошук повільний.
+	"""
+	# ВИПРАВЛЕНО: Використовуємо простий шум без кешування (щоб уникнути проблем з пам'яттю)
+	# var key = str(x) + "_" + str(z)
+	# if noise_cache.has(key):
+	# 	return noise_cache[key]
+	
+	# Fallback до звичайного шуму (НЕ ЗБІГАЄТЬСЯ з FastNoiseLite!)
 	var noise_val = sin(x * 0.1) * cos(z * 0.1) + sin(x * 0.05 + z * 0.07) * 0.5
-	noise_cache[key] = noise_val
+	# noise_cache[key] = noise_val  # ВИМКНЕНО: Пам'ять вибухає
 	return noise_val
 
 func optimized_height_generation(start_pos: Vector2i, size: Vector2i, height_multiplier: float, base_height: int) -> Array:
@@ -112,19 +142,31 @@ func add_block_to_mesh(st: SurfaceTool, x: int, y: int, z: int):
 	st.add_vertex(v3)
 
 func get_cached_vector(x: int, y: int, z: int) -> Vector3:
-	"""Отримання кешованого вектора"""
-	var index = (x * 31 + y * 37 + z * 41) % vector_cache.size()  # Простий hash
-	vector_cache[index] = Vector3(x, y, z)
-	return vector_cache[index]
+	"""Отримання кешованого вектора
+	
+	ВАЖЛИВО: hash (x*31 + y*37 + z*41) % size → колізії, перезапис векторів → баги в геометрії.
+	ВИПРАВЛЕНО: Повертаємо новий Vector3 замість кешованого.
+	"""
+	# ВИПРАВЛЕНО: Повертаємо новий Vector3 замість кешованого (щоб уникнути колізій)
+	# var index = (x * 31 + y * 37 + z * 41) % vector_cache.size()  # Простий hash → колізії!
+	# vector_cache[index] = Vector3(x, y, z)
+	# return vector_cache[index]
+	return Vector3(x, y, z)
 
 func optimized_chunk_generation(chunk_pos: Vector2i, chunk_size: Vector2i) -> Dictionary:
-	"""Оптимізована генерація цілого чанка"""
+	"""Оптимізована генерація цілого чанка
+	
+	ВАЖЛИВО: Генерує Mesh, але система використовує GridMap → цей код просто не викликається.
+	Залишено як заготовку для майбутнього GDExtension.
+	"""
+	push_warning("[NativeOptimizer] optimized_chunk_generation() не використовується - система використовує GridMap, а не Mesh!")
+	
 	var start_time = Time.get_ticks_usec()
 
 	# Генеруємо висоти
 	var heights = optimized_height_generation(chunk_pos * chunk_size, chunk_size, 5.0, 5)
 
-	# Генеруємо mesh пакетно
+	# Генеруємо mesh пакетно (НЕ ВИКОРИСТОВУЄТЬСЯ - система використовує GridMap!)
 	var meshes = batch_mesh_generation(heights, chunk_size)
 
 	var end_time = Time.get_ticks_usec()

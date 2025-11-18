@@ -3,10 +3,14 @@ class_name ProceduralGeneration
 
 # Модуль для базової процедурної генерації терейну з шуму
 
+const DEFAULT_CHUNK_SIZE := Vector2i(32, 32)
+
 var noise: FastNoiseLite
+var biome_noise: FastNoiseLite
 var height_amplitude := 5
 var base_height := 5
-var max_height := 64
+var min_height := -64   # Мінімальна висота для шарів під землею (оптимізовано)
+var max_height := 192   # Збільшена максимальна висота (оптимізовано)
 
 # Додаткові шари шуму (з infinite_heightmap_terrain)
 @export var extra_terrain_noise_layers: Array[FastNoiseLite] = []
@@ -37,6 +41,13 @@ func _ready():
 		noise = FastNoiseLite.new()
 		noise.seed = randi()
 		noise.frequency = 0.05
+	
+	if not biome_noise:
+		biome_noise = FastNoiseLite.new()
+		biome_noise.seed = (noise.seed if noise else randi()) + 9137
+		biome_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+		biome_noise.frequency = 1.0 / max(biome_scale, 0.001)
+		biome_noise.fractal_octaves = 1
 
 	if not terrain_color_steepness_curve:
 		terrain_color_steepness_curve = Curve.new()
@@ -46,6 +57,11 @@ func _ready():
 	if not terrain_material:
 		terrain_material = StandardMaterial3D.new()
 		terrain_material.vertex_color_use_as_albedo = true
+	
+	# ВИПРАВЛЕНО: Синхронізуємо height_amplitude та base_height з TerrainGenerator
+	# Це виправляє проблему з висотою завжди 5 замість 32/16
+	# Використовуємо call_deferred щоб parent був готовий
+	call_deferred("_sync_with_parent")
 
 func generate_terrain(gridmap: GridMap, start_pos: Vector2i, size: Vector2i):
 	"""Генерація терейну в заданій області"""
@@ -58,30 +74,14 @@ func generate_terrain(gridmap: GridMap, start_pos: Vector2i, size: Vector2i):
 	for x in range(start_pos.x, start_pos.x + size.x):
 		for z in range(start_pos.y, start_pos.y + size.y):
 			var height = _clamp_height(int(noise.get_noise_2d(x, z) * height_amplitude) + base_height)
-
-			for y in range(height):
-				var block_id: String
-
-				# Визначення типу блоку залежно від висоти
-				if y < height - 2:
-					block_id = "stone"
-				elif y < height - 1:
-					block_id = "dirt"
-				else:
-					block_id = "grass"
-
-				var mesh_index = get_mesh_index_for_block(gridmap, block_id)
-				if mesh_index >= 0:
-					gridmap.set_cell_item(Vector3i(x, y, z), mesh_index)
+			_set_blocks_at_position(gridmap, x, z, height)
 
 func generate_chunk(gridmap: GridMap, chunk_pos: Vector2i, optimization: Dictionary = {}):
 	"""Генерація окремого чанка з оптимізацією та врахуванням границь"""
 	# Отримуємо chunk_size з батьківського chunk_module або використовуємо дефолт
-	var chunk_size = Vector2i(50, 50)  # дефолт
+	var chunk_size = DEFAULT_CHUNK_SIZE
 	if get_parent() and get_parent().has_method("get_chunk_size"):
 		chunk_size = get_parent().get_chunk_size()
-	elif get_parent() and get_parent().chunk_size:
-		chunk_size = get_parent().chunk_size
 
 	var chunk_start = chunk_pos * chunk_size
 
@@ -144,12 +144,33 @@ func prepare_chunk_context(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: Ve
 	return context
 
 func generate_column_with_context(gridmap: GridMap, context: Dictionary, world_x: int, world_z: int):
-	if not gridmap or context.is_empty():
+	if not gridmap:
+		push_error("[ProceduralGeneration] generate_column_with_context: GridMap is null для координат (" + str(world_x) + ", " + str(world_z) + ")")
+		return
+	
+	if not is_instance_valid(gridmap):
+		push_error("[ProceduralGeneration] generate_column_with_context: GridMap не валідний для координат (" + str(world_x) + ", " + str(world_z) + ")")
+		return
+	
+	if context.is_empty():
+		push_error("[ProceduralGeneration] generate_column_with_context: Context порожній для координат (" + str(world_x) + ", " + str(world_z) + ")")
+		return
+	
+	if not noise:
+		push_error("[ProceduralGeneration] generate_column_with_context: Noise не встановлений")
 		return
 
-	var chunk_start: Vector2i = context["chunk_start"]
-	var chunk_size: Vector2i = context["chunk_size"]
+	# Перевірка валідності координат
+	if world_x < -10000 or world_x > 10000 or world_z < -10000 or world_z > 10000:
+		push_error("[ProceduralGeneration] generate_column_with_context: Невалідні координати: (" + str(world_x) + ", " + str(world_z) + ")")
+		return
+
+	var chunk_start: Vector2i = context.get("chunk_start", Vector2i.ZERO)
+	var chunk_size: Vector2i = context.get("chunk_size", Vector2i.ZERO)
 	var neighbor_heights: Dictionary = context.get("neighbor_heights", {})
+
+	if not context.has("height_cache"):
+		context["height_cache"] = {}
 
 	var height := _clamp_height(int(noise.get_noise_2d(world_x, world_z) * height_amplitude) + base_height)
 
@@ -299,33 +320,107 @@ func _calculate_neighbor_average_height(neighbor_heights: Dictionary) -> float:
 	return float(total_height) / count if count > 0 else base_height
 
 func _set_blocks_at_position(gridmap: GridMap, x: int, z: int, surface_height: int):
-	"""Встановлює блоки в позиції (x, z) до заданої висоти поверхні з врахуванням біомів"""
+	"""Встановлює блоки в позиції (x, z) від min_height до заданої висоти поверхні з врахуванням біомів"""
+	if not gridmap:
+		push_error("[ProceduralGeneration] _set_blocks_at_position: GridMap is null для координат (" + str(x) + ", " + str(z) + ")")
+		return
+	
+	if not is_instance_valid(gridmap):
+		push_error("[ProceduralGeneration] _set_blocks_at_position: GridMap не валідний для координат (" + str(x) + ", " + str(z) + ")")
+		return
+	
+	# Перевірка валідності координат
+	if x < -10000 or x > 10000 or z < -10000 or z > 10000:
+		push_error("[ProceduralGeneration] _set_blocks_at_position: Невалідні координати: (" + str(x) + ", " + str(z) + ")")
+		return
+	
 	# Отримуємо біом та його характеристики
 	var biome_data = get_biome_at_position(x, z)
+	if biome_data.is_empty():
+		push_error("[ProceduralGeneration] _set_blocks_at_position: Не вдалося отримати біом для координат (" + str(x) + ", " + str(z) + ")")
+		return
+	
 	var clamped_height = _clamp_height(surface_height)
+	var min_y = _get_min_height()
+	
+	# Оптимізація: генеруємо тільки до розумної глибини під землею
+	# Якщо поверхня висока, не заповнюємо весь простір до min_height
+	var underground_depth = 32  # Максимальна глибина підземних шарів для генерації
+	var start_y = max(min_y, clamped_height - underground_depth)
 
-	for y in range(clamped_height):
+	# Перевірка валідності діапазону висот
+	if start_y > clamped_height:
+		# Немає блоків для генерації
+		return
+
+	# Генеруємо блоки від start_y до поверхні
+	for y in range(start_y, clamped_height + 1):
+		# Перевірка валідності координати Y
+		if y < min_y or y >= _get_max_height():
+			push_error("[ProceduralGeneration] _set_blocks_at_position: Невалідна координата Y: " + str(y) + " для позиції (" + str(x) + ", " + str(z) + ")")
+			continue
+		
 		var block_id: String
 
 		# Визначення типу блоку залежно від висоти та біому
 		if y < clamped_height - 2:
-			block_id = biome_data["stone_block"]
+			block_id = biome_data.get("stone_block", "stone")
 		elif y < clamped_height - 1:
-			block_id = biome_data["dirt_block"]
+			block_id = biome_data.get("dirt_block", "dirt")
 		else:
-			block_id = biome_data["surface_block"]
+			block_id = biome_data.get("surface_block", "grass")
 
 		var mesh_index = get_mesh_index_for_block(gridmap, block_id)
 		if mesh_index >= 0:
+			# Перевірка валідності перед встановленням
+			if not is_instance_valid(gridmap):
+				push_error("[ProceduralGeneration] _set_blocks_at_position: GridMap став невалідним під час встановлення блоку")
+				break
 			gridmap.set_cell_item(Vector3i(x, y, z), mesh_index)
 
 func _clamp_height(value: int) -> int:
-	return clamp(value, 0, _get_max_height())
+	return clamp(value, _get_min_height(), _get_max_height())
 
 func _get_max_height() -> int:
 	if get_parent() and get_parent().has_method("get_max_height"):
 		return max(get_parent().get_max_height(), 1)
 	return max_height
+
+func _get_min_height() -> int:
+	if get_parent() and get_parent().has_method("get_min_height"):
+		return min(get_parent().get_min_height(), -1)
+	return min_height
+
+func _sync_with_parent():
+	"""Синхронізувати параметри з батьківським TerrainGenerator
+	
+	ВИПРАВЛЕНО: Синхронізує height_amplitude та base_height з TerrainGenerator.
+	Це виправляє проблему з висотою завжди 5 замість 32/16.
+	"""
+	if not get_parent():
+		return
+	
+	# ВИПРАВЛЕНО: Синхронізуємо height_amplitude та base_height
+	if "height_amplitude" in get_parent():
+		height_amplitude = get_parent().height_amplitude
+	if "base_height" in get_parent():
+		base_height = get_parent().base_height
+	
+	# Синхронізуємо min_height та max_height
+	if get_parent().has_method("get_max_height"):
+		var parent_max_height = get_parent().get_max_height()
+		if parent_max_height != max_height:
+			max_height = parent_max_height
+
+	if get_parent().has_method("get_min_height"):
+		var parent_min_height = get_parent().get_min_height()
+		if parent_min_height != min_height:
+			min_height = parent_min_height
+	
+	# Синхронізуємо chunk_size якщо потрібно
+	if get_parent().has_method("get_chunk_size"):
+		var parent_chunk_size = get_parent().get_chunk_size()
+		# Синхронізуємо якщо потрібно (поки що не використовується)
 
 func get_mesh_index_for_block(gridmap: GridMap, block_name: String) -> int:
 	"""Fallback функція для отримання mesh index з пріоритетом:
@@ -412,11 +507,17 @@ func _calculate_biome_weights(x: int, z: int) -> Dictionary:
 
 func _get_biome_name_at_point(point: Vector2) -> String:
 	"""Визначає ім'я біому в точці"""
-	if not noise:
+	if not biome_noise and not noise:
 		return "plains"
 
-	# Використовуємо шум для визначення біому
-	var biome_value = noise.get_noise_2d(point.x / biome_scale, point.y / biome_scale)
+	var scale = max(0.001, biome_scale)
+	if biome_noise:
+		biome_noise.frequency = 1.0 / scale
+
+	var source_noise = biome_noise if biome_noise else noise
+
+	# Використовуємо окремий шум для визначення біому
+	var biome_value = source_noise.get_noise_2d(point.x / scale, point.y / scale)
 
 	# Простий розподіл біомів залежно від шуму
 	if biome_value < -0.5:

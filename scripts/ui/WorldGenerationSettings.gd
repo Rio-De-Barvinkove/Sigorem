@@ -186,6 +186,11 @@ func load_current_settings():
 	height_amplitude.value = terrain_generator.height_amplitude
 	base_height.value = terrain_generator.base_height
 	max_height.value = terrain_generator.max_height
+	# min_height може бути не в UI, тому використовуємо дефолт якщо немає
+	if has_node("Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/MinHeight"):
+		var min_height_node = get_node("Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/MinHeight")
+		if min_height_node:
+			min_height_node.value = terrain_generator.min_height
 
 	# Noise parameters
 	if terrain_generator.noise:
@@ -261,6 +266,11 @@ func apply_settings():
 	terrain_generator.height_amplitude = int(height_amplitude.value)
 	terrain_generator.base_height = int(base_height.value)
 	terrain_generator.max_height = int(max_height.value)
+	# min_height може бути не в UI, тому використовуємо дефолт якщо немає
+	if has_node("Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/MinHeight"):
+		var min_height_node = get_node("Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/MinHeight")
+		if min_height_node:
+			terrain_generator.min_height = int(min_height_node.value)
 
 	# Noise parameters
 	if terrain_generator.noise:

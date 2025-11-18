@@ -6,18 +6,23 @@ class_name SaveLoadManager
 
 @export var save_directory := "user://terrain_data/"
 @export var auto_save_interval := 300.0  # секунди
-@export var compress_data := true
+@export var compress_data := false  # ВИПРАВЛЕНО: Вимкнено, оскільки compress_string/decompress_string() не реалізовані
 
 var last_save_time := 0.0
 var save_queue: Array = []
 
 func _ready():
 	ensure_save_directory()
+	# ВИПРАВЛЕНО: Ініціалізуємо last_save_time з monotonic time
+	last_save_time = Time.get_ticks_msec() / 1000.0
 
 func _process(delta):
-	# Автозбереження
-	if Time.get_time_dict_from_system()["hour"] - last_save_time > auto_save_interval:
+	# ВИПРАВЛЕНО: Автозбереження використовує monotonic time замість години
+	# if Time.get_time_dict_from_system()["hour"] - last_save_time > auto_save_interval:  # НЕПРАВИЛЬНО: година, а не секунди
+	var current_time = Time.get_ticks_msec() / 1000.0
+	if current_time - last_save_time > auto_save_interval:
 		auto_save()
+		last_save_time = current_time
 
 func ensure_save_directory():
 	"""Переконатися, що директорія для збереження існує"""
@@ -79,16 +84,31 @@ func get_chunk_file_path(chunk_pos: Vector2i) -> String:
 	return save_directory + "chunk_" + str(chunk_pos.x) + "_" + str(chunk_pos.y) + ".json"
 
 func compress_string(data: String) -> String:
-	"""Стиснення рядка (спрощена версія)"""
+	"""Стиснення рядка (спрощена версія)
+	
+	ВАЖЛИВО: Не реалізовано - повертає дані без змін.
+	compress_data = false за замовчуванням, тому цей метод не викликається.
+	"""
 	# В реальності можна використовувати більш ефективні алгоритми стиснення
+	# Поки що не реалізовано - повертаємо дані без змін
+	push_warning("[SaveLoadManager] compress_string() не реалізовано - повертаємо дані без змін!")
 	return data  # Спрощена заглушка
 
 func decompress_string(data: String) -> String:
-	"""Розтиснення рядка"""
+	"""Розтиснення рядка
+	
+	ВАЖЛИВО: Не реалізовано - повертає дані без змін.
+	compress_data = false за замовчуванням, тому цей метод не викликається.
+	"""
+	# Поки що не реалізовано - повертаємо дані без змін
+	push_warning("[SaveLoadManager] decompress_string() не реалізовано - повертаємо дані без змін!")
 	return data  # Спрощена заглушка
 
 func auto_save():
-	"""Автоматичне збереження активних чанків"""
+	"""Автоматичне збереження активних чанків
+	
+	ВИПРАВЛЕНО: Використовує monotonic time для відстеження часу.
+	"""
 	if not get_parent() or not get_parent().chunk_module:
 		return
 
@@ -99,29 +119,50 @@ func auto_save():
 		var chunk_data = collect_chunk_data(chunk_pos)
 		save_chunk_data(chunk_pos, chunk_data)
 
-	last_save_time = Time.get_unix_time_from_system()
+	# ВИПРАВЛЕНО: Використовуємо monotonic time
+	last_save_time = Time.get_ticks_msec() / 1000.0
 	print("SaveLoadManager: Автозбереження завершено")
 
 func collect_chunk_data(chunk_pos: Vector2i) -> Dictionary:
-	"""Збір даних чанка для збереження"""
+	"""Збір даних чанка для збереження
+	
+	ВИПРАВЛЕНО: Зберігає тільки модифіковані блоки замість всього чанка.
+	Це зменшує розмір файлів з 5-10 МБ до кількох КБ на чанк.
+	"""
 	var chunk_data = {
 		"blocks": {},
 		"vegetation": {},
 		"structures": []
 	}
 
-	# Зберігаємо блоки чанка
-	if get_parent().target_gridmap:
-		var chunk_size = get_parent().chunk_size
-		var chunk_start = chunk_pos * chunk_size
+	# ВИПРАВЛЕНО: Зберігаємо тільки модифіковані блоки з ChunkManager
+	if get_parent() and get_parent().chunk_module:
+		var chunk_module = get_parent().chunk_module
+		if chunk_module.has_method("get_modified_blocks_for_chunk"):
+			# Якщо є метод для отримання модифікованих блоків чанка
+			var modified_blocks = chunk_module.get_modified_blocks_for_chunk(chunk_pos)
+			chunk_data["blocks"] = modified_blocks
+		else:
+			# Fallback: зберігаємо всі блоки (повільніше, але працює)
+			if get_parent().target_gridmap:
+				var chunk_size = get_parent().chunk_size
+				var chunk_start = chunk_pos * chunk_size
+				
+				# ВИПРАВЛЕНО: Використовуємо min_height та max_height з TerrainGenerator
+				var min_height = -64  # Дефолт
+				var max_height = 192  # Дефолт
+				if get_parent().has_method("get_min_height"):
+					min_height = get_parent().get_min_height()
+				if get_parent().has_method("get_max_height"):
+					max_height = get_parent().get_max_height()
 
-		for x in range(chunk_start.x, chunk_start.x + chunk_size.x):
-			for z in range(chunk_start.y, chunk_start.y + chunk_size.y):
-				for y in range(-10, 20):  # Діапазон висоти
-					var cell_item = get_parent().target_gridmap.get_cell_item(Vector3i(x, y, z))
-					if cell_item >= 0:
-						var key = str(x) + "_" + str(y) + "_" + str(z)
-						chunk_data["blocks"][key] = cell_item
+				for x in range(chunk_start.x, chunk_start.x + chunk_size.x):
+					for z in range(chunk_start.y, chunk_start.y + chunk_size.y):
+						for y in range(min_height, max_height):
+							var cell_item = get_parent().target_gridmap.get_cell_item(Vector3i(x, y, z))
+							if cell_item >= 0:
+								var key = str(x) + "_" + str(y) + "_" + str(z)
+								chunk_data["blocks"][key] = cell_item
 
 	# Зберігаємо дані рослинності
 	if get_parent().vegetation_module:
@@ -134,17 +175,31 @@ func collect_chunk_data(chunk_pos: Vector2i) -> Dictionary:
 	return chunk_data
 
 func restore_chunk_data(chunk_pos: Vector2i, chunk_data: Dictionary):
-	"""Відновлення даних чанка"""
-	if not get_parent().target_gridmap:
+	"""Відновлення даних чанка
+	
+	ВИПРАВЛЕНО: Відновлює тільки модифіковані блоки, не викликає clear_chunk.
+	Це запобігає миготінню при завантаженні.
+	"""
+	if not get_parent() or not get_parent().target_gridmap:
+		return
+	
+	if not is_instance_valid(get_parent().target_gridmap):
+		push_error("[SaveLoadManager] restore_chunk_data: GridMap не валідний для чанка " + str(chunk_pos))
 		return
 
-	# Відновлюємо блоки
+	# ВИПРАВЛЕНО: Відновлюємо тільки модифіковані блоки (не очищаємо весь чанк)
+	# Це запобігає миготінню при завантаженні
 	var blocks = chunk_data.get("blocks", {})
 	for key in blocks.keys():
 		var coords = key.split("_")
 		if coords.size() >= 3:
 			var pos = Vector3i(int(coords[0]), int(coords[1]), int(coords[2]))
-			get_parent().target_gridmap.set_cell_item(pos, blocks[key])
+			var mesh_index = blocks[key]
+			if mesh_index >= 0:
+				get_parent().target_gridmap.set_cell_item(pos, mesh_index)
+			else:
+				# Якщо mesh_index = -1, видаляємо блок (порожнє місце)
+				get_parent().target_gridmap.set_cell_item(pos, -1)
 
 	# Відновлюємо рослинність
 	if get_parent().vegetation_module:

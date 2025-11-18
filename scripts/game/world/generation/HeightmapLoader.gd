@@ -2,6 +2,8 @@ extends Node
 class_name HeightmapLoader
 
 # Модуль для роботи з heightmap текстурами (з Procedural-Terrain-Generator)
+# ВАЖЛИВО: Цей файл є окремим інструментом для тестового heightmap-терейну
+# і НЕ використовується в поточній системі чанків. Залишено для майбутнього використання.
 
 @export var heightmap: Texture2D
 @export var height_scale: float = 5.0
@@ -50,15 +52,29 @@ func get_height_from_image(uv: Vector2) -> float:
 	# Використовуємо червоний канал як висоту (0-1)
 	return pixel_color.r * height_scale
 
-func get_height_at_position(world_pos: Vector2, terrain_size: Vector2) -> float:
-	"""Отримати висоту в світових координатах"""
+func get_height_at_position(world_pos: Vector2, terrain_size: Vector2, terrain_offset: Vector2 = Vector2.ZERO) -> float:
+	"""Отримати висоту в світових координатах
+	
+	ВИПРАВЛЕНО: Додано параметр terrain_offset для підтримки інфінітного світу.
+	Тепер працює з абсолютними координатами, а не тільки з центрованим terrain в (0,0).
+	
+	Args:
+		world_pos: Світові координати (x, z)
+		terrain_size: Розмір terrain в світових координатах
+		terrain_offset: Зміщення terrain від початку координат (для інфінітного світу)
+	
+	Returns:
+		Висота в світових координатах
+	"""
 	if not image_data:
 		return 0.0
 
-	# Перетворюємо світові координати в UV
+	# ВИПРАВЛЕНО: Використовуємо абсолютні координати з урахуванням offset
+	# Перетворюємо світові координати в UV (0-1)
+	var relative_pos = world_pos - terrain_offset
 	var uv = Vector2(
-		(world_pos.x / terrain_size.x + 0.5),  # -terrain_size.x/2 до +terrain_size.x/2 -> 0 до 1
-		(world_pos.y / terrain_size.y + 0.5)
+		relative_pos.x / terrain_size.x,
+		relative_pos.y / terrain_size.y
 	)
 
 	# Клапимо UV координати
@@ -67,8 +83,48 @@ func get_height_at_position(world_pos: Vector2, terrain_size: Vector2) -> float:
 
 	return get_height_from_image(uv)
 
-func generate_mesh_from_heightmap() -> Mesh:
-	"""Генерація mesh з heightmap (як у Procedural-Terrain-Generator)"""
+func get_height_at_position_absolute(world_pos: Vector2, heightmap_world_size: Vector2, heightmap_world_offset: Vector2 = Vector2.ZERO) -> float:
+	"""Отримати висоту в абсолютних світових координатах (для інфінітного світу)
+	
+	Альтернативний метод для роботи з heightmap в інфінітному світі.
+	Використовує абсолютні координати без припущення про центрування.
+	
+	Args:
+		world_pos: Абсолютні світові координати (x, z)
+		heightmap_world_size: Розмір heightmap в світових координатах
+		heightmap_world_offset: Початкова позиція heightmap в світових координатах
+	
+	Returns:
+		Висота в світових координатах
+	"""
+	if not image_data:
+		return 0.0
+
+	# Перетворюємо абсолютні координати в UV
+	var relative_pos = world_pos - heightmap_world_offset
+	var uv = Vector2(
+		relative_pos.x / heightmap_world_size.x,
+		relative_pos.y / heightmap_world_size.y
+	)
+
+	# Клапимо UV координати
+	uv.x = clamp(uv.x, 0.0, 1.0)
+	uv.y = clamp(uv.y, 0.0, 1.0)
+
+	return get_height_from_image(uv)
+
+func generate_mesh_from_heightmap(custom_size: Vector2 = Vector2.ZERO) -> Mesh:
+	"""Генерація mesh з heightmap (як у Procedural-Terrain-Generator)
+	
+	ВАЖЛИВО: Цей метод створює PlaneMesh з фіксованим розміром і НЕ підходить для системи чанків.
+	Залишено як окремий інструмент для тестового heightmap-терейну.
+	
+	Args:
+		custom_size: Опціональний розмір mesh (якщо Vector2.ZERO, використовується mesh_size)
+	
+	Returns:
+		Згенерований Mesh або null при помилці
+	"""
 	if not image_data:
 		push_error("HeightmapLoader: Немає heightmap для генерації mesh!")
 		return null
@@ -80,7 +136,9 @@ func generate_mesh_from_heightmap() -> Mesh:
 	var img_size = image_data.get_size()
 	var aspect_ratio = float(img_size.x) / float(img_size.y)
 
-	plane.size = Vector2(mesh_size.x, mesh_size.y * aspect_ratio)
+	# ВИПРАВЛЕНО: Підтримка кастомного розміру
+	var final_size = custom_size if custom_size != Vector2.ZERO else mesh_size
+	plane.size = Vector2(final_size.x, final_size.y * aspect_ratio)
 
 	var arrays = ArrayMesh.new()
 	var mesh_data = plane.get_mesh_arrays()
@@ -117,14 +175,28 @@ func generate_mesh_from_heightmap() -> Mesh:
 	return final_mesh
 
 func save_mesh(mesh: Mesh, path: String):
-	"""Збереження mesh (як у Procedural-Terrain-Generator)"""
+	"""Збереження mesh (як у Procedural-Terrain-Generator)
+	
+	ВАЖЛИВО: ResourceSaver.save() працює тільки в редакторі або з user:// шляхом.
+	Для збереження в runtime використовуйте user:// шлях.
+	
+	Args:
+		mesh: Mesh для збереження
+		path: Шлях для збереження (res:// для редактора, user:// для runtime)
+	"""
 	if not mesh:
 		push_error("HeightmapLoader: Mesh не існує!")
 		return
 
-	var error = ResourceSaver.save(mesh, path)
+	# ВИПРАВЛЕНО: Перевірка шляху для runtime
+	var final_path = path
+	if not path.begins_with("res://") and not path.begins_with("user://"):
+		# Якщо шлях не починається з res:// або user://, додаємо user://
+		final_path = "user://" + path.lstrip("/")
+
+	var error = ResourceSaver.save(mesh, final_path)
 
 	if error == OK:
-		print("HeightmapLoader: Mesh збережено в: ", path)
+		print("HeightmapLoader: Mesh збережено в: ", final_path)
 	else:
-		push_error("HeightmapLoader: Помилка збереження mesh: ", error)
+		push_error("HeightmapLoader: Помилка збереження mesh: ", error, " (шлях: ", final_path, ")")
