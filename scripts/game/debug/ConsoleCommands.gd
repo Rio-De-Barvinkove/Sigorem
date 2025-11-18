@@ -92,11 +92,23 @@ func regenerate_chunk(x: int, z: int) -> String:
 	if not terrain_generator:
 		return "Помилка: TerrainGenerator не знайдено"
 	
-	if terrain_generator.chunk_module and terrain_generator.chunk_module.has_method("generate_chunk"):
-		var chunk_pos = Vector2i(x, z)
-		terrain_generator.chunk_module.generate_chunk(terrain_generator.target_gridmap, chunk_pos)
-		return "Чанк (" + str(x) + ", " + str(z) + ") перегенеровано"
-	return "Помилка: Не вдалося перегенерувати чанк"
+	if not terrain_generator.chunk_module:
+		return "Помилка: ChunkManager не доступний"
+	
+	var chunk_pos = Vector2i(x, z)
+	# ВИПРАВЛЕНО: generate_chunk() видалена, використовуємо queue_chunk_generation()
+	# Спочатку видаляємо старий чанк якщо він існує
+	if terrain_generator.chunk_module.active_chunks.has(chunk_pos):
+		if not terrain_generator.target_gridmap or not is_instance_valid(terrain_generator.target_gridmap):
+			return "Помилка: GridMap не валідний для видалення чанка"
+		terrain_generator.chunk_module.remove_chunk(terrain_generator.target_gridmap, chunk_pos)
+	
+	# Додаємо в чергу генерації з пріоритетом
+	var success = terrain_generator.chunk_module.queue_chunk_generation(chunk_pos)
+	if success:
+		return "Чанк (" + str(x) + ", " + str(z) + ") додано в чергу генерації"
+	else:
+		return "Помилка: Не вдалося додати чанк в чергу генерації (перевірте, чи ChunkManager прикріплено до TerrainGenerator та чи валідний target_gridmap)"
 
 func regenerate_world() -> String:
 	"""Перегенерувати весь світ"""

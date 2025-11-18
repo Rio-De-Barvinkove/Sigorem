@@ -28,11 +28,12 @@ class_name TerrainGenerator
 
 @export_group("Параметри процедурної генерації")
 @export var noise: FastNoiseLite
-@export var chunk_size := Vector2i(32, 32)
+@export var chunk_size := Vector2i(50, 50)
 @export var chunk_radius := 3
 @export var height_amplitude := 32
 @export var base_height := 16
-@export var max_height := 128
+@export var min_height := -64   # Мінімальна висота для шарів під землею (оптимізовано)
+@export var max_height := 192   # Збільшена максимальна висота (оптимізовано)
 
 @export_group("Параметри печер")
 @export var enable_caves := true
@@ -67,7 +68,10 @@ var native_optimizer
 var pattern_manager
 var best_practices
 
+const PLAYER_LOOKUP_WARNING := "TerrainGenerator: Гравець не знайдений для стартової зони"
+
 var is_initialized := false
+var _player_lookup_attempted := false
 
 func _ready():
 	if Engine.is_editor_hint():
@@ -91,6 +95,7 @@ func initialize_modules():
 	# Нормалізуємо параметри висоти
 	height_amplitude = int(max(height_amplitude, 1))
 	base_height = int(max(base_height, 0))
+	min_height = int(min(min_height, base_height - 1))  # min_height має бути менше base_height
 	max_height = int(max(max_height, base_height + 1))
 
 	# Процедурна генерація (базова)
@@ -99,6 +104,7 @@ func initialize_modules():
 		procedural_module.noise = noise
 		procedural_module.height_amplitude = height_amplitude
 		procedural_module.base_height = base_height
+		procedural_module.min_height = min_height
 		procedural_module.max_height = max_height
 		# Печери
 		procedural_module.enable_caves = enable_caves
@@ -195,10 +201,17 @@ func initialize_modules():
 
 func cleanup_modules():
 	"""Очищення всіх модулів перед реініціалізацією"""
-	# Видаляємо всі дочірні вузли (модулі)
+	var nodes_to_remove: Array = []
 	for child in get_children():
-		if child != target_gridmap:  # Не видаляємо GridMap якщо він дочірній
-			child.queue_free()
+		if child != target_gridmap:
+			nodes_to_remove.append(child)
+
+	for child in nodes_to_remove:
+		if child == chunk_module and target_gridmap and chunk_module and chunk_module.has_method("clear_all_chunks"):
+			chunk_module.clear_all_chunks(target_gridmap)
+		if child.get_parent() == self:
+			remove_child(child)
+		child.call_deferred("free")
 
 	# Очищаємо посилання
 	procedural_module = null
@@ -227,6 +240,10 @@ func generate_initial_terrain():
 	var center_chunk = Vector2i.ZERO
 
 	if use_chunking and chunk_module:
+		if chunk_module.has_method("set_player"):
+			chunk_module.set_player(player)
+		elif player:
+			chunk_module.player = player
 		# Chunk-based генерація
 		chunk_module.generate_initial_chunks(target_gridmap)
 	else:
@@ -234,10 +251,15 @@ func generate_initial_terrain():
 		if use_procedural_generation and procedural_module:
 			procedural_module.generate_terrain(target_gridmap, Vector2i(-chunk_size.x, -chunk_size.y), chunk_size)
 
-	# Генеруємо starting area після основної генерації, щоб перезаписати терейн у безпечній зоні
-	if use_starting_area and starting_area_module:
-		starting_area_module.generate_starting_area(target_gridmap, center_chunk, chunk_size)
-		print("TerrainGenerator: Starting area згенеровано")
+	# ВИПРАВЛЕНО: Starting area тепер генерується в ChunkManager._finalize_chunk_job() після завершення генерації чанка (0, 0)
+	# Це гарантує що стартова зона генерується після повної генерації чанка
+	if use_chunking:
+		print("TerrainGenerator: Starting area буде згенерована після завершення генерації чанка (0, 0)")
+	else:
+		# Для не-chunking режиму генеруємо одразу
+		if use_starting_area and starting_area_module:
+			starting_area_module.generate_starting_area(target_gridmap, center_chunk, chunk_size)
+			print("TerrainGenerator: Starting area згенеровано")
 
 	print("TerrainGenerator: Початкова генерація завершена")
 
@@ -252,16 +274,17 @@ func generate_initial_terrain():
 
 func _set_player_safe_position():
 	"""Встановити безпечну позицію гравця на стартовій зоні"""
-	# Якщо гравець ще не встановлений, спробуємо знайти його
-	if not player:
+	if not player and not _player_lookup_attempted:
+		_player_lookup_attempted = true
 		var world = get_tree().get_root().get_node_or_null("World")
 		if world:
 			player = world.get_node_or_null("Player")
 	
-	if not player or not use_starting_area or not starting_area_module or not target_gridmap:
-		# Якщо гравець все ще не знайдений, спробуємо ще раз через кадр
-		if not player:
-			call_deferred("_set_player_safe_position")
+	if not use_starting_area or not starting_area_module or not target_gridmap:
+		return
+	
+	if not player:
+		push_warning(PLAYER_LOOKUP_WARNING)
 		return
 	
 	if not starting_area_module.always_spawn_on_starting_area:
@@ -282,9 +305,8 @@ func _process(delta):
 	if not is_initialized or Engine.is_editor_hint():
 		return
 
-	# Оновлення chunking системи
-	if use_chunking and chunk_module and player:
-		chunk_module.update_chunks(target_gridmap)
+	# ВИПРАВЛЕНО: ChunkManager тепер сам обробляє оновлення в своєму _process()
+	# Не потрібно викликати update_chunks() - вона видалена, логіка перенесена в _process() ChunkManager
 
 func generate_structures():
 	"""Генерація структур на існуючому терейні"""
@@ -294,6 +316,8 @@ func generate_structures():
 func regenerate_terrain():
 	"""Повна регенерація терейну"""
 	if target_gridmap:
+		if use_chunking and chunk_module:
+			chunk_module.clear_all_chunks(target_gridmap)
 		target_gridmap.clear()
 		generate_initial_terrain()
 		# Телепортуємо гравця на стартову зону після регенерації
@@ -304,6 +328,9 @@ func get_chunk_size() -> Vector2i:
 
 func get_max_height() -> int:
 	return max_height
+
+func get_min_height() -> int:
+	return min_height
 
 # Editor tools (використовувати через консоль або скрипти)
 func generate_terrain_editor():

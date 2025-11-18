@@ -1,0 +1,261 @@
+Рев’ю BestPractices.gd — тільки фікси тезами
+
+Файл не робить нічого корисного зараз — це просто заготівка з гарними назвами.
+object_pool зберігає тільки Vector3/Vector2/Color → майже ніде не використовується → марна трата пам’яті.
+get_pooled_vector3() і return_pooled_vector3() не реалізовані повністю (return обрізаний) → помилка компіляції.
+setup_quality_checks() і setup_performance_monitoring() — порожні або обрізані → нічого не роблять.
+performance_stats ніколи не заповнюється → всі звіти порожні.
+export_performance_report() і save_performance_report() працюють, але дані фейкові/нульові.
+cleanup_interval і last_cleanup_time є, але немає _process() для очищення → пул ніколи не чиститься.
+enable_threading := true, але ніде не застосовується → брехня в налаштуваннях.
+OS.get_static_memory_usage() в Godot 4 часто повертає 0 або неточне значення → звіт брехливий.
+
+
+ChunkManager.gd — стан: 98/100, майже ідеально
+
+Критичних помилок компіляції більше немає (якщо ти додав queue_chunk_generation — перевір, чи є вона).
+Залишилось тільки 2 дрібниці:
+В is_chunk_loaded_or_pending() є рядок for pos in pending_chunk_generations: → змінна видалена → помилка компіляції!
+→ Видалити цей блок повністю (він дублює job_lookup).
+preload_queue і всі preload-функції досі присутні, але process_preload_queue() не викликається і функція відсутня → мертвий код.
+→ Або повністю видалити preload систему (рекомендую), або додати функцію update_preload_queue() + process.
+
+
+DetailLayerManager.gd — проблеми середньої тяжкості
+
+generate_grass_for_chunk() використовує hardcode chunk_size = 50×50 → неузгодженість з TerrainGenerator (32×32) → трава генерується криво або за межами.
+get_terrain_height_at(x, z) викликає procedural_module.get_height_at(), якого немає → помилка runtime.
+grass_multimesh додається в get_parent().get_parent() → дуже крихко, легко null.
+MultiMesh.instance_count = 0 спочатку, потім переприсвоюється → ок, але краще робити instance_count = positions.size() одразу.
+Немає видалення трави при unload чанка → пам’ять буде рости вічно.
+Фікси:
+Замінити 50×50 на get_parent().get_chunk_size() або передати як параметр.
+Додати fallback висоти або кешувати heightmap.
+Додати remove_grass_for_chunk() і викликати з ChunkManager при unload.
+
+
+ErosionSimulator.gd — стан: заготовка, не працює взагалі
+
+Усі ключові функції ( ніде не генерується/не передається з ProceduralGeneration.
+Немає інтеграції з ChunkManager/TerrainGenerator → модуль просто висить.
+Це не баг, а незавершена фіча → можна _simulate_hydrological_step, _simulate_thermal_step) — pass → ерозія нічого не робить.
+heightmap приймається як Array, алезалишити як є, але вимкнути enable_erosion = false за замовчуванням (вже так і є).
+
+
+HeightmapLoader.gd — стан: 90/100, майже готовий
+
+Працює добре для класичного heightmap → mesh.
+Критичні фікси:
+get_height_at_position() рахує UV з +0.5 → працює тільки якщо terrain центрований в (0,0). У вашому інфінітному світі це ламається.
+→ Виправити: передавати offset або використовувати абсолютні координати.
+generate_mesh_from_heightmap() створює PlaneMesh з фіксованим розміром → не підходить для чанків.
+→ Цей файл не використовується в поточній системі чанків → можна залишити, але не інтегрувати.
+save_mesh() використовує ResourceSaver.save → працює тільки в редакторі або з user:// → ок.
+Підсумок: залишити як окремий інструмент для тестового heightmap-терейну, не чіпати в основній системі.
+
+LargeStructureGenerator.gd — стан: 60/100, гарна заготівка, але зараз ламає терейн
+
+Критичні баги:
+generate_mountains_for_chunk():
+_get_current_height_at_position() шукає блок зверху вниз від y=30 → в чанках з висотою 100+ знаходить повітря і повертає 5 → гори генеруються з рівня 5.
+→ Результат: величезні стовпи каменю знизу.
+
+_fill_column_to_height() завжди ставить "stone" і перезаписує весь стовпчик знизу → знищує біоми, траву, землю, печери.
+Не використовує procedural_module → дублює логіку висоти.
+generate_canyons_for_chunk() і generate_caves_for_chunk() — просто pass → нічого не роблять.
+Обов’язкові фікси (інакше не вмикати модуль):
+Вимкнути за замовчуванням: @export var enable_large_structures := false (вже так).
+Якщо хочеш ввімкнути — переписати:gdscript# Замість перезапису стовпчика — тільки додавати зверху
+var boost = int(height_boost)
+for dy in range(boost):
+    var y = current_surface_y + dy + 1
+    gridmap.set_cell_item(Vector3i(x, y, z), stone_id)
+Або краще: перенести логіку в ProceduralGeneration як додатковий шар шуму (рекомендую).
+
+
+LODManager.gd — стан: 30/100, повністю заглушка
+
+update_lod_levels() і apply_lod_to_chunk() — просто pass або print.
+lod_resolutions не використовується.
+Не інтегровано з ChunkManager → не робить нічого.Фікси:
+Або повністю видалити файл поки що.
+Або залишити, але вимкнути use_lod := false (вже так).
+Якщо хочеш простий LOD — додати в ChunkManager при генерації чанка:gdscriptvar dist = chunk_pos.distance_to(player_chunk)
+var resolution = 1.0 if dist < 3 else 0.5 if dist < 6 else 0.25
+job["optimization"] = {"resolution": resolution}
+
+Фінальний ревью трьох файлів: NativeOptimizer.gd + OptimizationManager.gd + POIGenerator.gd
+NativeOptimizer.gd — стан: 30/100, симуляція "native", але насправді повільніше
+
+Критичні проблеми:
+noise_cache з ключем str(x) + "_" + str(z) → пам’ять вибухає (мільйони записів), і пошук повільний.
+precompute_noise_patterns() виконує 1000×1000 = 1 000 000 ітерацій в _ready() → зависання гри на 1-5 секунд.
+vector_cache з hash (x*31 + y*37 + z*41) % size → колізії, перезапис векторів → баги в геометрії.
+optimized_chunk_generation() генерує Mesh, але система використовує GridMap → цей код просто не викликається.
+fast_noise_2d() використовує sin/cos → не збігається з FastNoiseLite → висота інша.
+Висновок: файл зараз шкодить більше, ніж допомагає.
+Рекомендація: залишити use_native_optimization = false (вже так) і не чіпати, поки не буде реального GDExtension.
+
+OptimizationManager.gd — стан: 70/100, є корисне, але багато багів
+
+Критичні баги:
+optimize_chunk_mesh() сканує весь чанк 6 разів на блок → для 50×50×192 = 10+ млн ітерацій → FPS падає до 1.
+_has_neighbor_block_in_adjacent_chunk() завжди повертає false → оптимізація граней не працює між чанками.
+collect_chunk_data() сканує весь чанк → дуже повільно при save/load.
+is_chunk_occluded() вважає чанк occluded, якщо всі сусіди існують → навпаки логіки (це visibility culling, а не occlusion).
+Корисне, що є:
+adaptive_optimization() і check_generation_time() — добре для обмеження бюджету.
+LOD distances (можна використати).
+Фікси (обов’язково):
+Вимкнути mesh-оптимізацію повністю (вона не працює правильно з GridMap).
+Залишити тільки таймери і LOD.
+
+
+POIGenerator.gd — стан: 85/100, найкраща заготівка з усіх
+
+Працює майже ідеально як заготовка.
+Дрібні проблеми:
+generated_pois зберігається в пам’яті назавжди → при довгій грі буде займати пам’ять.
+find_surface_position_near() шукає від y=20 вниз → не працює для високих чанків.
+generate_cave_poi() просто викликає procedural_module.generate_caves_in_chunk() → дублювання.
+Фікси (рекомендовано):
+Додати очищення старих POI при unload чанка.
+Змінити пошук поверхні на використання procedural_module.get_height_at().
+
+
+
+Фінальний ревью трьох файлів: PrecomputedPatterns.gd + ProceduralGeneration.gd + SaveLoadManager.gd
+PrecomputedPatterns.gd — стан: 40/100, дуже небезпечний зараз
+
+Критичні проблеми:
+precompute_terrain_patterns() в _ready() робить 256×256×3×10 = ~6 млн ітерацій → зависання гри на 2-10 секунд при старті.
+Зберігає всі патерни в RAM → при 256×256 float = 0.5 МБ на патерн × 30 патернів = 15+ МБ.
+generate_pattern_noise() використовує Math синусоїди, а не FastNoiseLite → не збігається з ProceduralGeneration.
+Ніде не використовується в поточній системі → мертвий код.
+Рекомендація: залишити use_precomputed_patterns = false назавжди, поки не перепишеш на Thread + GDExtension.
+
+ProceduralGeneration.gd — стан: 95/100, майже ідеально
+
+Залишилось тільки 2 дрібниці:
+height_amplitude/base_height не синхронізуються з TerrainGenerator → висота завжди 5 замість 32/16.
+→ Додати в _ready():gdscriptif get_parent():
+    height_amplitude = get_parent().height_amplitude
+    base_height = get_parent().base_height
+_carve_caves_full_with_context() обрізаний в документі → якщо його немає — ChunkManager падає.
+Все інше (біоми, печери, контекст) — працює відмінно.
+
+SaveLoadManager.gd — стан: 85/100, працює, але є ризики
+
+Проблеми:
+auto_save() викликається за Time.get_time_dict_from_system()["hour"] → це година, а не секунди → автосейв ніколи не спрацьовує.
+→ Виправити на:gdscriptif Time.get_ticks_msec() / 1000.0 - last_save_time > auto_save_interval:
+compress_string/decompress_string() не реалізовані → помилка при compress_data = true.
+save_chunk_data() зберігає весь чанк (включаючи 50×192×50 = 480 000 клітинок) → файл 5-10 МБ на чанк → швидко заповнить диск.
+restore_chunk_from_save() викликає clear_chunk → миготіння при завантаженні.
+Фікси (обов’язково):
+Вимкнути compress_data = false.
+Зберігати тільки модифіковані блоки (додати modified_blocks в ChunkManager).
+Виправити автосейв.
+
+Фінальний ревью трьох файлів: SplatMapManager.gd + StartingAreaGenerator.gd + StructureGenerator.gd
+SplatMapManager.gd — стан: 70/100, працює, але дуже повільний і крихкий
+
+Критичні проблеми:
+generate_splat_map() робить 4× get_height_at() на кожен піксель → для 1024×1024 = 4 млн викликів шуму → зависання на 5-20 секунд.
+splat_image створюється кожного разу з нуля → пам’ять + лаги.
+calculate_steepness() викликає procedural_module.get_height_at() для сусідів → дуже повільно.
+Ніде не оновлюється при зміні чанка → splat map тільки одна на весь світ.
+Фікси (обов’язково):
+Залишити use_splat_mapping = false до повного перепису.
+Або генерувати splat per chunk (256×256) і оновлювати тільки при генерації чанка.
+
+
+StartingAreaGenerator.gd — стан: 95/100, найкращий з модулів!
+
+Працює ідеально.
+Дрібні фікси:
+starting_area_size = 5 блоків → це дуже мало (5×5 м), краще 10-20.
+flatten_starting_area на y=16 → ок, але додати маленьку платформу з трави.
+teleport_player_to_starting_area() не реалізована → додати в TerrainGenerator.
+Висновок: вмикай сміливо, це безпечний і корисний модуль.
+
+StructureGenerator.gd — стан: 50/100, небезпечний зараз
+
+Критичні баги:
+generate_simple_houses() використовує get_terrain_height_at() → якщо procedural_module не готовий → помилка.
+set_block_at() використовує BlockRegistry, якого може не бути → краш.
+generate_wfc_structures() створює Node з скриптом, якого немає → помилка.
+generate_structures() викликається один раз → структури тільки в одному місці.
+Фікси:
+Залишити use_structures = false назавжди, поки не перепишеш.
+Або зробити простий генератор дерев/каміння без WFC.
+
+Фінальний ревью трьох файлів: TerrainGenerator.gd + ThreadingManager.gd + VegetationManager.gd
+TerrainGenerator.gd — стан: 98/100, ідеальний "головний хаб"
+
+Все добре, логіка модульності супер.
+Залишилось тільки 2 дрібниці:
+chunk_size = 50×50, а в ProceduralGeneration const DEFAULT_CHUNK_SIZE = 32×32 → неузгодженість.
+→ Змінити в ProceduralGeneration на 50 або тут на 32 (рекомендую 50).
+use_threading = false, але ThreadingManager є → ок, просто не вмикай.
+Висновок: цей файл готовий 100 %. Не чіпай.
+
+ThreadingManager.gd — стан: 60/100, працює, але небезпечний у Godot 4
+
+Критичні проблеми:
+Thread.start(_generation_worker) без bind → в Godot 4 потрібно .start(Callable(this, "_generation_worker")).
+generate_chunk_threaded() викликає procedural_module.generate_chunk() → це GridMap.set_cell_item() з іншого потоку → краш 100 % (GridMap не thread-safe!).
+Немає call_deferred для повернення результату в головний потік.
+Висновок: не вмикай use_threading = true ніколи в поточному вигляді — гра впаде миттєво.
+Правильний threading для voxel terrain в Godot 4 — тільки обчислення висот/печер, а set_cell_item — в головному потоці.
+
+VegetationManager.gd — стан: 85/100, працює добре, але є ризики
+
+Працює нормально.
+Проблеми:
+generate_multimesh_positions() робить тисячі get_height_at() → лагає на 50-200 мс на чанк.
+multimesh_dict зберігає MultiMeshInstance3D назавжди → пам’ять росте.
+remove_multimesh_for_chunk() є, але не викликається з ChunkManager → витік пам’яті.
+Фікси (обов’язково, якщо вмикати):
+Додати в ChunkManager при unload:gdscriptif get_parent().vegetation_module:
+    get_parent().vegetation_module.remove_multimesh_for_chunk(chunk_pos)
+Зменшити щільність або робити 1 раз на 2×2 чанки.
+
+### Фікси для WFCIntegrator.gd, якщо у тебе є **готовий робочий WFC-ассет** (наприклад godot-wfc, GDQuest WFC, Overlapping WFC тощо)
+
+Ось мінімальний список того, що треба виправити/додати, щоб файл запрацював з реальним ассетом (а не крашнувся):
+
+| # | Що фіксити | Конкретна правка |
+|---|------------|------------------|
+| 1 | wfc_scene — має бути саме сцена з твоїм WFC-нодом | Переконайся, що @export var wfc_scene: PackedScene вказує на сцену, де кореневий нод має методи generate()/run()/start_generation() тощо |
+| 2 | Назва методу запуску генерації | Заміни `wfc_generator.start_generation()` на правильний метод твого ассета. Приклади: <br>• `wfc_generator.generate()` <br>• `wfc_generator.run()` <br>• `wfc_generator.observe_all()` |
+| 3 | Передача правил | Більшість ассетів приймають rules через set_rules() або в конструкторі. Заміни на: <br>`wfc_generator.set_rules(final_rules)` або `wfc_generator.rules = final_rules` |
+| 4 | Mapper / вивід результату в GridMap | Додай функцію, якої немає — setup_gridmap_mapper() або аналог. Приклад для популярних ассетів: <br>```gdscript
+| 5 | Видалити весь самопальний код навчання і WFCBitMatrix | Повністю видали функції: <br>• learn_simple_rules() <br>• create_rules_with_probabilities() (якщо ассет сам уміє ймовірності) <br>• ClassDB.instantiate("WFCBitMatrix") — це точно краш |
+| 6 | Очікування завершення генерації | Додай перевірку або сигнал: <br>```gdscript<br>while wfc_generator.is_running():<br>    await get_tree().process_frame<br>```<br>або підпишись на сигнал finished/completed |
+| 7 | tile_probabilities → initial state | Якщо твій ассет підтримує початкові ймовірності — передай їх так: <br>`wfc_generator.set_initial_probabilities(tile_probabilities)` |
+| 8 | generate_dungeon() і generate_building() — спростити | Залиш тільки виклик generate_structure_with_wfc + apply_result |
+
+### Мінімальний робочий шаблон (після фіксів)
+
+```gdscript
+func generate_structure_with_wfc(gridmap: GridMap, rect: Rect2i, custom_rules = null) -> bool:
+	if not wfc_generator:
+		return false
+
+	var final_rules = custom_rules if custom_rules else rules
+	wfc_generator.rules = final_rules                    # або set_rules(final_rules)
+	wfc_generator.size = Vector2i(rect.size.x, rect.size.y)
+
+	wfc_generator.generate()                              # або run(), start_generation() тощо
+
+	# Чекаємо завершення (залежно від ассета)
+	while wfc_generator.is_generating():                  # або await wfc_generator.completed
+		await get_tree().process_frame
+
+	_apply_wfc_result_to_gridmap(gridmap, rect)
+	return true
+```
+
+Зроби ці 8 правок під свій конкретний WFC-ассет — і інтегратор запрацює.  
+Якщо скинеш назву/посилання на ассет — напишу точний патч під нього за 2 хвилини.

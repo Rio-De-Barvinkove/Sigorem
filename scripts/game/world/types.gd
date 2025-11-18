@@ -7,7 +7,8 @@ const DEFAULT_CHUNK_RADIUS := 3
 # Стандартні параметри висот (синхронізовано з TerrainGenerator)
 const DEFAULT_HEIGHT_AMPLITUDE := 32
 const DEFAULT_BASE_HEIGHT := 16
-const DEFAULT_MAX_HEIGHT := 128
+const DEFAULT_MIN_HEIGHT := -64   # Мінімальна висота для шарів під землею (оптимізовано)
+const DEFAULT_MAX_HEIGHT := 192   # Збільшена максимальна висота (оптимізовано)
 
 # Граничні значення для налаштувань
 const MIN_CHUNK_SIZE := Vector2i(16, 16)
@@ -100,6 +101,7 @@ class GenerationConfig:
 	var noise_frequency: float = 0.05
 	var height_amplitude: int = DEFAULT_HEIGHT_AMPLITUDE
 	var base_height: int = DEFAULT_BASE_HEIGHT
+	var min_height: int = DEFAULT_MIN_HEIGHT
 	var max_height: int = DEFAULT_MAX_HEIGHT
 	var chunk_size: Vector2i = DEFAULT_CHUNK_SIZE
 	var chunk_radius: int = DEFAULT_CHUNK_RADIUS
@@ -114,6 +116,7 @@ class GenerationConfig:
 			"noise_frequency": noise_frequency,
 			"height_amplitude": height_amplitude,
 			"base_height": base_height,
+			"min_height": min_height,
 			"max_height": max_height,
 			"chunk_size": chunk_size,
 			"chunk_radius": chunk_radius
@@ -129,6 +132,7 @@ class GenerationConfig:
 		config.noise_frequency = data.get("noise_frequency", 0.05)
 		config.height_amplitude = data.get("height_amplitude", DEFAULT_HEIGHT_AMPLITUDE)
 		config.base_height = data.get("base_height", DEFAULT_BASE_HEIGHT)
+		config.min_height = data.get("min_height", DEFAULT_MIN_HEIGHT)
 		config.max_height = data.get("max_height", DEFAULT_MAX_HEIGHT)
 		config.chunk_size = data.get("chunk_size", DEFAULT_CHUNK_SIZE)
 		config.chunk_radius = data.get("chunk_radius", DEFAULT_CHUNK_RADIUS)

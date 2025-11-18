@@ -2,12 +2,22 @@ extends Node
 class_name WFCIntegrator
 
 # Модуль для інтеграції WFC (Wave Function Collapse) з ассета
+#
+# ВАЖЛИВО: Цей модуль потребує готового робочого WFC-ассета (наприклад godot-wfc, GDQuest WFC, Overlapping WFC тощо).
+# Без реального ассета модуль не працюватиме.
+#
+# ФІКСИ ЗАСТОСОВАНО:
+# - Видалено самопальний код навчання і WFCBitMatrix
+# - Додано правильну передачу правил через set_rules() або rules =
+# - Додано очікування завершення генерації
+# - Спрощено generate_dungeon() і generate_building()
+# - Додано setup_gridmap_mapper() для виводу результату в GridMap
 
 var wfc_generator: Node
 var rules: Resource
 var mapper: Node
 
-@export var wfc_scene: PackedScene  # Сцена з WFC генератором
+@export var wfc_scene: PackedScene  # ВИПРАВЛЕНО: Має бути саме сцена з твоїм WFC-нодом (кореневий нод має методи generate()/run()/start_generation() тощо)
 @export var rules_resource: Resource  # WFC правила
 
 # Ймовірності блоків для WFC генерації
@@ -31,183 +41,174 @@ func setup_wfc():
 
 	print("WFCIntegrator: WFC компоненти ініціалізовані")
 
-func generate_structure_with_wfc(gridmap: GridMap, rect: Rect2i, rules_override: Resource = null) -> bool:
-	"""Генерація структури з використанням WFC з ймовірностями"""
+func generate_structure_with_wfc(gridmap: GridMap, rect: Rect2i, custom_rules = null) -> bool:
+	"""Генерація структури з використанням WFC
+	
+	ВИПРАВЛЕНО: Мінімальний робочий шаблон після фіксів.
+	Потрібно адаптувати під конкретний WFC-ассет.
+	"""
 	if not wfc_generator or not gridmap:
 		push_error("WFCIntegrator: WFC генератор або GridMap не ініціалізовані!")
 		return false
+	
+	if not is_instance_valid(wfc_generator):
+		push_error("WFCIntegrator: wfc_generator не валідний!")
+		return false
 
-	# Створюємо правила з ймовірностями якщо потрібно
-	var final_rules = rules_override if rules_override else rules
-	if final_rules and tile_probabilities.size() > 0:
-		final_rules = create_rules_with_probabilities(final_rules, rect)
-
-	wfc_generator.rules = final_rules
+	var final_rules = custom_rules if custom_rules else rules
+	
+	# ВИПРАВЛЕНО: Передача правил (більшість ассетів приймають rules через set_rules() або в конструкторі)
+	if wfc_generator.has_method("set_rules"):
+		wfc_generator.set_rules(final_rules)
+	else:
+		wfc_generator.rules = final_rules
+	
+	# ВИПРАВЛЕНО: Встановлюємо розмір (якщо підтримується)
+	if wfc_generator.has("size"):
+		wfc_generator.size = Vector2i(rect.size.x, rect.size.y)
+	
+	# ВИПРАВЛЕНО: tile_probabilities → initial state (якщо твій ассет підтримує початкові ймовірності)
+	if tile_probabilities.size() > 0 and wfc_generator.has_method("set_initial_probabilities"):
+		wfc_generator.set_initial_probabilities(tile_probabilities)
 
 	# Налаштовуємо mapper для GridMap
 	setup_gridmap_mapper(gridmap, rect)
 
-	# Запускаємо генерацію
-	wfc_generator.start_generation()
+	# ВИПРАВЛЕНО: Запускаємо генерацію (назва методу залежить від ассета)
+	# Приклади: wfc_generator.generate(), wfc_generator.run(), wfc_generator.start_generation()
+	var generation_started = false
+	if wfc_generator.has_method("generate"):
+		wfc_generator.generate()
+		generation_started = true
+	elif wfc_generator.has_method("run"):
+		wfc_generator.run()
+		generation_started = true
+	elif wfc_generator.has_method("start_generation"):
+		wfc_generator.start_generation()
+		generation_started = true
+	elif wfc_generator.has_method("observe_all"):
+		wfc_generator.observe_all()
+		generation_started = true
+	else:
+		push_error("WFCIntegrator: wfc_generator не має методу для запуску генерації (generate/run/start_generation/observe_all)!")
+		return false
+	
+	if not generation_started:
+		return false
 
-	print("WFCIntegrator: Запущено WFC генерацію для області ", rect, " з ймовірностями")
+	# ВИПРАВЛЕНО: Очікування завершення генерації
+	await _wait_for_generation_complete()
+
+	# Застосовуємо результат до GridMap
+	_apply_wfc_result_to_gridmap(gridmap, rect)
+	
+	print("WFCIntegrator: Запущено WFC генерацію для області ", rect)
 	return true
 
-func create_rules_with_probabilities(base_rules: Resource, rect: Rect2i) -> Resource:
-	"""Створює правила з урахуванням ймовірностей блоків"""
-	if not base_rules:
-		return null
-	var enhanced_rules = base_rules.duplicate()
-
-	# Розраховуємо початковий стан з ймовірностями
-	var initial_state = create_initial_state_with_probabilities(rect)
-
-	# Застосовуємо ймовірності до правил
-	apply_probabilities_to_rules(enhanced_rules, initial_state)
-
-	return enhanced_rules
-
-func create_initial_state_with_probabilities(rect: Rect2i) -> Array:
-	"""Створює початковий стан з урахуванням ймовірностей"""
-	var initial_state = []
-
-	# Для кожної позиції в області
-	for x in range(rect.position.x, rect.position.x + rect.size.x):
-		for y in range(rect.position.y, rect.position.y + rect.size.y):
-			var possible_tiles = []
-
-			# Збираємо всі тайли з їх ймовірностями
-			for tile_key in tile_probabilities.keys():
-				var probability = tile_probabilities[tile_key]
-				var tile_id = int(tile_key)
-
-				# Додаємо тайл стільки разів, скільки відповідає його ймовірності
-				var count = max(1, int(probability * 100))  # Масштабуємо для дискретності
-				for i in range(count):
-					possible_tiles.append(tile_id)
-
-			initial_state.append(possible_tiles)
-
-	return initial_state
-
-func apply_probabilities_to_rules(rules: Resource, initial_state: Array):
-	"""Застосовує ймовірності до правил генерації"""
-	if not rules:
-		return
-	# Розширюємо правила додатковою інформацією про ймовірності
-	if not rules.has_meta("tile_probabilities"):
-		rules.set_meta("tile_probabilities", tile_probabilities.duplicate())
-
-	# Створюємо розширену версію правил з урахуванням ймовірностей
-	var enhanced_rules = create_enhanced_rules_with_probabilities(rules)
-
-	# Замінюємо оригінальні правила
-	if enhanced_rules:
-		for property in enhanced_rules.keys():
-			if rules.has("get") and rules.has("set"):
-				if rules.get(property) != null:
-					rules.set(property, enhanced_rules[property])
-
-func create_enhanced_rules_with_probabilities(base_rules: Resource) -> Dictionary:
-	"""Створює розширені правила з ймовірностями"""
-	var enhanced = {}
-	if not base_rules:
-		return enhanced
-
-	# Копіюємо існуючі правила (якщо вони є)
-	if base_rules.has("axis_matrices"):
-		enhanced["axis_matrices"] = base_rules.axis_matrices.duplicate()
-
-	# Додаємо інформацію про ймовірності
-	enhanced["tile_probabilities"] = tile_probabilities.duplicate()
-
-	# Створюємо ймовірнісні матриці сумісності
-	if base_rules.has("axis_matrices"):
-		enhanced["probability_matrices"] = create_probability_matrices(base_rules.axis_matrices)
-
-	return enhanced
-
-func create_probability_matrices(axis_matrices: Array) -> Array:
-	"""Створює матриці з урахуванням ймовірностей"""
-	var probability_matrices = []
-
-	for axis_matrix in axis_matrices:
-		# Спрощена версія - в реальності треба більш складна логіка
-		probability_matrices.append(axis_matrix)
-
-	return probability_matrices
-
-func select_tile_with_probability(possible_tiles: Array) -> int:
-	"""Вибір тайла з урахуванням ймовірностей (статичний метод)"""
-	if possible_tiles.size() == 0:
-		return -1
-
-	if possible_tiles.size() == 1:
-		return possible_tiles[0]
-
-	# Створюємо зважені ймовірності для можливих тайлів
-	var weighted_options = []
-	var total_weight = 0.0
-
-	for tile_id in possible_tiles:
-		var tile_key = str(tile_id)
-		var weight = tile_probabilities.get(tile_key, 1.0)
-		weighted_options.append({"tile": tile_id, "weight": weight})
-		total_weight += weight
-
-	# Нормалізуємо ймовірності
-	for i in range(weighted_options.size()):
-		weighted_options[i]["normalized_weight"] = weighted_options[i]["weight"] / total_weight
-
-	# Випадковий вибір на основі ймовірностей
-	var random_value = randf()
-	var cumulative_weight = 0.0
-
-	for option in weighted_options:
-		cumulative_weight += option["normalized_weight"]
-		if random_value <= cumulative_weight:
-			return option["tile"]
-
-	# Fallback
-	return possible_tiles[randi() % possible_tiles.size()]
-
-func _on_tile_selected_with_probability(position: Vector2i, possible_tiles: Array) -> int:
-	"""Вибір тайла на основі ймовірностей"""
-	if possible_tiles.size() == 0:
-		return -1
-
-	# Створюємо зважені ймовірності
-	var weighted_tiles = []
-	for tile_id in possible_tiles:
-		var tile_key = str(tile_id)
-		var weight = tile_probabilities.get(tile_key, 1.0)
-		for i in range(int(weight * 10)):  # Масштабуємо ваги
-			weighted_tiles.append(tile_id)
-
-	# Випадково вибираємо з урахуванням ваги
-	if weighted_tiles.size() > 0:
-		return weighted_tiles[randi() % weighted_tiles.size()]
-	else:
-		return possible_tiles[randi() % possible_tiles.size()]
-
-func setup_gridmap_mapper(gridmap: GridMap, rect: Rect2i):
-	"""Налаштування mapper'а для GridMap"""
+func _wait_for_generation_complete():
+	"""Очікування завершення генерації
+	
+	ВИПРАВЛЕНО: Додано перевірку або сигнал для очікування завершення генерації.
+	"""
 	if not wfc_generator:
 		return
+	
+	# Варіант 1: Перевірка через is_running() / is_generating()
+	if wfc_generator.has_method("is_running"):
+		while wfc_generator.is_running():
+			await get_tree().process_frame
+	elif wfc_generator.has_method("is_generating"):
+		while wfc_generator.is_generating():
+			await get_tree().process_frame
+	# Варіант 2: Підписка на сигнал finished/completed (якщо є)
+	elif wfc_generator.has_signal("finished"):
+		await wfc_generator.finished
+	elif wfc_generator.has_signal("completed"):
+		await wfc_generator.completed
+	# Варіант 3: Просто чекаємо один кадр (якщо генерація синхронна)
+	else:
+		await get_tree().process_frame
 
+func _apply_wfc_result_to_gridmap(gridmap: GridMap, rect: Rect2i):
+	"""Застосувати результат WFC генерації до GridMap
+	
+	ВИПРАВЛЕНО: Додано функцію для виводу результату в GridMap.
+	Потрібно адаптувати під конкретний WFC-ассет.
+	"""
+	if not wfc_generator or not gridmap:
+		return
+	
+	# Варіант 1: Якщо ассет має метод для отримання результату
+	if wfc_generator.has_method("get_result"):
+		var result = wfc_generator.get_result()
+		# Застосовуємо результат до GridMap
+		_apply_result_array_to_gridmap(gridmap, rect, result)
+	# Варіант 2: Якщо ассет має властивість result
+	elif wfc_generator.has("result"):
+		var result = wfc_generator.result
+		_apply_result_array_to_gridmap(gridmap, rect, result)
+	# Варіант 3: Якщо mapper вже застосував результат
+	else:
+		push_warning("[WFCIntegrator] _apply_wfc_result_to_gridmap: Не вдалося отримати результат генерації!")
+
+func _apply_result_array_to_gridmap(gridmap: GridMap, rect: Rect2i, result: Array):
+	"""Застосувати масив результатів до GridMap"""
+	if not result or result.is_empty():
+		return
+	
+	# Припускаємо, що result - це 2D масив з ID блоків
+	for x in range(rect.size.x):
+		for z in range(rect.size.y):
+			var index = x * rect.size.y + z
+			if index < result.size():
+				var block_id = result[index]
+				if block_id >= 0:
+					var world_pos = Vector3i(rect.position.x + x, 0, rect.position.y + z)
+					# Отримуємо висоту терейну
+					if get_parent() and get_parent().procedural_module:
+						var height = get_parent().procedural_module.get_height_at(world_pos.x, world_pos.z)
+						world_pos.y = height
+					# Встановлюємо блок
+					gridmap.set_cell_item(world_pos, block_id)
+
+func setup_gridmap_mapper(gridmap: GridMap, rect: Rect2i):
+	"""Налаштування mapper'а для GridMap
+	
+	ВИПРАВЛЕНО: Додано функцію для mapper / вивід результату в GridMap.
+	Потрібно адаптувати під конкретний WFC-ассет.
+	"""
+	if not wfc_generator or not gridmap:
+		return
+
+	# Варіант 1: Якщо ассет має вбудований mapper
+	if wfc_generator.has_method("set_mapper"):
+		var gridmap_mapper = _create_gridmap_mapper(gridmap, rect)
+		if gridmap_mapper:
+			wfc_generator.set_mapper(gridmap_mapper)
+	# Варіант 2: Якщо mapper встановлюється через rules
+	elif wfc_generator.has("rules") and wfc_generator.rules:
+		if wfc_generator.rules.has_method("set_mapper"):
+			var gridmap_mapper = _create_gridmap_mapper(gridmap, rect)
+			if gridmap_mapper:
+				wfc_generator.rules.set_mapper(gridmap_mapper)
+		elif wfc_generator.rules.has("mapper"):
+			var gridmap_mapper = _create_gridmap_mapper(gridmap, rect)
+			if gridmap_mapper:
+				wfc_generator.rules.mapper = gridmap_mapper
+
+func _create_gridmap_mapper(gridmap: GridMap, rect: Rect2i):
+	"""Створити mapper для GridMap (якщо клас доступний)"""
+	# ВИПРАВЛЕНО: Видалено ClassDB.instantiate("WFCBitMatrix") - це точно краш
 	# Створюємо GridMap mapper (якщо клас доступний)
-	var gridmap_mapper
+	var gridmap_mapper = null
 	if ClassDB.class_exists("WFCGridMapMapper2D"):
 		gridmap_mapper = ClassDB.instantiate("WFCGridMapMapper2D")
 		if gridmap_mapper:
 			gridmap_mapper.mesh_library = get_mesh_library_from_gridmap(gridmap)
 			if gridmap_mapper.has("base_point"):
 				gridmap_mapper.base_point = Vector3i(rect.position.x, 0, rect.position.y)
-
-			# Налаштовуємо правила для роботи з GridMap
-			if wfc_generator.has("rules") and wfc_generator.rules:
-				if wfc_generator.rules.has("mapper"):
-					wfc_generator.rules.mapper = gridmap_mapper
+	
+	return gridmap_mapper
 
 func get_mesh_library_from_gridmap(gridmap: GridMap) -> MeshLibrary:
 	"""Отримати MeshLibrary з GridMap"""
@@ -220,74 +221,43 @@ func get_mesh_library_from_gridmap(gridmap: GridMap) -> MeshLibrary:
 	return library
 
 func learn_patterns_from_sample(sample_gridmap: GridMap, sample_rect: Rect2i) -> Resource:
-	"""Навчити правила з прикладу карти"""
+	"""Навчити правила з прикладу карти
+	
+	ВИПРАВЛЕНО: Видалено весь самопальний код навчання і WFCBitMatrix.
+	Якщо твій WFC-ассет має вбудоване навчання, використовуй його методи.
+	"""
 	if not wfc_generator:
 		push_error("WFCIntegrator: WFC генератор не ініціалізований!")
 		return null
 
 	print("WFCIntegrator: Навчання патернів з прикладу...")
 
-	# Тут буде логіка навчання з прикладу
-	# Зараз заглушка
-	var new_rules
-	if ClassDB.class_exists("WFCRules2D"):
-		new_rules = ClassDB.instantiate("WFCRules2D")
+	# ВИПРАВЛЕНО: Використовуємо методи ассета для навчання (якщо є)
+	if wfc_generator.has_method("learn_from_sample"):
+		var new_rules = wfc_generator.learn_from_sample(sample_gridmap, sample_rect)
+		print("WFCIntegrator: Правила навчено через learn_from_sample()")
+		return new_rules
+	elif wfc_generator.has_method("train"):
+		var new_rules = wfc_generator.train(sample_gridmap, sample_rect)
+		print("WFCIntegrator: Правила навчено через train()")
+		return new_rules
 	else:
-		new_rules = Resource.new()
-
-	# Створюємо простий mapper для навчання (якщо клас доступний)
-	if ClassDB.class_exists("WFCGridMapMapper2D"):
-		var sample_mapper = ClassDB.instantiate("WFCGridMapMapper2D")
-		if sample_mapper:
-			sample_mapper.mesh_library = get_mesh_library_from_gridmap(sample_gridmap)
-			if sample_mapper.has("base_point"):
-				sample_mapper.base_point = Vector3i(sample_rect.position.x, 0, sample_rect.position.y)
-			if new_rules and new_rules.has("mapper"):
-				new_rules.mapper = sample_mapper
-
-	# Навчаємо правила (спрощена версія)
-	learn_simple_rules(new_rules, sample_gridmap, sample_rect)
-
-	print("WFCIntegrator: Правила навчено")
-	return new_rules
-
-func learn_simple_rules(rules: Resource, sample_gridmap: GridMap, sample_rect: Rect2i):
-	"""Простий алгоритм навчання правил"""
-	if not rules:
-		return
-	# Це спрощена заглушка - в реальності треба аналізувати сусідні блоки
-
-	# Створюємо базові правила для простих блоків
-	if rules.has("axes"):
-		rules.axes = [
-			Vector2i(0, 1),  # Вниз
-			Vector2i(1, 0)   # Вправо
-		]
-
-	# Створюємо bit matrices для кожного напрямку
-	var axis_matrices: Array = []
-
-	if rules.has("axes"):
-		for axis in rules.axes:
-			var bit_matrix
-			if ClassDB.class_exists("WFCBitMatrix"):
-				bit_matrix = ClassDB.instantiate("WFCBitMatrix")
-			else:
-				bit_matrix = {}
-			# Спрощена ініціалізація - всі блоки можуть стояти поруч
-			# В реальності треба аналізувати навчальну карту
-			axis_matrices.append(bit_matrix)
-
-	if rules.has("axis_matrices"):
-		rules.axis_matrices = axis_matrices
+		push_warning("[WFCIntegrator] learn_patterns_from_sample: WFC-ассет не має методу для навчання!")
+		return null
 
 func generate_dungeon(gridmap: GridMap, center: Vector2i, size: Vector2i) -> bool:
-	"""Генерація підземелля"""
+	"""Генерація підземелля
+	
+	ВИПРАВЛЕНО: Спрощено - залишено тільки виклик generate_structure_with_wfc + apply_result.
+	"""
 	var dungeon_rect = Rect2i(center - size/2, size)
 	return generate_structure_with_wfc(gridmap, dungeon_rect)
 
 func generate_building(gridmap: GridMap, position: Vector2i, building_type: String = "house") -> bool:
-	"""Генерація будівлі"""
+	"""Генерація будівлі
+	
+	ВИПРАВЛЕНО: Спрощено - залишено тільки виклик generate_structure_with_wfc + apply_result.
+	"""
 	var building_rect = Rect2i(position, Vector2i(10, 10))  # 10x10 блоків
 
 	# Можна мати різні правила для різних типів будівель

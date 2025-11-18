@@ -13,7 +13,7 @@ class_name BestPractices
 @export_group("Performance Settings")
 @export var enable_culling := true
 @export var enable_lod := true
-@export var enable_threading := true
+@export var enable_threading := false  # ВИПРАВЛЕНО: Threading не реалізований, вимкнено за замовчуванням
 @export var max_generation_time_ms := 16.0
 
 @export_group("Memory Management")
@@ -24,6 +24,7 @@ class_name BestPractices
 var object_pool: Array = []
 var last_cleanup_time := 0.0
 var performance_stats: Dictionary = {}
+var debug_prints := false  # ВИПРАВЛЕНО: Додано флаг для логування
 
 func _ready():
 	setup_best_practices()
@@ -57,19 +58,15 @@ func create_pooled_object():
 	}
 
 func get_pooled_vector3() -> Vector3:
-	"""Отримання Vector3 з пулу"""
-	for obj in object_pool:
-		if not obj.in_use:
-			obj.in_use = true
-			return obj.vector3
-	return Vector3.ZERO  # Fallback
+	"""Отримання Vector3 з пулу (ВИДАЛЕНО: не використовується, повертає новий об'єкт)"""
+	# ВИПРАВЛЕНО: Повертаємо новий Vector3 замість посилання на пул
+	# Object pooling для примітивних типів не має сенсу в GDScript
+	return Vector3.ZERO
 
 func return_pooled_vector3(vec: Vector3):
-	"""Повернення Vector3 до пулу"""
-	for obj in object_pool:
-		if obj.in_use and obj.vector3 == vec:
-			obj.in_use = false
-			break
+	"""Повернення Vector3 до пулу (ВИДАЛЕНО: не використовується)"""
+	# ВИПРАВЛЕНО: Нічого не робимо - object pooling для Vector3 не має сенсу
+	pass
 
 func setup_quality_checks():
 	"""Налаштування перевірок якості"""
@@ -84,28 +81,52 @@ func setup_quality_checks():
 
 func setup_performance_monitoring():
 	"""Налаштування моніторингу продуктивності"""
+	# ВИПРАВЛЕНО: Ініціалізуємо з реальними значеннями
 	performance_stats = {
 		"average_generation_time": 0.0,
 		"peak_memory_usage": 0,
-		"chunks_generated_per_second": 0,
-		"cache_hit_rate": 0.0
+		"chunks_generated_per_second": 0.0,
+		"cache_hit_rate": 0.0,
+		"fps": Engine.get_frames_per_second(),
+		"last_update": Time.get_ticks_msec() / 1000.0
 	}
+	
+	# Оновлюємо статистику кожні 5 секунд
+	if not has_meta("last_stats_update"):
+		set_meta("last_stats_update", Time.get_ticks_msec() / 1000.0)
 
 func _process(delta):
-	# Періодичне очищення
-	if Time.get_time_dict_from_system()["second"] - last_cleanup_time > cleanup_interval:
-		perform_cleanup()
-		last_cleanup_time = Time.get_time_dict_from_system()["second"]
+	# ВИПРАВЛЕНО: Використовуємо монотонний час замість системного
+	if enable_memory_pooling:
+		var current_time = Time.get_ticks_msec() / 1000.0
+		if current_time - last_cleanup_time > cleanup_interval:
+			perform_cleanup()
+			last_cleanup_time = current_time
 
 func perform_cleanup():
 	"""Виконання очищення для оптимізації пам'яті"""
 	if enable_memory_pooling:
 		cleanup_object_pool()
+	
+	# ВИПРАВЛЕНО: Оновлюємо статистику продуктивності
+	_update_performance_stats()
 
 	# Викликаємо GC для очищення
 	# force_gc()  # В Godot немає прямого виклику GC
 
-	print("BestPractices: Виконано очищення")
+	if debug_prints:
+		print("BestPractices: Виконано очищення")
+
+func _update_performance_stats():
+	"""Оновлення статистики продуктивності"""
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var last_update = get_meta("last_stats_update", current_time)
+	var time_delta = current_time - last_update
+	
+	if time_delta >= 5.0:  # Оновлюємо кожні 5 секунд
+		performance_stats["fps"] = Engine.get_frames_per_second()
+		performance_stats["last_update"] = current_time
+		set_meta("last_stats_update", current_time)
 
 func cleanup_object_pool():
 	"""Очищення пулу об'єктів"""
@@ -239,8 +260,10 @@ func get_optimization_suggestions() -> Array:
 	if fps < 30:
 		suggestions.append("FPS нижче 30 - зменшіть chunk_radius або увімкніть LOD")
 
-	var memory = OS.get_static_memory_usage() / 1024.0 / 1024.0
-	if memory > 500:
+	# ВИПРАВЛЕНО: OS.get_static_memory_usage() в Godot 4 часто повертає 0
+	# Використовуємо альтернативний метод або пропускаємо перевірку
+	var memory_mb = performance_stats.get("peak_memory_usage", 0) / 1024.0 / 1024.0
+	if memory_mb > 500 and memory_mb > 0:
 		suggestions.append("Використання пам'яті > 500MB - увімкніть cleanup")
 
 	if performance_stats.get("cache_hit_rate", 0.0) < 0.5:
@@ -255,7 +278,11 @@ func export_performance_report() -> String:
 	report += "- Godot Version: " + Engine.get_version_info()["string"] + "\n"
 	report += "- OS: " + OS.get_name() + "\n"
 	report += "- CPU Cores: " + str(OS.get_processor_count()) + "\n"
-	report += "- Memory: " + str(OS.get_static_memory_usage() / 1024.0 / 1024.0) + " MB\n\n"
+	# ВИПРАВЛЕНО: OS.get_static_memory_usage() в Godot 4 ненадійний
+	var memory_mb = performance_stats.get("peak_memory_usage", 0) / 1024.0 / 1024.0
+	if memory_mb == 0:
+		memory_mb = OS.get_static_memory_usage() / 1024.0 / 1024.0
+	report += "- Memory: " + str(memory_mb) + " MB (може бути неточним в Godot 4)\n\n"
 
 	report += "## Generation Stats\n"
 	for key in performance_stats.keys():

@@ -98,18 +98,28 @@ func generate_poi_of_type(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: Vec
 	}
 
 func generate_cave_poi(gridmap: GridMap, chunk_pos: Vector2i, chunk_size: Vector2i):
-	"""Генерація печери як POI"""
+	"""Генерація печери як POI
+	
+	ВИПРАВЛЕНО: Видалено дублювання з procedural_module.generate_caves_in_chunk().
+	Тепер тільки створює вхід до печери на поверхні, а не генерує всю печеру.
+	"""
 	var cave_size = cave_min_size + randi() % (cave_max_size - cave_min_size)
 	var cave_center = Vector2i(
 		chunk_pos.x * chunk_size.x + chunk_size.x / 2,
 		chunk_pos.y * chunk_size.y + chunk_size.y / 2
 	)
 
-	# Створити вхід до печери на поверхні
+	# ВИПРАВЛЕНО: Тільки створюємо вхід до печери на поверхні
+	# Сама печера генерується через procedural_module.generate_caves_in_chunk()
 	var entrance_pos = find_surface_position_near(gridmap, cave_center, 5)
 	if entrance_pos:
 		# Створити вертикальний вхід
-		for y in range(entrance_pos.y, entrance_pos.y - 5, -1):
+		var min_height = -64
+		if get_parent() and get_parent().has_method("get_min_height"):
+			min_height = get_parent().get_min_height()
+		
+		var entrance_depth = min(5, entrance_pos.y - min_height)
+		for y in range(entrance_pos.y, entrance_pos.y - entrance_depth, -1):
 			gridmap.set_cell_item(Vector3i(entrance_pos.x, y, entrance_pos.z), -1)
 
 		# Додати факел біля входу (заготовка)
@@ -147,13 +157,41 @@ func is_too_close_to_existing_poi(chunk_pos: Vector2i) -> bool:
 	return false
 
 func find_surface_position_near(gridmap: GridMap, center: Vector2i, search_radius: int) -> Vector3i:
-	"""Знайти позицію поверхні біля центру"""
+	"""Знайти позицію поверхні біля центру
+	
+	ВИПРАВЛЕНО: Тепер використовує procedural_module.get_height_at() замість пошуку від y=20.
+	Це працює для високих чанків (100+).
+	"""
+	# ВИПРАВЛЕНО: Отримуємо min_height та max_height
+	var min_height = -64  # Дефолт
+	var max_height = 192  # Дефолт
+	
+	if get_parent() and get_parent().has_method("get_min_height"):
+		min_height = get_parent().get_min_height()
+	if get_parent() and get_parent().has_method("get_max_height"):
+		max_height = get_parent().get_max_height()
+	
+	# ВИПРАВЛЕНО: Використовуємо procedural_module.get_height_at() для отримання висоти
+	var procedural = null
+	if get_parent() and get_parent().procedural_module:
+		procedural = get_parent().procedural_module
+	
 	for x in range(center.x - search_radius, center.x + search_radius):
 		for z in range(center.y - search_radius, center.y + search_radius):
-			# Знайти найвищий блок
-			for y in range(20, -1, -1):
-				if gridmap.get_cell_item(Vector3i(x, y, z)) >= 0:
-					return Vector3i(x, y + 1, z)  # Поверхня
+			var surface_y = 0
+			
+			# ВИПРАВЛЕНО: Отримуємо висоту через procedural_module або GridMap
+			if procedural and procedural.has_method("get_height_at"):
+				surface_y = procedural.get_height_at(x, z)
+			else:
+				# Fallback: шукаємо найвищий блок від max_height вниз
+				for y in range(max_height - 1, min_height - 1, -1):
+					if gridmap.get_cell_item(Vector3i(x, y, z)) >= 0:
+						surface_y = y + 1
+						break
+			
+			if surface_y > 0:
+				return Vector3i(x, surface_y, z)  # Поверхня
 
 	return Vector3i()  # Не знайдено
 
@@ -189,6 +227,41 @@ func get_poi_stats() -> Dictionary:
 		"total_pois": generated_pois.size(),
 		"by_type": stats
 	}
+
+func remove_poi_for_chunk(chunk_pos: Vector2i):
+	"""Видалити POI для чанка при unload
+	
+	ВИПРАВЛЕНО: Додано очищення старих POI при unload чанка.
+	Це запобігає витокам пам'яті при довгій грі.
+	"""
+	if generated_pois.has(chunk_pos):
+		generated_pois.erase(chunk_pos)
+		if enable_poi_generation:
+			print("POIGenerator: Видалено POI для чанка ", chunk_pos)
+
+func clear_old_pois(max_distance: float):
+	"""Очистити старі POI за межами радіуса
+	
+	ВИПРАВЛЕНО: Додано метод для очищення старих POI за межами радіуса.
+	Використовується для запобігання витокам пам'яті.
+	"""
+	if not get_parent() or not get_parent().player:
+		return
+	
+	var player_pos = get_parent().player.global_position
+	var player_chunk = Vector2i(int(player_pos.x / 50), int(player_pos.z / 50))  # Припускаємо chunk_size = 50
+	
+	var pois_to_remove = []
+	for poi_pos in generated_pois.keys():
+		var distance = player_chunk.distance_to(poi_pos)
+		if distance > max_distance:
+			pois_to_remove.append(poi_pos)
+	
+	for poi_pos in pois_to_remove:
+		generated_pois.erase(poi_pos)
+	
+	if pois_to_remove.size() > 0 and enable_poi_generation:
+		print("POIGenerator: Очищено ", pois_to_remove.size(), " старих POI за межами радіуса ", max_distance)
 
 # Future features - заготовки
 
