@@ -1,49 +1,36 @@
-[gd_resource type="VoxelBlockyLibrary" load_steps=14 format=3 uid="uid://voxel_library_basic"]
+[gd_resource type="VoxelBlockyLibrary" load_steps=14 format=3 uid="uid://dwomnamqvyaqf"]
 
-[ext_resource type="Texture2D" uid="uid://b8iqiiu3tfx8v" path="res://assets/textures/Set 4 All/Stones/Stones_Loose_01_Grey_1.png" id="1_stone"]
-[ext_resource type="Texture2D" uid="uid://h6vx8wr2mtjs" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_01_Brown_1.png" id="2_dirt"]
-[ext_resource type="Texture2D" uid="uid://yd1ku557f55k" path="res://assets/textures/Set 4 All/Grass/Grass_01_Green_1.png" id="3_grass"]
-[ext_resource type="Texture2D" uid="uid://cpflswbtln7dp" path="res://assets/textures/Set 4 All/Stones/Stones_Loose_01_Grey_2.png" id="4_bedrock"]
+[ext_resource type="Texture2D" uid="uid://dfma5rrfuhpmj" path="res://assets/textures/Set 2 128x128/Stone/Stone_11-128x128.png" id="1_k3uno"]
+[ext_resource type="Texture2D" uid="uid://civigweyspgfx" path="res://assets/textures/Set 2 128x128/Dirt/Dirt_02-128x128.png" id="2_ba830"]
+[ext_resource type="Texture2D" uid="uid://bgdjmxwonat0w" path="res://assets/textures/Set 4 All/Grass/Grass_01_Green_2.png" id="3_f3gil"]
+[ext_resource type="Texture2D" uid="uid://pcdh8f1n202s" path="res://assets/textures/Set 4 All/Rockface/Rock_Grey_01.png" id="4_0gm41"]
 
 [sub_resource type="VoxelBlockyModel" id="VoxelBlockyModel_air"]
 resource_name = "Air"
-geometry_type = 0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_stone"]
-albedo_texture = ExtResource("1_stone")
-texture_filter = 0
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tm2mg"]
+albedo_texture = ExtResource("1_k3uno")
 
-[sub_resource type="VoxelBlockyModel" id="VoxelBlockyModel_stone"]
-resource_name = "Stone"
-geometry_type = 1
-material_override_0 = SubResource("StandardMaterial3D_stone")
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_fsoae"]
+material_override_0 = SubResource("StandardMaterial3D_tm2mg")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dirt"]
-albedo_texture = ExtResource("2_dirt")
-texture_filter = 0
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m5kr6"]
+albedo_texture = ExtResource("2_ba830")
 
-[sub_resource type="VoxelBlockyModel" id="VoxelBlockyModel_dirt"]
-resource_name = "Dirt"
-geometry_type = 1
-material_override_0 = SubResource("StandardMaterial3D_dirt")
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_cm3i0"]
+material_override_0 = SubResource("StandardMaterial3D_m5kr6")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_grass"]
-albedo_texture = ExtResource("3_grass")
-texture_filter = 0
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ig8ue"]
+albedo_texture = ExtResource("3_f3gil")
 
-[sub_resource type="VoxelBlockyModel" id="VoxelBlockyModel_grass"]
-resource_name = "Grass"
-geometry_type = 1
-material_override_0 = SubResource("StandardMaterial3D_grass")
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_3kwel"]
+material_override_0 = SubResource("StandardMaterial3D_ig8ue")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bedrock"]
-albedo_texture = ExtResource("4_bedrock")
-texture_filter = 0
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qxmek"]
+albedo_texture = ExtResource("4_0gm41")
 
-[sub_resource type="VoxelBlockyModel" id="VoxelBlockyModel_bedrock"]
-resource_name = "Bedrock"
-geometry_type = 1
-material_override_0 = SubResource("StandardMaterial3D_bedrock")
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ut4dk"]
+material_override_0 = SubResource("StandardMaterial3D_qxmek")
 
 [resource]
-models = [SubResource("VoxelBlockyModel_air"), SubResource("VoxelBlockyModel_stone"), SubResource("VoxelBlockyModel_dirt"), SubResource("VoxelBlockyModel_grass"), SubResource("VoxelBlockyModel_bedrock")]
+models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModel_air"), SubResource("VoxelBlockyModelCube_fsoae"), SubResource("VoxelBlockyModelCube_cm3i0"), SubResource("VoxelBlockyModelCube_3kwel"), SubResource("VoxelBlockyModelCube_ut4dk")])
