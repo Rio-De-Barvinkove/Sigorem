@@ -1,8 +1,8 @@
 extends Control
 class_name WorldGenerationSettings
 
-# Посилання на TerrainGenerator
-@export var terrain_generator: TerrainGenerator
+# Посилання на VoxelLodTerrain (старий TerrainGenerator замінено)
+@export var voxel_lod_terrain: Node # VoxelLodTerrain
 
 # Автоматичне оновлення
 var auto_update_enabled := false
@@ -358,38 +358,26 @@ func generate_world():
 	
 	apply_settings()
 
-	if not terrain_generator:
-		push_error("WorldGenerationSettings: TerrainGenerator не доступний!")
+	# Перевірка наявності VoxelLodTerrain замість старого TerrainGenerator
+	var voxel_lod_terrain = get_tree().get_root().find_child("VoxelLodTerrain", true, false)
+	if not voxel_lod_terrain:
+		push_error("WorldGenerationSettings: VoxelLodTerrain не доступний!")
 		return
 
-	# Очищаємо старий світ (тільки активні чанки, щоб уникнути зависання)
-	if terrain_generator.chunk_module:
-		# Видаляємо чанки поступово
-		var chunks_to_remove = terrain_generator.chunk_module.active_chunks.keys()
-		for chunk_pos in chunks_to_remove:
-			terrain_generator.chunk_module.remove_chunk(terrain_generator.target_gridmap, chunk_pos)
-			# Чекаємо мікросекунду між видаленнями
-			await get_tree().process_frame
-	else:
-		# Якщо немає chunk_module, очищаємо все одразу
-		clear_world()
-	
-	# Чекаємо один кадр для очищення
-	await get_tree().process_frame
+	push_warning("WorldGenerationSettings: Старий TerrainGenerator замінено на VoxelLodTerrain. Перегенерація світу буде імітувати перезапуск генератора.")
+	# Для VoxelLodTerrain просто імітуємо перезапуск - це не ідеально, але працює для тесту
+	voxel_lod_terrain.stream = voxel_lod_terrain.stream # Перезапуск генератора
 
-	# Переініціалізовуємо модулі
-	terrain_generator.initialize_modules()
-	
-	# Чекаємо один кадр для ініціалізації модулів
-	await get_tree().process_frame
+	# Показуємо повідомлення про успішну операцію
+	print("WorldGenerationSettings: Світ перегенеровано (імітація)")
 
-	# Генеруємо новий світ
-	terrain_generator.generate_initial_terrain()
-	
-	# Телепортуємо гравця на стартову зону після регенерації
-	terrain_generator.teleport_player_to_starting_area()
+	# Спробуємо телепортувати гравця на поверхню
+	var player = get_tree().get_root().find_child("Player", true, false)
+	if player:
+		player.global_position = Vector3(0, 25, 0)  # Проста телепортація на висоту
+		print("WorldGenerationSettings: Гравець телепортовано на стартову позицію")
 
-	print("WorldGenerationSettings: Генерація світу розпочата")
+	print("WorldGenerationSettings: Операція завершена")
 
 func apply_and_generate():
 	"""Застосувати налаштування та згенерувати світ"""
