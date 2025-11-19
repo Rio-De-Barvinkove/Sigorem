@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://bquqyerqh1fk7"]
+[gd_scene load_steps=16 format=3 uid="uid://bquqyerqh1fk7"]
 
 [ext_resource type="Script" uid="uid://p8ub8qbg5p32" path="res://scripts/game/world/generation/VoxelGeneratorAdapter.gd" id="1_generator"]
 [ext_resource type="Material" path="res://LotL_Terrain_Material.tres" id="2_lotl_mat"]
