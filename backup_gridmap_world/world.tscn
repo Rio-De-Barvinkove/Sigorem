@@ -1,0 +1,130 @@
+[gd_scene load_steps=23 format=3 uid="uid://c6v2wih236026"]
+
+[ext_resource type="Script" uid="uid://dh7eiekt4eerp" path="res://scripts/game/world/WorldGenerator.gd" id="1_5j1ce"]
+[ext_resource type="Texture2D" uid="uid://bbas0v448jcam" path="res://assets/textures/Solo_draw/Terrain_Grass_Top.png" id="1_w7kh3"]
+[ext_resource type="PackedScene" uid="uid://dps3xrk1e80j7" path="res://scenes/player.tscn" id="2_p6w2a"]
+[ext_resource type="Script" uid="uid://bgxhog0gtcg6q" path="res://scripts/game/player/CameraController.gd" id="3_q7w8e"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih236027" path="res://scenes/ui/inventory.tscn" id="4_inventory"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih236028" path="res://scenes/ui/pause_menu.tscn" id="5_pause"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih23603a" path="res://scenes/ui/character_menu.tscn" id="6_char"]
+[ext_resource type="PackedScene" uid="uid://c8v1qkq6t6v7b" path="res://scenes/ui/world_generation_settings.tscn" id="7_world_settings"]
+[ext_resource type="Script" uid="uid://dnkdy3jxy7cuy" path="res://scripts/ui/game_hud.gd" id="9_hud"]
+[ext_resource type="Script" uid="uid://b0a0qpcpkqt7m" path="res://scripts/game/debug/ConsoleCommands.gd" id="10_console_commands"]
+
+[sub_resource type="Environment" id="Environment_ambient"]
+background_mode = 1
+background_color = Color(0.15, 0.15, 0.2, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.7, 0.7, 0.8, 1)
+ambient_light_energy = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4mrxx"]
+albedo_color = Color(0.4, 0.8, 0.2, 1)
+albedo_texture = ExtResource("1_w7kh3")
+
+[sub_resource type="BoxMesh" id="BoxMesh_7r4gi"]
+material = SubResource("StandardMaterial3D_4mrxx")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_w7kh3"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e3hyu"]
+albedo_color = Color(0.55, 0.27, 0.07, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_q5onr"]
+material = SubResource("StandardMaterial3D_e3hyu")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jhx03"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o8fc1"]
+albedo_color = Color(0.5, 0.5, 0.5, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_xo05s"]
+material = SubResource("StandardMaterial3D_o8fc1")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dss4m"]
+
+[sub_resource type="MeshLibrary" id="MeshLibrary_7t5mc"]
+item/0/name = "Grass Block"
+item/0/mesh = SubResource("BoxMesh_7r4gi")
+item/0/mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/0/mesh_cast_shadow = 0
+item/0/shapes = [SubResource("BoxShape3D_w7kh3"), Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)]
+item/0/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/0/navigation_layers = 1
+item/1/name = "Dirt Block"
+item/1/mesh = SubResource("BoxMesh_q5onr")
+item/1/mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/1/mesh_cast_shadow = 0
+item/1/shapes = [SubResource("BoxShape3D_jhx03"), Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)]
+item/1/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/1/navigation_layers = 1
+item/2/name = "Stone Block"
+item/2/mesh = SubResource("BoxMesh_xo05s")
+item/2/mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/2/mesh_cast_shadow = 0
+item/2/shapes = [SubResource("BoxShape3D_dss4m"), Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)]
+item/2/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/2/navigation_layers = 1
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_4mrxx"]
+
+[node name="World" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_ambient")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 20, 0)
+light_energy = 1.5
+
+[node name="GridMap" type="GridMap" parent="."]
+mesh_library = SubResource("MeshLibrary_7t5mc")
+physics_material = SubResource("PhysicsMaterial_4mrxx")
+cell_size = Vector3(1, 1, 1)
+script = ExtResource("1_5j1ce")
+
+[node name="Player" parent="." instance=ExtResource("2_p6w2a")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 20, 25)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 15, 15)
+current = true
+script = ExtResource("3_q7w8e")
+target = NodePath("../Player")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="InventoryUI" parent="UI" instance=ExtResource("4_inventory")]
+
+[node name="PauseMenu" parent="UI" instance=ExtResource("5_pause")]
+
+[node name="CharacterMenu" parent="UI" instance=ExtResource("6_char")]
+
+[node name="WorldGenerationSettings" parent="UI" instance=ExtResource("7_world_settings")]
+
+[node name="GameHUD" type="CanvasLayer" parent="."]
+script = ExtResource("9_hud")
+
+[node name="InfoLabel" type="Label" parent="GameHUD"]
+
+[node name="DebugLabel" type="Label" parent="GameHUD"]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 260.0
+offset_bottom = 100.0
+
+[node name="BuildModeLabel" type="Label" parent="GameHUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -400.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 30.0
+grow_horizontal = 0
+horizontal_alignment = 2
+
+[node name="ConsoleCommands" type="Node" parent="."]
+script = ExtResource("10_console_commands")
+
+[node name="Node3D" type="Node3D" parent="."]
