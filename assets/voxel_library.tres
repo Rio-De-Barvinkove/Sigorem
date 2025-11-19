@@ -1,36 +1,923 @@
-[gd_resource type="VoxelBlockyLibrary" load_steps=14 format=3 uid="uid://dwomnamqvyaqf"]
+[gd_resource type="VoxelBlockyLibrary" load_steps=275 format=3 uid="uid://dwomnamqvyaqf"]
 
 [ext_resource type="Texture2D" uid="uid://dfma5rrfuhpmj" path="res://assets/textures/Set 2 128x128/Stone/Stone_11-128x128.png" id="1_k3uno"]
 [ext_resource type="Texture2D" uid="uid://civigweyspgfx" path="res://assets/textures/Set 2 128x128/Dirt/Dirt_02-128x128.png" id="2_ba830"]
 [ext_resource type="Texture2D" uid="uid://bgdjmxwonat0w" path="res://assets/textures/Set 4 All/Grass/Grass_01_Green_2.png" id="3_f3gil"]
 [ext_resource type="Texture2D" uid="uid://pcdh8f1n202s" path="res://assets/textures/Set 4 All/Rockface/Rock_Grey_01.png" id="4_0gm41"]
+[ext_resource type="Texture2D" uid="uid://cgvtbch62tq0d" path="res://assets/textures/Set 4 All/Stones/Stones_Loose_01_Blue_1.png" id="5_42bt8"]
+[ext_resource type="Texture2D" uid="uid://cyghev3qbm02e" path="res://assets/textures/Set 4 All/Stones/Stones_Loose_01_Blue_2.png" id="6_2ss22"]
+[ext_resource type="Texture2D" uid="uid://b8iqiiu3tfx8v" path="res://assets/textures/Set 4 All/Stones/Stones_Loose_01_Grey_1.png" id="7_8f6dt"]
+[ext_resource type="Texture2D" uid="uid://cpflswbtln7dp" path="res://assets/textures/Set 4 All/Stones/Stones_Loose_01_Grey_2.png" id="8_2vjeh"]
+[ext_resource type="Texture2D" uid="uid://7heaw8c0365e" path="res://assets/textures/Set 4 All/Stones/Stones_Loose_01_Orange_1.png" id="9_0mcx0"]
+[ext_resource type="Texture2D" uid="uid://c6koopkd1au7" path="res://assets/textures/Set 4 All/Stones/Stones_Loose_01_Orange_2.png" id="10_ncqxw"]
+[ext_resource type="Texture2D" uid="uid://ddmev4ij513ja" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_01_Black_1.png" id="11_il8l6"]
+[ext_resource type="Texture2D" uid="uid://h6vx8wr2mtjs" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_01_Brown_1.png" id="12_s3wxg"]
+[ext_resource type="Texture2D" uid="uid://bbu6xlc7xtwe5" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_01_Green_1.png" id="13_ceqgd"]
+[ext_resource type="Texture2D" uid="uid://ciia0kpo5uqce" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_01_Grey_1.png" id="14_eah83"]
+[ext_resource type="Texture2D" uid="uid://wmc34ui43xbq" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_01_White_1.png" id="15_xcokd"]
+[ext_resource type="Texture2D" uid="uid://6yi0l527wdg5" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_01_Yellow_1.png" id="16_6nyih"]
+[ext_resource type="Texture2D" uid="uid://6mq2frnpaxn8" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_01_Yellow_2.png" id="17_v1bj0"]
+[ext_resource type="Texture2D" uid="uid://cye8cnq5v6vhw" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_02_Black_1.png" id="18_c0qfd"]
+[ext_resource type="Texture2D" uid="uid://crpgfd5r1js7" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_02_Brown_1.png" id="19_fb6vl"]
+[ext_resource type="Texture2D" uid="uid://dlxgkws1yowqa" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_02_Green_1.png" id="20_dmybi"]
+[ext_resource type="Texture2D" uid="uid://fusin57x7pv8" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_02_Grey_1.png" id="21_gvrr1"]
+[ext_resource type="Texture2D" uid="uid://8s1tddxbgecj" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_02_White_1.png" id="22_m36ly"]
+[ext_resource type="Texture2D" uid="uid://doc2xlhqy8268" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_02_Yellow_1.png" id="23_kb82q"]
+[ext_resource type="Texture2D" uid="uid://cm3h41gpp3syy" path="res://assets/textures/Set 4 All/Dirt/Dirt_Cracked_02_Yellow_2.png" id="24_ateac"]
+[ext_resource type="Texture2D" uid="uid://c5uu8wliw251d" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_01_Black_1.png" id="25_n3p7r"]
+[ext_resource type="Texture2D" uid="uid://devif1rbu28o0" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_01_Brown_1.png" id="26_fhkxs"]
+[ext_resource type="Texture2D" uid="uid://reccgf0t6fpo" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_01_Green_1.png" id="27_ig8ms"]
+[ext_resource type="Texture2D" uid="uid://dh08gqulwnl76" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_01_Grey_1.png" id="28_t6lwd"]
+[ext_resource type="Texture2D" uid="uid://u6ymgttdskvc" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_01_White_1.png" id="29_ofg0o"]
+[ext_resource type="Texture2D" uid="uid://df5h2v26ixs51" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_01_Yellow_1.png" id="30_jn2hi"]
+[ext_resource type="Texture2D" uid="uid://cbjm6jct6u1no" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_01_Yellow_2.png" id="31_4xoiv"]
+[ext_resource type="Texture2D" uid="uid://bcwvk4ysa4dj3" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_02_Black_1.png" id="32_qj7h8"]
+[ext_resource type="Texture2D" uid="uid://lgs0w00w2mwj" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_02_Brown_1.png" id="33_7bhu8"]
+[ext_resource type="Texture2D" uid="uid://cvbqou4mwnkh" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_02_Green_1.png" id="34_qji3w"]
+[ext_resource type="Texture2D" uid="uid://ddj62s4olhja0" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_02_Grey_1.png" id="35_ci2ig"]
+[ext_resource type="Texture2D" uid="uid://b5q1xbokrxaje" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_02_White_1.png" id="36_y2oyv"]
+[ext_resource type="Texture2D" uid="uid://b7fgul12t4olh" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_02_Yellow_1.png" id="37_xtaay"]
+[ext_resource type="Texture2D" uid="uid://b4wd2biu2tiaf" path="res://assets/textures/Set 4 All/Dirt/Dirt_Pebbles_02_Yellow_2.png" id="38_xr27g"]
+[ext_resource type="Texture2D" uid="uid://4kpm380b2mol" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_01_Black_1.png" id="39_jeb3s"]
+[ext_resource type="Texture2D" uid="uid://215v1mgu0re6" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_01_Brown_1.png" id="40_75ej8"]
+[ext_resource type="Texture2D" uid="uid://di8lr2k8n0l3b" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_01_Brown_2.png" id="41_fwlji"]
+[ext_resource type="Texture2D" uid="uid://bynfqefo1t2bb" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_01_Green_1.png" id="42_sr4r6"]
+[ext_resource type="Texture2D" uid="uid://b53vlsnrt2r68" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_01_Grey_1.png" id="43_phind"]
+[ext_resource type="Texture2D" uid="uid://lwneo15b7vgi" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_01_White_1.png" id="44_rjm62"]
+[ext_resource type="Texture2D" uid="uid://bw48lruxpo2j" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_01_Yellow_1.png" id="45_lgcw2"]
+[ext_resource type="Texture2D" uid="uid://dwstl2tc8568d" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_02_0.png" id="46_2yrjn"]
+[ext_resource type="Texture2D" uid="uid://5bgo4cregii2" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_02_1.png" id="47_yoffn"]
+[ext_resource type="Texture2D" uid="uid://cqyj0kdgx7ki" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_02_2.png" id="48_3ot37"]
+[ext_resource type="Texture2D" uid="uid://baf3jpkulfn6" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_02_3.png" id="49_q8aho"]
+[ext_resource type="Texture2D" uid="uid://djkqq8yq3akqb" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_02_4.png" id="50_qmbbs"]
+[ext_resource type="Texture2D" uid="uid://bx5h5x056yolp" path="res://assets/textures/Set 4 All/Dirt/Dirt_Rocks_02_Brown_1.png" id="51_te6lx"]
+[ext_resource type="Texture2D" uid="uid://b734xef5wkht5" path="res://assets/textures/Set 4 All/Dirt/Dirt_Silt_01_Brown_1.png" id="52_nyxea"]
+[ext_resource type="Texture2D" uid="uid://dkco1ewgjhlst" path="res://assets/textures/Set 4 All/Dirt/Dirt_Silt_01_Brown_2.png" id="53_83gy8"]
+[ext_resource type="Texture2D" uid="uid://rxq6koi51gx" path="res://assets/textures/Set 4 All/Dirt/Dirt_Silt_01_Grey_1.png" id="54_bgbl1"]
+[ext_resource type="Texture2D" uid="uid://c784yolj04lxr" path="res://assets/textures/Set 4 All/Dirt/Dirt_Silt_01_White_1.png" id="55_73qlr"]
+[ext_resource type="Texture2D" uid="uid://2mq4dfwbwumd" path="res://assets/textures/Set 4 All/Dirt/Dirt_Silt_01_Yellow_1.png" id="56_t3yla"]
+[ext_resource type="Texture2D" uid="uid://2bkn7u2yek5h" path="res://assets/textures/Set 4 All/Dirt/Dirt_Silt_01_Yellow_2.png" id="57_0j3y6"]
+[ext_resource type="Texture2D" uid="uid://yd1ku557f55k" path="res://assets/textures/Set 4 All/Grass/Grass_01_Green_1.png" id="58_kxtn5"]
+[ext_resource type="Texture2D" uid="uid://btc6w27xtxc18" path="res://assets/textures/Set 4 All/Grass/Grass_01_Orange_1.png" id="59_8jhji"]
+[ext_resource type="Texture2D" uid="uid://burjp8oa8l2og" path="res://assets/textures/Set 4 All/Grass/Grass_01_Snow_1.png" id="60_01wj2"]
+[ext_resource type="Texture2D" uid="uid://cpvsr8u61ku6b" path="res://assets/textures/Set 4 All/Grass/Grass_01_Snow_2.png" id="61_eg32a"]
+[ext_resource type="Texture2D" uid="uid://dkq8ukq7vjxej" path="res://assets/textures/Set 4 All/Grass/Grass_01_Snow_3.png" id="62_wqwwy"]
+[ext_resource type="Texture2D" uid="uid://b722bfys4ux0g" path="res://assets/textures/Set 4 All/Grass/Grass_01_White_1.png" id="63_vilcl"]
+[ext_resource type="Texture2D" uid="uid://cpevmr0imtvp5" path="res://assets/textures/Set 4 All/Grass/Grass_02_Green_1.png" id="64_rnvlp"]
+[ext_resource type="Texture2D" uid="uid://bjo2nl1f6n3hk" path="res://assets/textures/Set 4 All/Grass/Grass_02_Green_2.png" id="65_5do8x"]
+[ext_resource type="Texture2D" uid="uid://c0k45m5rg4pcf" path="res://assets/textures/Set 4 All/Grass/Grass_02_Green_3.png" id="66_gwnjq"]
+[ext_resource type="Texture2D" uid="uid://veb3118imkos" path="res://assets/textures/Set 4 All/Grass/Grass_02_Red_1.png" id="67_nljha"]
+[ext_resource type="Texture2D" uid="uid://chhape68umhg0" path="res://assets/textures/Set 4 All/Grass/Grass_02_White_1.png" id="68_3d4ok"]
+[ext_resource type="Texture2D" uid="uid://bkebby1w42otk" path="res://assets/textures/Set 4 All/Rockface/Rock_Grey_02.png" id="69_dq87s"]
+[ext_resource type="Texture2D" uid="uid://ejiv7goaniai" path="res://assets/textures/Set 4 All/Rockface/Rock_Grey_Boulder_01.png" id="70_5t1vt"]
+[ext_resource type="Texture2D" uid="uid://dg4o1h4v6vuku" path="res://assets/textures/Set 4 All/Rockface/Rock_Grey_Boulder_02.png" id="71_xb0br"]
+[ext_resource type="Texture2D" uid="uid://bst8ej3d40qla" path="res://assets/textures/Set 4 All/Sand/Sand_01_Rocks_1.png" id="72_baqj3"]
+[ext_resource type="Texture2D" uid="uid://d05ot2b0mwilm" path="res://assets/textures/Set 4 All/Sand/Sand_01_Rocks_2.png" id="73_y7jhp"]
+[ext_resource type="Texture2D" uid="uid://be0qmkqk72upc" path="res://assets/textures/Set 4 All/Sand/Sand_01_Yellow_1.png" id="74_sa133"]
+[ext_resource type="Texture2D" uid="uid://nlsuoemvgpkw" path="res://assets/textures/Set 4 All/Sand/Sand_02_Rocks_1.png" id="75_dte64"]
+[ext_resource type="Texture2D" uid="uid://c61rm54tehrno" path="res://assets/textures/Set 4 All/Sand/Sand_02_Rocks_2.png" id="76_bxuf5"]
+[ext_resource type="Texture2D" uid="uid://egyuo17t8wqc" path="res://assets/textures/Set 4 All/Sand/Sand_02_Yellow_1.png" id="77_ed871"]
+[ext_resource type="Texture2D" uid="uid://j6r3j84g7cly" path="res://assets/textures/Set 4 All/Sand/Sand_03_Rocks_1.png" id="78_dfenf"]
+[ext_resource type="Texture2D" uid="uid://ddyn2bn4sf3ud" path="res://assets/textures/Set 4 All/Sand/Sand_03_Yellow_1.png" id="79_ay6pu"]
+[ext_resource type="Texture2D" uid="uid://ddyt6tetckem2" path="res://assets/textures/Set 4 All/Sand/Sand_03_Yellow_2.png" id="80_jduw2"]
+[ext_resource type="Texture2D" uid="uid://wjenblrmo4o1" path="res://assets/textures/Set 4 All/Gravel/Gravel_01_Blue_1.png" id="81_qtq1h"]
+[ext_resource type="Texture2D" uid="uid://b3cne82ypnfm6" path="res://assets/textures/Set 4 All/Gravel/Gravel_01_Brown_1.png" id="82_jkgbl"]
+[ext_resource type="Texture2D" uid="uid://bdh3qrl0ecba" path="res://assets/textures/Set 4 All/Gravel/Gravel_01_Brown_2.png" id="83_5fku8"]
+[ext_resource type="Texture2D" uid="uid://d2at6lptrsqfx" path="res://assets/textures/Set 4 All/Gravel/Gravel_01_Grey_1.png" id="84_bdimr"]
+[ext_resource type="Texture2D" uid="uid://bv0a1dfvyeb45" path="res://assets/textures/Set 4 All/Gravel/Gravel_01_Orange_1.png" id="85_mmogd"]
+[ext_resource type="Texture2D" uid="uid://cmtphpqvk414b" path="res://assets/textures/Set 4 All/Gravel/Gravel_01_Purple_1.png" id="86_wksle"]
+[ext_resource type="Texture2D" uid="uid://di50gffsd3t7b" path="res://assets/textures/Set 4 All/Gravel/Gravel_01_Purple_2.png" id="87_g3tho"]
+[ext_resource type="Texture2D" uid="uid://nj6hg087brxp" path="res://assets/textures/Set 4 All/Gravel/Gravel_01_Red_1.png" id="88_hjwne"]
+[ext_resource type="Texture2D" uid="uid://ddql0fecyus71" path="res://assets/textures/Set 4 All/Gravel/Gravel_01_Red_2.png" id="89_n5k4g"]
+[ext_resource type="Texture2D" uid="uid://dhrdb0lq7dcfs" path="res://assets/textures/Set 4 All/Gravel/Gravel_01_White_1.png" id="90_anu2u"]
 
-[sub_resource type="VoxelBlockyModel" id="VoxelBlockyModel_air"]
-resource_name = "Air"
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tm2mg"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_73rtg"]
 albedo_texture = ExtResource("1_k3uno")
+roughness = 0.8
+texture_filter = 0
 
-[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_fsoae"]
-material_override_0 = SubResource("StandardMaterial3D_tm2mg")
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_cjhwf"]
+material_override_0 = SubResource("StandardMaterial3D_73rtg")
+resource_name = "Stone"
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m5kr6"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q3wgx"]
 albedo_texture = ExtResource("2_ba830")
+roughness = 0.8
+texture_filter = 0
 
-[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_cm3i0"]
-material_override_0 = SubResource("StandardMaterial3D_m5kr6")
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_32jls"]
+material_override_0 = SubResource("StandardMaterial3D_q3wgx")
+resource_name = "Dirt"
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ig8ue"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e16kw"]
 albedo_texture = ExtResource("3_f3gil")
+roughness = 0.8
+texture_filter = 0
 
-[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_3kwel"]
-material_override_0 = SubResource("StandardMaterial3D_ig8ue")
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_st4j0"]
+material_override_0 = SubResource("StandardMaterial3D_e16kw")
+resource_name = "Grass"
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qxmek"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gscxh"]
 albedo_texture = ExtResource("4_0gm41")
+roughness = 0.8
+texture_filter = 0
 
-[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ut4dk"]
-material_override_0 = SubResource("StandardMaterial3D_qxmek")
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_toxs6"]
+material_override_0 = SubResource("StandardMaterial3D_gscxh")
+resource_name = "Rock"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0ydaf"]
+albedo_texture = ExtResource("5_42bt8")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_1sbnh"]
+material_override_0 = SubResource("StandardMaterial3D_0ydaf")
+resource_name = "Stones_Stones_Loose_01_Blue_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shwkl"]
+albedo_texture = ExtResource("6_2ss22")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_m2u3k"]
+material_override_0 = SubResource("StandardMaterial3D_shwkl")
+resource_name = "Stones_Stones_Loose_01_Blue_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ufewc"]
+albedo_texture = ExtResource("7_8f6dt")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_r3h8s"]
+material_override_0 = SubResource("StandardMaterial3D_ufewc")
+resource_name = "Stones_Stones_Loose_01_Grey_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fqq58"]
+albedo_texture = ExtResource("8_2vjeh")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_tihe4"]
+material_override_0 = SubResource("StandardMaterial3D_fqq58")
+resource_name = "Stones_Stones_Loose_01_Grey_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qbw84"]
+albedo_texture = ExtResource("9_0mcx0")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_0b1fd"]
+material_override_0 = SubResource("StandardMaterial3D_qbw84")
+resource_name = "Stones_Stones_Loose_01_Orange_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_whwe0"]
+albedo_texture = ExtResource("10_ncqxw")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_qbr2g"]
+material_override_0 = SubResource("StandardMaterial3D_whwe0")
+resource_name = "Stones_Stones_Loose_01_Orange_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xq0i4"]
+albedo_texture = ExtResource("11_il8l6")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_3e8kq"]
+material_override_0 = SubResource("StandardMaterial3D_xq0i4")
+resource_name = "Dirt_Dirt_Cracked_01_Black_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gt3vy"]
+albedo_texture = ExtResource("12_s3wxg")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_w7duf"]
+material_override_0 = SubResource("StandardMaterial3D_gt3vy")
+resource_name = "Dirt_Dirt_Cracked_01_Brown_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fbdu4"]
+albedo_texture = ExtResource("13_ceqgd")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_mmrql"]
+material_override_0 = SubResource("StandardMaterial3D_fbdu4")
+resource_name = "Dirt_Dirt_Cracked_01_Green_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_d1f8h"]
+albedo_texture = ExtResource("14_eah83")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_8qed5"]
+material_override_0 = SubResource("StandardMaterial3D_d1f8h")
+resource_name = "Dirt_Dirt_Cracked_01_Grey_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o542e"]
+albedo_texture = ExtResource("15_xcokd")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_bqmm3"]
+material_override_0 = SubResource("StandardMaterial3D_o542e")
+resource_name = "Dirt_Dirt_Cracked_01_White_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8ad23"]
+albedo_texture = ExtResource("16_6nyih")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_2ml2q"]
+material_override_0 = SubResource("StandardMaterial3D_8ad23")
+resource_name = "Dirt_Dirt_Cracked_01_Yellow_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a6lj8"]
+albedo_texture = ExtResource("17_v1bj0")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_61kvo"]
+material_override_0 = SubResource("StandardMaterial3D_a6lj8")
+resource_name = "Dirt_Dirt_Cracked_01_Yellow_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dd60f"]
+albedo_texture = ExtResource("18_c0qfd")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_qqwpk"]
+material_override_0 = SubResource("StandardMaterial3D_dd60f")
+resource_name = "Dirt_Dirt_Cracked_02_Black_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r1wus"]
+albedo_texture = ExtResource("19_fb6vl")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_1j4y5"]
+material_override_0 = SubResource("StandardMaterial3D_r1wus")
+resource_name = "Dirt_Dirt_Cracked_02_Brown_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nuclv"]
+albedo_texture = ExtResource("20_dmybi")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_n1qjj"]
+material_override_0 = SubResource("StandardMaterial3D_nuclv")
+resource_name = "Dirt_Dirt_Cracked_02_Green_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_43v20"]
+albedo_texture = ExtResource("21_gvrr1")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_au5r3"]
+material_override_0 = SubResource("StandardMaterial3D_43v20")
+resource_name = "Dirt_Dirt_Cracked_02_Grey_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3gmlk"]
+albedo_texture = ExtResource("22_m36ly")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_23578"]
+material_override_0 = SubResource("StandardMaterial3D_3gmlk")
+resource_name = "Dirt_Dirt_Cracked_02_White_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vi2uh"]
+albedo_texture = ExtResource("23_kb82q")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_i5ykx"]
+material_override_0 = SubResource("StandardMaterial3D_vi2uh")
+resource_name = "Dirt_Dirt_Cracked_02_Yellow_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pqitp"]
+albedo_texture = ExtResource("24_ateac")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_28tva"]
+material_override_0 = SubResource("StandardMaterial3D_pqitp")
+resource_name = "Dirt_Dirt_Cracked_02_Yellow_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8b6bu"]
+albedo_texture = ExtResource("25_n3p7r")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_u1t43"]
+material_override_0 = SubResource("StandardMaterial3D_8b6bu")
+resource_name = "Dirt_Dirt_Pebbles_01_Black_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nhdou"]
+albedo_texture = ExtResource("26_fhkxs")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_li3kg"]
+material_override_0 = SubResource("StandardMaterial3D_nhdou")
+resource_name = "Dirt_Dirt_Pebbles_01_Brown_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_g5g4r"]
+albedo_texture = ExtResource("27_ig8ms")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_fow8r"]
+material_override_0 = SubResource("StandardMaterial3D_g5g4r")
+resource_name = "Dirt_Dirt_Pebbles_01_Green_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nae23"]
+albedo_texture = ExtResource("28_t6lwd")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_6vatn"]
+material_override_0 = SubResource("StandardMaterial3D_nae23")
+resource_name = "Dirt_Dirt_Pebbles_01_Grey_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nxhsi"]
+albedo_texture = ExtResource("29_ofg0o")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_jt5rw"]
+material_override_0 = SubResource("StandardMaterial3D_nxhsi")
+resource_name = "Dirt_Dirt_Pebbles_01_White_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7mpia"]
+albedo_texture = ExtResource("30_jn2hi")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_yjtja"]
+material_override_0 = SubResource("StandardMaterial3D_7mpia")
+resource_name = "Dirt_Dirt_Pebbles_01_Yellow_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_d8ak0"]
+albedo_texture = ExtResource("31_4xoiv")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_oegc4"]
+material_override_0 = SubResource("StandardMaterial3D_d8ak0")
+resource_name = "Dirt_Dirt_Pebbles_01_Yellow_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4gwqf"]
+albedo_texture = ExtResource("32_qj7h8")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_bs8xg"]
+material_override_0 = SubResource("StandardMaterial3D_4gwqf")
+resource_name = "Dirt_Dirt_Pebbles_02_Black_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_getkk"]
+albedo_texture = ExtResource("33_7bhu8")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ot847"]
+material_override_0 = SubResource("StandardMaterial3D_getkk")
+resource_name = "Dirt_Dirt_Pebbles_02_Brown_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gqld4"]
+albedo_texture = ExtResource("34_qji3w")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_r7qvr"]
+material_override_0 = SubResource("StandardMaterial3D_gqld4")
+resource_name = "Dirt_Dirt_Pebbles_02_Green_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ikl4m"]
+albedo_texture = ExtResource("35_ci2ig")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_5wq67"]
+material_override_0 = SubResource("StandardMaterial3D_ikl4m")
+resource_name = "Dirt_Dirt_Pebbles_02_Grey_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tjmkd"]
+albedo_texture = ExtResource("36_y2oyv")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_q4acr"]
+material_override_0 = SubResource("StandardMaterial3D_tjmkd")
+resource_name = "Dirt_Dirt_Pebbles_02_White_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gvt8e"]
+albedo_texture = ExtResource("37_xtaay")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_jxfmr"]
+material_override_0 = SubResource("StandardMaterial3D_gvt8e")
+resource_name = "Dirt_Dirt_Pebbles_02_Yellow_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kvyaf"]
+albedo_texture = ExtResource("38_xr27g")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_pk4tw"]
+material_override_0 = SubResource("StandardMaterial3D_kvyaf")
+resource_name = "Dirt_Dirt_Pebbles_02_Yellow_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5o60n"]
+albedo_texture = ExtResource("39_jeb3s")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_b7b7x"]
+material_override_0 = SubResource("StandardMaterial3D_5o60n")
+resource_name = "Dirt_Dirt_Rocks_01_Black_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xhekt"]
+albedo_texture = ExtResource("40_75ej8")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_vgx7u"]
+material_override_0 = SubResource("StandardMaterial3D_xhekt")
+resource_name = "Dirt_Dirt_Rocks_01_Brown_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_am2s1"]
+albedo_texture = ExtResource("41_fwlji")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_qf7ie"]
+material_override_0 = SubResource("StandardMaterial3D_am2s1")
+resource_name = "Dirt_Dirt_Rocks_01_Brown_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5dmnk"]
+albedo_texture = ExtResource("42_sr4r6")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ms03b"]
+material_override_0 = SubResource("StandardMaterial3D_5dmnk")
+resource_name = "Dirt_Dirt_Rocks_01_Green_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x2boa"]
+albedo_texture = ExtResource("43_phind")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_8uetm"]
+material_override_0 = SubResource("StandardMaterial3D_x2boa")
+resource_name = "Dirt_Dirt_Rocks_01_Grey_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c337c"]
+albedo_texture = ExtResource("44_rjm62")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_67x2o"]
+material_override_0 = SubResource("StandardMaterial3D_c337c")
+resource_name = "Dirt_Dirt_Rocks_01_White_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_26ohj"]
+albedo_texture = ExtResource("45_lgcw2")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_r6rh1"]
+material_override_0 = SubResource("StandardMaterial3D_26ohj")
+resource_name = "Dirt_Dirt_Rocks_01_Yellow_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hnvla"]
+albedo_texture = ExtResource("46_2yrjn")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_cc711"]
+material_override_0 = SubResource("StandardMaterial3D_hnvla")
+resource_name = "Dirt_Dirt_Rocks_02_0"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wg6lb"]
+albedo_texture = ExtResource("47_yoffn")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ncovq"]
+material_override_0 = SubResource("StandardMaterial3D_wg6lb")
+resource_name = "Dirt_Dirt_Rocks_02_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c2fks"]
+albedo_texture = ExtResource("48_3ot37")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_sppp3"]
+material_override_0 = SubResource("StandardMaterial3D_c2fks")
+resource_name = "Dirt_Dirt_Rocks_02_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x64dy"]
+albedo_texture = ExtResource("49_q8aho")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_511eb"]
+material_override_0 = SubResource("StandardMaterial3D_x64dy")
+resource_name = "Dirt_Dirt_Rocks_02_3"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x7jqx"]
+albedo_texture = ExtResource("50_qmbbs")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_yecp8"]
+material_override_0 = SubResource("StandardMaterial3D_x7jqx")
+resource_name = "Dirt_Dirt_Rocks_02_4"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_niqvs"]
+albedo_texture = ExtResource("51_te6lx")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_a375i"]
+material_override_0 = SubResource("StandardMaterial3D_niqvs")
+resource_name = "Dirt_Dirt_Rocks_02_Brown_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5cgds"]
+albedo_texture = ExtResource("52_nyxea")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_8fotf"]
+material_override_0 = SubResource("StandardMaterial3D_5cgds")
+resource_name = "Dirt_Dirt_Silt_01_Brown_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3odrv"]
+albedo_texture = ExtResource("53_83gy8")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_maumr"]
+material_override_0 = SubResource("StandardMaterial3D_3odrv")
+resource_name = "Dirt_Dirt_Silt_01_Brown_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ft5um"]
+albedo_texture = ExtResource("54_bgbl1")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_cxhix"]
+material_override_0 = SubResource("StandardMaterial3D_ft5um")
+resource_name = "Dirt_Dirt_Silt_01_Grey_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_apw17"]
+albedo_texture = ExtResource("55_73qlr")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_2td86"]
+material_override_0 = SubResource("StandardMaterial3D_apw17")
+resource_name = "Dirt_Dirt_Silt_01_White_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ulqjq"]
+albedo_texture = ExtResource("56_t3yla")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_2qqty"]
+material_override_0 = SubResource("StandardMaterial3D_ulqjq")
+resource_name = "Dirt_Dirt_Silt_01_Yellow_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ydwae"]
+albedo_texture = ExtResource("57_0j3y6")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_xcroj"]
+material_override_0 = SubResource("StandardMaterial3D_ydwae")
+resource_name = "Dirt_Dirt_Silt_01_Yellow_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ghbrs"]
+albedo_texture = ExtResource("58_kxtn5")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_3l1sq"]
+material_override_0 = SubResource("StandardMaterial3D_ghbrs")
+resource_name = "Grass_Grass_01_Green_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wqqoe"]
+albedo_texture = ExtResource("3_f3gil")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_1pxu0"]
+material_override_0 = SubResource("StandardMaterial3D_wqqoe")
+resource_name = "Grass_Grass_01_Green_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_uvgiq"]
+albedo_texture = ExtResource("59_8jhji")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_d2lwc"]
+material_override_0 = SubResource("StandardMaterial3D_uvgiq")
+resource_name = "Grass_Grass_01_Orange_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dtg3s"]
+albedo_texture = ExtResource("60_01wj2")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_r6spi"]
+material_override_0 = SubResource("StandardMaterial3D_dtg3s")
+resource_name = "Grass_Grass_01_Snow_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xayxa"]
+albedo_texture = ExtResource("61_eg32a")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_q8tac"]
+material_override_0 = SubResource("StandardMaterial3D_xayxa")
+resource_name = "Grass_Grass_01_Snow_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y6trg"]
+albedo_texture = ExtResource("62_wqwwy")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_shd4y"]
+material_override_0 = SubResource("StandardMaterial3D_y6trg")
+resource_name = "Grass_Grass_01_Snow_3"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ue4vd"]
+albedo_texture = ExtResource("63_vilcl")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_brxbq"]
+material_override_0 = SubResource("StandardMaterial3D_ue4vd")
+resource_name = "Grass_Grass_01_White_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c0ssa"]
+albedo_texture = ExtResource("64_rnvlp")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_wecrd"]
+material_override_0 = SubResource("StandardMaterial3D_c0ssa")
+resource_name = "Grass_Grass_02_Green_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gixdy"]
+albedo_texture = ExtResource("65_5do8x")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_j8njg"]
+material_override_0 = SubResource("StandardMaterial3D_gixdy")
+resource_name = "Grass_Grass_02_Green_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0caiv"]
+albedo_texture = ExtResource("66_gwnjq")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_vsk7q"]
+material_override_0 = SubResource("StandardMaterial3D_0caiv")
+resource_name = "Grass_Grass_02_Green_3"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cgc8v"]
+albedo_texture = ExtResource("67_nljha")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_b6pvg"]
+material_override_0 = SubResource("StandardMaterial3D_cgc8v")
+resource_name = "Grass_Grass_02_Red_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7sma7"]
+albedo_texture = ExtResource("68_3d4ok")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_br8ek"]
+material_override_0 = SubResource("StandardMaterial3D_7sma7")
+resource_name = "Grass_Grass_02_White_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_l2clp"]
+albedo_texture = ExtResource("4_0gm41")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_4kemg"]
+material_override_0 = SubResource("StandardMaterial3D_l2clp")
+resource_name = "Rockface_Rock_Grey_01"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ywc5v"]
+albedo_texture = ExtResource("69_dq87s")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_43xr4"]
+material_override_0 = SubResource("StandardMaterial3D_ywc5v")
+resource_name = "Rockface_Rock_Grey_02"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1wv2g"]
+albedo_texture = ExtResource("70_5t1vt")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_jb3wm"]
+material_override_0 = SubResource("StandardMaterial3D_1wv2g")
+resource_name = "Rockface_Rock_Grey_Boulder_01"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6lm8o"]
+albedo_texture = ExtResource("71_xb0br")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ltemr"]
+material_override_0 = SubResource("StandardMaterial3D_6lm8o")
+resource_name = "Rockface_Rock_Grey_Boulder_02"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tvxx7"]
+albedo_texture = ExtResource("72_baqj3")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_8ju5a"]
+material_override_0 = SubResource("StandardMaterial3D_tvxx7")
+resource_name = "Sand_Sand_01_Rocks_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lo1kp"]
+albedo_texture = ExtResource("73_y7jhp")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ly3t2"]
+material_override_0 = SubResource("StandardMaterial3D_lo1kp")
+resource_name = "Sand_Sand_01_Rocks_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6ag3l"]
+albedo_texture = ExtResource("74_sa133")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_8ehgs"]
+material_override_0 = SubResource("StandardMaterial3D_6ag3l")
+resource_name = "Sand_Sand_01_Yellow_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o2icp"]
+albedo_texture = ExtResource("75_dte64")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_l864d"]
+material_override_0 = SubResource("StandardMaterial3D_o2icp")
+resource_name = "Sand_Sand_02_Rocks_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_s4qmo"]
+albedo_texture = ExtResource("76_bxuf5")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_b5anh"]
+material_override_0 = SubResource("StandardMaterial3D_s4qmo")
+resource_name = "Sand_Sand_02_Rocks_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_k3xyc"]
+albedo_texture = ExtResource("77_ed871")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_guoik"]
+material_override_0 = SubResource("StandardMaterial3D_k3xyc")
+resource_name = "Sand_Sand_02_Yellow_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rx8si"]
+albedo_texture = ExtResource("78_dfenf")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_j518l"]
+material_override_0 = SubResource("StandardMaterial3D_rx8si")
+resource_name = "Sand_Sand_03_Rocks_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mttbw"]
+albedo_texture = ExtResource("79_ay6pu")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ypnka"]
+material_override_0 = SubResource("StandardMaterial3D_mttbw")
+resource_name = "Sand_Sand_03_Yellow_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vcdaj"]
+albedo_texture = ExtResource("80_jduw2")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_0ngyf"]
+material_override_0 = SubResource("StandardMaterial3D_vcdaj")
+resource_name = "Sand_Sand_03_Yellow_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lae5w"]
+albedo_texture = ExtResource("81_qtq1h")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_algrn"]
+material_override_0 = SubResource("StandardMaterial3D_lae5w")
+resource_name = "Gravel_Gravel_01_Blue_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pbc0q"]
+albedo_texture = ExtResource("82_jkgbl")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_0clwn"]
+material_override_0 = SubResource("StandardMaterial3D_pbc0q")
+resource_name = "Gravel_Gravel_01_Brown_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5k7f0"]
+albedo_texture = ExtResource("83_5fku8")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_7ui0v"]
+material_override_0 = SubResource("StandardMaterial3D_5k7f0")
+resource_name = "Gravel_Gravel_01_Brown_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_42fme"]
+albedo_texture = ExtResource("84_bdimr")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_d7106"]
+material_override_0 = SubResource("StandardMaterial3D_42fme")
+resource_name = "Gravel_Gravel_01_Grey_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7t6g0"]
+albedo_texture = ExtResource("85_mmogd")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_44y2d"]
+material_override_0 = SubResource("StandardMaterial3D_7t6g0")
+resource_name = "Gravel_Gravel_01_Orange_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mjn5e"]
+albedo_texture = ExtResource("86_wksle")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_wolvb"]
+material_override_0 = SubResource("StandardMaterial3D_mjn5e")
+resource_name = "Gravel_Gravel_01_Purple_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mv23w"]
+albedo_texture = ExtResource("87_g3tho")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_kfcop"]
+material_override_0 = SubResource("StandardMaterial3D_mv23w")
+resource_name = "Gravel_Gravel_01_Purple_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cc1nq"]
+albedo_texture = ExtResource("88_hjwne")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_qqfl7"]
+material_override_0 = SubResource("StandardMaterial3D_cc1nq")
+resource_name = "Gravel_Gravel_01_Red_1"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fdcrc"]
+albedo_texture = ExtResource("89_n5k4g")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_n6aob"]
+material_override_0 = SubResource("StandardMaterial3D_fdcrc")
+resource_name = "Gravel_Gravel_01_Red_2"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yu5hl"]
+albedo_texture = ExtResource("90_anu2u")
+roughness = 0.8
+texture_filter = 0
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_biec6"]
+material_override_0 = SubResource("StandardMaterial3D_yu5hl")
+resource_name = "Gravel_Gravel_01_White_1"
 
 [resource]
-models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModel_air"), SubResource("VoxelBlockyModelCube_fsoae"), SubResource("VoxelBlockyModelCube_cm3i0"), SubResource("VoxelBlockyModelCube_3kwel"), SubResource("VoxelBlockyModelCube_ut4dk")])
+models = Array[VoxelBlockyModel]([null, SubResource("VoxelBlockyModelCube_cjhwf"), SubResource("VoxelBlockyModelCube_32jls"), SubResource("VoxelBlockyModelCube_st4j0"), SubResource("VoxelBlockyModelCube_toxs6"), SubResource("VoxelBlockyModelCube_1sbnh"), SubResource("VoxelBlockyModelCube_m2u3k"), SubResource("VoxelBlockyModelCube_r3h8s"), SubResource("VoxelBlockyModelCube_tihe4"), SubResource("VoxelBlockyModelCube_0b1fd"), SubResource("VoxelBlockyModelCube_qbr2g"), SubResource("VoxelBlockyModelCube_3e8kq"), SubResource("VoxelBlockyModelCube_w7duf"), SubResource("VoxelBlockyModelCube_mmrql"), SubResource("VoxelBlockyModelCube_8qed5"), SubResource("VoxelBlockyModelCube_bqmm3"), SubResource("VoxelBlockyModelCube_2ml2q"), SubResource("VoxelBlockyModelCube_61kvo"), SubResource("VoxelBlockyModelCube_qqwpk"), SubResource("VoxelBlockyModelCube_1j4y5"), SubResource("VoxelBlockyModelCube_n1qjj"), SubResource("VoxelBlockyModelCube_au5r3"), SubResource("VoxelBlockyModelCube_23578"), SubResource("VoxelBlockyModelCube_i5ykx"), SubResource("VoxelBlockyModelCube_28tva"), SubResource("VoxelBlockyModelCube_u1t43"), SubResource("VoxelBlockyModelCube_li3kg"), SubResource("VoxelBlockyModelCube_fow8r"), SubResource("VoxelBlockyModelCube_6vatn"), SubResource("VoxelBlockyModelCube_jt5rw"), SubResource("VoxelBlockyModelCube_yjtja"), SubResource("VoxelBlockyModelCube_oegc4"), SubResource("VoxelBlockyModelCube_bs8xg"), SubResource("VoxelBlockyModelCube_ot847"), SubResource("VoxelBlockyModelCube_r7qvr"), SubResource("VoxelBlockyModelCube_5wq67"), SubResource("VoxelBlockyModelCube_q4acr"), SubResource("VoxelBlockyModelCube_jxfmr"), SubResource("VoxelBlockyModelCube_pk4tw"), SubResource("VoxelBlockyModelCube_b7b7x"), SubResource("VoxelBlockyModelCube_vgx7u"), SubResource("VoxelBlockyModelCube_qf7ie"), SubResource("VoxelBlockyModelCube_ms03b"), SubResource("VoxelBlockyModelCube_8uetm"), SubResource("VoxelBlockyModelCube_67x2o"), SubResource("VoxelBlockyModelCube_r6rh1"), SubResource("VoxelBlockyModelCube_cc711"), SubResource("VoxelBlockyModelCube_ncovq"), SubResource("VoxelBlockyModelCube_sppp3"), SubResource("VoxelBlockyModelCube_511eb"), SubResource("VoxelBlockyModelCube_yecp8"), SubResource("VoxelBlockyModelCube_a375i"), SubResource("VoxelBlockyModelCube_8fotf"), SubResource("VoxelBlockyModelCube_maumr"), SubResource("VoxelBlockyModelCube_cxhix"), SubResource("VoxelBlockyModelCube_2td86"), SubResource("VoxelBlockyModelCube_2qqty"), SubResource("VoxelBlockyModelCube_xcroj"), SubResource("VoxelBlockyModelCube_3l1sq"), SubResource("VoxelBlockyModelCube_1pxu0"), SubResource("VoxelBlockyModelCube_d2lwc"), SubResource("VoxelBlockyModelCube_r6spi"), SubResource("VoxelBlockyModelCube_q8tac"), SubResource("VoxelBlockyModelCube_shd4y"), SubResource("VoxelBlockyModelCube_brxbq"), SubResource("VoxelBlockyModelCube_wecrd"), SubResource("VoxelBlockyModelCube_j8njg"), SubResource("VoxelBlockyModelCube_vsk7q"), SubResource("VoxelBlockyModelCube_b6pvg"), SubResource("VoxelBlockyModelCube_br8ek"), SubResource("VoxelBlockyModelCube_4kemg"), SubResource("VoxelBlockyModelCube_43xr4"), SubResource("VoxelBlockyModelCube_jb3wm"), SubResource("VoxelBlockyModelCube_ltemr"), SubResource("VoxelBlockyModelCube_8ju5a"), SubResource("VoxelBlockyModelCube_ly3t2"), SubResource("VoxelBlockyModelCube_8ehgs"), SubResource("VoxelBlockyModelCube_l864d"), SubResource("VoxelBlockyModelCube_b5anh"), SubResource("VoxelBlockyModelCube_guoik"), SubResource("VoxelBlockyModelCube_j518l"), SubResource("VoxelBlockyModelCube_ypnka"), SubResource("VoxelBlockyModelCube_0ngyf"), SubResource("VoxelBlockyModelCube_algrn"), SubResource("VoxelBlockyModelCube_0clwn"), SubResource("VoxelBlockyModelCube_7ui0v"), SubResource("VoxelBlockyModelCube_d7106"), SubResource("VoxelBlockyModelCube_44y2d"), SubResource("VoxelBlockyModelCube_wolvb"), SubResource("VoxelBlockyModelCube_kfcop"), SubResource("VoxelBlockyModelCube_qqfl7"), SubResource("VoxelBlockyModelCube_n6aob"), SubResource("VoxelBlockyModelCube_biec6")])

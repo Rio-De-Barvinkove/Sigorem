@@ -1,0 +1,6 @@
+[gd_resource type="VoxelStreamScript" load_steps=2 format=3 uid="uid://d4f6g7h8jaj0k"]
+
+[ext_resource type="Script" path="res://scripts/game/world/generation/VoxelStreamAdapter.gd" id="1_stream"]
+
+[resource]
+script = ExtResource("1_stream")

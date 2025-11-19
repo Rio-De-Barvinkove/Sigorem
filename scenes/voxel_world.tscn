@@ -1,7 +1,5 @@
-[gd_scene load_steps=17 format=3 uid="uid://bquqyerqh1fk7"]
+[gd_scene load_steps=16 format=3 uid="uid://bquqyerqh1fk7"]
 
-[ext_resource type="Material" uid="uid://tymewt1rbkn8" path="res://LotL_Terrain_Material.tres" id="2_lmvip"]
-[ext_resource type="Script" uid="uid://p8ub8qbg5p32" path="res://scripts/game/world/generation/VoxelGeneratorAdapter.gd" id="3_r7dlv"]
 [ext_resource type="Texture2D" uid="uid://dyjqnuf8lpdq6" path="res://assets/textures/Test/60-Sky-gradiant-pack1/Sky_gradient_1.png" id="3_sky"]
 [ext_resource type="PackedScene" uid="uid://dps3xrk1e80j7" path="res://scenes/player.tscn" id="3_sqft2"]
 [ext_resource type="Script" uid="uid://bgxhog0gtcg6q" path="res://scripts/game/player/CameraController.gd" id="5_5g68j"]
@@ -10,6 +8,9 @@
 [ext_resource type="PackedScene" uid="uid://dsv2wih23603a" path="res://scenes/ui/character_menu.tscn" id="8_char"]
 [ext_resource type="Script" uid="uid://dnkdy3jxy7cuy" path="res://scripts/ui/game_hud.gd" id="10_hud"]
 [ext_resource type="Script" uid="uid://b0a0qpcpkqt7m" path="res://scripts/game/debug/ConsoleCommands.gd" id="11_console_commands"]
+[ext_resource type="VoxelGeneratorScript" uid="uid://c8v5k3n8m2r4d" path="res://resources/MyGenerator.tres" id="12_generator"]
+[ext_resource type="VoxelStreamScript" uid="uid://d4f6g7h8jaj0k" path="res://resources/MyStream.tres" id="13_stream"]
+[ext_resource type="VoxelBlockyLibrary" uid="uid://dwomnamqvyaqf" path="res://assets/voxel_library.tres" id="14_voxel_library"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_1"]
 panorama = ExtResource("3_sky")
@@ -23,12 +24,8 @@ sky = SubResource("Sky_1")
 tonemap_mode = 2
 glow_enabled = true
 
-[sub_resource type="VoxelStreamScript" id="VoxelStreamScript_xnn3w"]
-
-[sub_resource type="VoxelGeneratorScript" id="VoxelGeneratorScript_nclox"]
-script = ExtResource("3_r7dlv")
-
-[sub_resource type="VoxelMesherTransvoxel" id="VoxelMesherTransvoxel_1"]
+[sub_resource type="VoxelMesherBlocky" id="VoxelMesherBlocky_1"]
+library = ExtResource("14_voxel_library")
 
 [node name="VoxelWorld" type="Node3D"]
 
@@ -41,12 +38,13 @@ shadow_enabled = true
 
 [node name="VoxelLodTerrain" type="VoxelLodTerrain" parent="."]
 lod_count = 5
-material = ExtResource("2_lmvip")
-generator = SubResource("VoxelGeneratorScript_nclox")
-mesher = SubResource("VoxelMesherTransvoxel_1")
+run_stream_in_editor = false
+stream = ExtResource("13_stream")
+generator = ExtResource("12_generator")
+mesher = SubResource("VoxelMesherBlocky_1")
 
 [node name="Player" parent="." instance=ExtResource("3_sqft2")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 20, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0)
 
 [node name="VoxelViewer" type="VoxelViewer" parent="Player"]
 

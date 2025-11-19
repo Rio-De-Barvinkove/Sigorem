@@ -11,8 +11,15 @@ var base_height := 16
 var max_height := 128
 var biome_scale := 100.0
 
-# SDF channel for smooth terrain
-const CHANNEL_SDF = VoxelBuffer.CHANNEL_SDF
+# TYPE channel for blocky terrain
+const CHANNEL_TYPE = VoxelBuffer.CHANNEL_TYPE
+
+# Block type IDs (matching assets/voxel_library.tres)
+const BLOCK_AIR = 0
+const BLOCK_STONE = 1
+const BLOCK_DIRT = 2
+const BLOCK_GRASS = 3
+const BLOCK_ROCK = 4
 
 func _init():
 	resource_name = "VoxelGeneratorAdapter"
@@ -40,7 +47,7 @@ func _setup_noise():
 	cave_noise.fractal_octaves = 3
 
 func _get_used_channels_mask() -> int:
-	return 1 << CHANNEL_SDF
+	return 1 << CHANNEL_TYPE
 
 func _generate_block(out_buffer: VoxelBuffer, origin: Vector3i, lod: int):
 	var size := out_buffer.get_size()
@@ -48,46 +55,51 @@ func _generate_block(out_buffer: VoxelBuffer, origin: Vector3i, lod: int):
 	var size_y := size.y
 	var size_z := size.z
 
-	var start_x := origin.x
-	var start_y := origin.y
-	var start_z := origin.z
-
-	# LOD scaling - for higher LOD levels, we use larger steps
-	var lod_scale := 1 << lod
-
 	# Проходимо по всіх вокселях в блоці
-	for x in range(0, size_x, lod_scale):
-		var world_x = start_x + x
-		for z in range(0, size_z, lod_scale):
-			var world_z = start_z + z
+	# Важливо: origin вже враховує LOD від VoxelLodTerrain, тому просто додаємо локальні координати
+	for x in range(0, size_x, 1):
+		var world_x = origin.x + x
+		for z in range(0, size_z, 1):
+			var world_z = origin.z + z
 
 			# Отримуємо біом для цієї координати
 			var biome_data = _get_biome_at_position(world_x, world_z)
 
-			# Отримуємо висоту поверхні
-			var surface_height = _get_height_at(world_x, world_z, biome_data)
+			# Отримуємо висоту поверхні (округлюємо до цілого для блочного стилю)
+			var surface_height = int(_get_height_at(world_x, world_z, biome_data))
 
-			# Генеруємо SDF для кожного Y рівня в цьому стовпчику
-			for y in range(0, size_y, lod_scale):
-				var world_y = start_y + y
+			# Генеруємо блоки для кожного Y рівня в цьому стовпчику
+			for y in range(0, size_y, 1):
+				var world_y = origin.y + y
+				var block_type = BLOCK_AIR
 
-				# Розраховуємо signed distance до поверхні
-				var distance_to_surface = float(world_y) - surface_height
-
-				# Додаємо невеликий шум для більш природного вигляду
-				var surface_noise = noise.get_noise_3d(world_x * 0.1, world_y * 0.1, world_z * 0.1) * 2.0
-				distance_to_surface += surface_noise
+				# Визначаємо тип блоку на основі висоти
+				if world_y <= 2:
+					# Базальтовий шар на дні
+					block_type = BLOCK_STONE
+				elif world_y < surface_height - 3:
+					# Камінь глибоко під землею
+					block_type = BLOCK_STONE
+				elif world_y < surface_height:
+					# Земля під поверхнею
+					block_type = BLOCK_DIRT
+				elif world_y == surface_height:
+					# Поверхня - залежить від біому
+					var biome_name = biome_data.get("name", "plains")
+					if biome_name == "desert":
+						block_type = BLOCK_ROCK
+					else:
+						block_type = BLOCK_GRASS
+				else:
+					# Повітря над поверхнею
+					block_type = BLOCK_AIR
 
 				# Для печер: якщо шум негативний в певному діапазоні, створюємо порожнину
 				var cave_value = cave_noise.get_noise_3d(world_x * 0.05, world_y * 0.05, world_z * 0.05)
-				if cave_value < -0.3 and world_y < surface_height - 5:
-					distance_to_surface = 1.0  # Повітря всередині печери
+				if cave_value < -0.3 and world_y < surface_height - 5 and block_type != BLOCK_AIR:
+					block_type = BLOCK_AIR  # Повітря всередині печери
 
-				# Базальтовий шар на дні
-				if world_y <= 2:
-					distance_to_surface = -1.0  # Завжди всередині
-
-				out_buffer.set_voxel_f(distance_to_surface, x, y, z, CHANNEL_SDF)
+				out_buffer.set_voxel(block_type, x, y, z, CHANNEL_TYPE)
 
 func _get_height_at(x: int, z: int, biome_data: Dictionary) -> float:
 	var height_modifier = biome_data.get("height_modifier", 0.0)
@@ -111,18 +123,22 @@ func _get_biome_at_position(x: int, z: int) -> Dictionary:
 func _get_biome_data(biome_name: String) -> Dictionary:
 	var biomes = {
 		"plains": {
+			"name": "plains",
 			"height_modifier": 0.0,
 			"surface_roughness": 1.0
 		},
 		"forest": {
+			"name": "forest",
 			"height_modifier": 0.5,
 			"surface_roughness": 1.2
 		},
 		"desert": {
+			"name": "desert",
 			"height_modifier": -0.2,
 			"surface_roughness": 0.8
 		},
 		"mountains": {
+			"name": "mountains",
 			"height_modifier": 2.0,
 			"surface_roughness": 1.5
 		}
