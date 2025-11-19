@@ -4,6 +4,9 @@ class_name WorldGenerationSettings
 # Посилання на VoxelLodTerrain (старий TerrainGenerator замінено)
 @export var voxel_lod_terrain: Node # VoxelLodTerrain
 
+# Старий terrain_generator більше не використовується
+var terrain_generator = null
+
 # Автоматичне оновлення
 var auto_update_enabled := false
 
@@ -165,167 +168,24 @@ func _on_setting_changed(_value = null):
 		# Повна регенерація тільки при явному натисканні кнопки "Generate"
 
 func load_current_settings():
-	"""Завантажити поточні налаштування з TerrainGenerator"""
-	if not terrain_generator:
-		find_terrain_generator()
-		return
-
-	if not terrain_generator:
-		return
-
-	# Основні модулі
-	procedural_generation.button_pressed = terrain_generator.use_procedural_generation
-	chunking.button_pressed = terrain_generator.use_chunking
-	optimization.button_pressed = terrain_generator.use_optimization
-	best_practices.button_pressed = terrain_generator.use_best_practices
-
-	# Параметри
-	chunk_size_x.value = terrain_generator.chunk_size.x
-	chunk_size_y.value = terrain_generator.chunk_size.y
-	chunk_radius.value = terrain_generator.chunk_radius
-	height_amplitude.value = terrain_generator.height_amplitude
-	base_height.value = terrain_generator.base_height
-	max_height.value = terrain_generator.max_height
-	# min_height може бути не в UI, тому використовуємо дефолт якщо немає
-	if has_node("Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/MinHeight"):
-		var min_height_node = get_node("Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/MinHeight")
-		if min_height_node:
-			min_height_node.value = terrain_generator.min_height
-
-	# Noise parameters
-	if terrain_generator.noise:
-		seed.value = terrain_generator.noise.seed
-		frequency.value = terrain_generator.noise.frequency
-		noise_type.selected = terrain_generator.noise.noise_type
-		fractal_type.selected = terrain_generator.noise.fractal_type
-		octaves.value = terrain_generator.noise.fractal_octaves
-
-	# Розширені модулі
-	structures.button_pressed = terrain_generator.use_structures
-	lod.button_pressed = terrain_generator.use_lod
-	threading.button_pressed = terrain_generator.use_threading
-	vegetation.button_pressed = terrain_generator.use_vegetation
-	heightmap.button_pressed = terrain_generator.use_heightmap
-	splat_mapping.button_pressed = terrain_generator.use_splat_mapping
-	detail_layers.button_pressed = terrain_generator.use_detail_layers
-	save_load.button_pressed = terrain_generator.use_save_load
-	native_optimization.button_pressed = terrain_generator.use_native_optimization
-	precomputed_patterns.button_pressed = terrain_generator.use_precomputed_patterns
-
-	# Оптимізація
-	enable_chunk_culling.button_pressed = terrain_generator.enable_chunk_culling
-	max_chunk_distance.value = terrain_generator.max_chunk_distance
-
-	# Heightmap параметри (з TerrainGenerator)
-	heightmap_scale.value = terrain_generator.heightmap_scale
-	heightmap_size_x.value = terrain_generator.heightmap_size.x
-	heightmap_size_y.value = terrain_generator.heightmap_size.y
-	heightmap_subdivides.value = terrain_generator.heightmap_subdivides
-
-	# Завантажуємо налаштування з модулів якщо вони існують
-	if terrain_generator.structure_module:
-		structure_density.value = terrain_generator.structure_module.structure_density
-	
-	if terrain_generator.vegetation_module:
-		vegetation_radius.value = terrain_generator.vegetation_module.multimesh_radius
-	
-	if terrain_generator.optimization_module:
-		max_generation_time.value = terrain_generator.optimization_module.max_generation_time_per_frame
-		target_fps.value = terrain_generator.optimization_module.target_fps
-		max_active_chunks.value = terrain_generator.optimization_module.max_active_chunks
-
-	print("WorldGenerationSettings: Налаштування завантажено")
+	"""Завантажити поточні налаштування з VoxelLodTerrain"""
+	push_warning("WorldGenerationSettings: Старий TerrainGenerator замінено на VoxelLodTerrain. Завантаження налаштувань вимкнено.")
+	print("WorldGenerationSettings: Налаштування не завантажено (VoxelLodTerrain)")
 
 func find_terrain_generator():
-	"""Знайти TerrainGenerator в сцені"""
-	var generators = get_tree().get_nodes_in_group("terrain_generator")
-	if generators.size() > 0:
-		terrain_generator = generators[0]
-		load_current_settings()
-		print("WorldGenerationSettings: Знайдено TerrainGenerator")
-	else:
-		push_warning("WorldGenerationSettings: TerrainGenerator не знайдено!")
+	"""Знайти VoxelLodTerrain в сцені"""
+	push_warning("WorldGenerationSettings: Старий TerrainGenerator замінено на VoxelLodTerrain. Пошук генератора вимкнено.")
+	print("WorldGenerationSettings: Пошук генератора пропущено (VoxelLodTerrain)")
 
 func apply_settings():
-	"""Застосувати налаштування до TerrainGenerator"""
-	if not terrain_generator:
-		find_terrain_generator()
-		if not terrain_generator:
-			push_error("WorldGenerationSettings: Неможливо знайти TerrainGenerator!")
-			return
-
-	# Основні модулі
-	terrain_generator.use_procedural_generation = procedural_generation.button_pressed
-	terrain_generator.use_chunking = chunking.button_pressed
-	terrain_generator.use_optimization = optimization.button_pressed
-	terrain_generator.use_best_practices = best_practices.button_pressed
-
-	# Параметри
-	terrain_generator.chunk_size = Vector2i(int(chunk_size_x.value), int(chunk_size_y.value))
-	terrain_generator.chunk_radius = int(chunk_radius.value)
-	terrain_generator.height_amplitude = int(height_amplitude.value)
-	terrain_generator.base_height = int(base_height.value)
-	terrain_generator.max_height = int(max_height.value)
-	# min_height може бути не в UI, тому використовуємо дефолт якщо немає
-	if has_node("Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/MinHeight"):
-		var min_height_node = get_node("Panel/VBoxContainer/TabContainer/CoreModules/ModulesVBox/ParamsGrid/MinHeight")
-		if min_height_node:
-			terrain_generator.min_height = int(min_height_node.value)
-
-	# Noise parameters
-	if terrain_generator.noise:
-		terrain_generator.noise.seed = int(seed.value)
-		terrain_generator.noise.frequency = frequency.value
-		terrain_generator.noise.noise_type = noise_type.selected
-		terrain_generator.noise.fractal_type = fractal_type.selected
-		terrain_generator.noise.fractal_octaves = int(octaves.value)
-
-	# Розширені модулі
-	terrain_generator.use_structures = structures.button_pressed
-	terrain_generator.use_lod = lod.button_pressed
-	terrain_generator.use_threading = threading.button_pressed
-	terrain_generator.use_vegetation = vegetation.button_pressed
-	terrain_generator.use_heightmap = heightmap.button_pressed
-	terrain_generator.use_splat_mapping = splat_mapping.button_pressed
-	terrain_generator.use_detail_layers = detail_layers.button_pressed
-	terrain_generator.use_save_load = save_load.button_pressed
-	terrain_generator.use_native_optimization = native_optimization.button_pressed
-	terrain_generator.use_precomputed_patterns = precomputed_patterns.button_pressed
-
-	# Оптимізація
-	terrain_generator.enable_chunk_culling = enable_chunk_culling.button_pressed
-	terrain_generator.max_chunk_distance = max_chunk_distance.value
-
-	# Heightmap параметри (до TerrainGenerator, вони застосуються при ініціалізації модуля)
-	terrain_generator.heightmap_scale = heightmap_scale.value
-	terrain_generator.heightmap_size = Vector2(heightmap_size_x.value, heightmap_size_y.value)
-	terrain_generator.heightmap_subdivides = heightmap_subdivides.value
-
-	# Застосовуємо налаштування до модулів (якщо вони вже існують)
-	if terrain_generator.structure_module:
-		terrain_generator.structure_module.structure_density = structure_density.value
-	
-	if terrain_generator.vegetation_module:
-		terrain_generator.vegetation_module.multimesh_radius = vegetation_radius.value
-	
-	# Heightmap параметри застосовуються під час ініціалізації модуля
-	if terrain_generator.heightmap_module:
-		terrain_generator.heightmap_module.height_scale = heightmap_scale.value
-		terrain_generator.heightmap_module.mesh_size = Vector2(heightmap_size_x.value, heightmap_size_y.value)
-		terrain_generator.heightmap_module.subdivides = heightmap_subdivides.value
-	
-	if terrain_generator.optimization_module:
-		terrain_generator.optimization_module.max_generation_time_per_frame = max_generation_time.value
-		terrain_generator.optimization_module.target_fps = target_fps.value
-		terrain_generator.optimization_module.max_active_chunks = max_active_chunks.value
-
-	print("WorldGenerationSettings: Налаштування застосовано")
+	"""Застосувати налаштування до VoxelLodTerrain"""
+	push_warning("WorldGenerationSettings: Старий TerrainGenerator замінено на VoxelLodTerrain. Застосування налаштувань вимкнено.")
+	print("WorldGenerationSettings: Налаштування не застосовано (VoxelLodTerrain)")
 
 func clear_world():
 	"""Очистити поточний світ"""
-	if terrain_generator and terrain_generator.target_gridmap:
-		terrain_generator.target_gridmap.clear()
-		print("WorldGenerationSettings: Світ очищено")
+	push_warning("WorldGenerationSettings: Старий TerrainGenerator замінено на VoxelLodTerrain. Очищення світу вимкнено.")
+	print("WorldGenerationSettings: Світ не очищено (VoxelLodTerrain)")
 
 func generate_world():
 	"""Запустити генерацію світу з поточними налаштуваннями"""
