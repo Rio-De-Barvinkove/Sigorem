@@ -1,10 +1,16 @@
-[gd_scene load_steps=11 format=3 uid="uid://bquqyerqh1fk7"]
+[gd_scene load_steps=18 format=3 uid="uid://bquqyerqh1fk7"]
 
 [ext_resource type="Script" uid="uid://p8ub8qbg5p32" path="res://scripts/game/world/generation/VoxelGeneratorAdapter.gd" id="1_generator"]
 [ext_resource type="Material" path="res://LotL_Terrain_Material.tres" id="2_lotl_mat"]
 [ext_resource type="Texture2D" uid="uid://dyjqnuf8lpdq6" path="res://assets/textures/Test/60-Sky-gradiant-pack1/Sky_gradient_1.png" id="3_sky"]
 [ext_resource type="PackedScene" uid="uid://dps3xrk1e80j7" path="res://scenes/player.tscn" id="3_sqft2"]
 [ext_resource type="Script" uid="uid://bgxhog0gtcg6q" path="res://scripts/game/player/CameraController.gd" id="5_5g68j"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih236027" path="res://scenes/ui/inventory.tscn" id="6_inventory"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih236028" path="res://scenes/ui/pause_menu.tscn" id="7_pause"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih23603a" path="res://scenes/ui/character_menu.tscn" id="8_char"]
+[ext_resource type="PackedScene" uid="uid://c8v1qkq6t6v7b" path="res://scenes/ui/world_generation_settings.tscn" id="9_world_settings"]
+[ext_resource type="Script" uid="uid://dnkdy3jxy7cuy" path="res://scripts/ui/game_hud.gd" id="10_hud"]
+[ext_resource type="Script" uid="uid://b0a0qpcpkqt7m" path="res://scripts/game/debug/ConsoleCommands.gd" id="11_console_commands"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_1"]
 panorama = ExtResource("3_sky")
@@ -51,3 +57,38 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 20, 0)
 transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 15, 15)
 current = true
 script = ExtResource("5_5g68j")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="InventoryUI" parent="UI" instance=ExtResource("6_inventory")]
+
+[node name="PauseMenu" parent="UI" instance=ExtResource("7_pause")]
+
+[node name="CharacterMenu" parent="UI" instance=ExtResource("8_char")]
+
+[node name="WorldGenerationSettings" parent="UI" instance=ExtResource("9_world_settings")]
+
+[node name="GameHUD" type="CanvasLayer" parent="."]
+script = ExtResource("10_hud")
+
+[node name="InfoLabel" type="Label" parent="GameHUD"]
+
+[node name="DebugLabel" type="Label" parent="GameHUD"]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 260.0
+offset_bottom = 100.0
+
+[node name="BuildModeLabel" type="Label" parent="GameHUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -400.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 30.0
+grow_horizontal = 0
+horizontal_alignment = 2
+
+[node name="ConsoleCommands" type="Node" parent="."]
+script = ExtResource("11_console_commands")

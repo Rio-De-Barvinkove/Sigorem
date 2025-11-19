@@ -5,23 +5,17 @@ class_name ConsoleCommands
 # Доступ до команд через консоль: Player.teleport(x, y, z) або TerrainGenerator.regenerate_chunk(x, z)
 
 var player: Node3D
-var terrain_generator: Node
+var voxel_lod_terrain: Node
 
 func _ready():
 	# Чекаємо один кадр, щоб сцена встигла завантажитися
 	await get_tree().process_frame
-	
-	# Знаходимо гравця та TerrainGenerator
-	var world = get_tree().get_root().get_node_or_null("World")
+
+	# Знаходимо гравця та VoxelLodTerrain
+	var world = get_tree().get_root().get_node_or_null("VoxelWorld")
 	if world:
 		player = world.get_node_or_null("Player")
-		# TerrainGenerator може бути дочірнім вузлом World (GridMap)
-		terrain_generator = world.get_node_or_null("TerrainGenerator")
-		if not terrain_generator:
-			# Спробуємо знайти через WorldGenerator
-			var world_gen = world
-			if world_gen and "terrain_generator" in world_gen:
-				terrain_generator = world_gen.terrain_generator
+		voxel_lod_terrain = world.get_node_or_null("VoxelLodTerrain")
 	
 	# Реєструємо команди в Panku Console
 	_register_commands()
@@ -54,15 +48,22 @@ func teleport(x: float, y: float, z: float) -> String:
 	player.global_position = Vector3(x, y, z)
 	return "Гравець телепортовано на (" + str(x) + ", " + str(y) + ", " + str(z) + ")"
 
-func teleport_to_starting_area() -> String:
-	"""Телепортувати гравця на стартову зону"""
-	if not terrain_generator:
-		return "Помилка: TerrainGenerator не знайдено"
-	
-	if terrain_generator.has_method("teleport_player_to_starting_area"):
-		terrain_generator.teleport_player_to_starting_area()
-		return "Гравець телепортовано на стартову зону"
-	return "Помилка: Метод teleport_player_to_starting_area не знайдено"
+func teleport_to_surface(x: float, z: float) -> String:
+	"""Телепортувати гравця на поверхню над позицією (x, z)"""
+	if not player or not voxel_lod_terrain:
+		return "Помилка: Гравець або VoxelLodTerrain не знайдено"
+
+	# Raycast down from high altitude to find surface
+	var space_state = player.get_world_3d().direct_space_state
+	var from = Vector3(x, 200, z)
+	var to = Vector3(x, -50, z)
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	var result = space_state.intersect_ray(query)
+
+	if result:
+		player.global_position = result.position + Vector3(0, 2, 0) # 2 units above surface
+		return "Гравець телепортовано на поверхню над (" + str(x) + ", " + str(z) + ")"
+	return "Помилка: Поверхня не знайдена на цій позиції"
 
 func set_speed(multiplier: float) -> String:
 	"""Встановити множник швидкості гравця"""
@@ -87,58 +88,71 @@ func toggle_flight() -> String:
 
 # ========== Команди для генерації світу ==========
 
-func regenerate_chunk(x: int, z: int) -> String:
-	"""Перегенерувати чанк на позиції (x, z)"""
-	if not terrain_generator:
-		return "Помилка: TerrainGenerator не знайдено"
-	
-	if not terrain_generator.chunk_module:
-		return "Помилка: ChunkManager не доступний"
-	
-	var chunk_pos = Vector2i(x, z)
-	# ВИПРАВЛЕНО: generate_chunk() видалена, використовуємо queue_chunk_generation()
-	# Спочатку видаляємо старий чанк якщо він існує
-	if terrain_generator.chunk_module.active_chunks.has(chunk_pos):
-		if not terrain_generator.target_gridmap or not is_instance_valid(terrain_generator.target_gridmap):
-			return "Помилка: GridMap не валідний для видалення чанка"
-		terrain_generator.chunk_module.remove_chunk(terrain_generator.target_gridmap, chunk_pos)
-	
-	# Додаємо в чергу генерації з пріоритетом
-	var success = terrain_generator.chunk_module.queue_chunk_generation(chunk_pos)
-	if success:
-		return "Чанк (" + str(x) + ", " + str(z) + ") додано в чергу генерації"
-	else:
-		return "Помилка: Не вдалося додати чанк в чергу генерації (перевірте, чи ChunkManager прикріплено до TerrainGenerator та чи валідний target_gridmap)"
+func fill_area(x1: int, y1: int, z1: int, x2: int, y2: int, z2: int, value: float = -1.0) -> String:
+	"""Заповнити область SDF значеннями (за замовчуванням - твердий матеріал)"""
+	if not voxel_lod_terrain:
+		return "Помилка: VoxelLodTerrain не знайдено"
 
-func regenerate_world() -> String:
-	"""Перегенерувати весь світ"""
-	if not terrain_generator:
-		return "Помилка: TerrainGenerator не знайдено"
-	
-	if terrain_generator.has_method("regenerate_terrain"):
-		terrain_generator.regenerate_terrain()
-		return "Світ перегенеровано"
-	return "Помилка: Не вдалося перегенерувати світ"
+	var tool = voxel_lod_terrain.get_voxel_tool()
+	if not tool:
+		return "Помилка: VoxelTool не доступний"
 
-func get_performance_report() -> String:
-	"""Отримати звіт про продуктивність"""
-	if not terrain_generator:
-		return "Помилка: TerrainGenerator не знайдено"
-	
-	if terrain_generator.optimization_module and terrain_generator.optimization_module.has_method("get_performance_report"):
-		return terrain_generator.optimization_module.get_performance_report()
-	return "Помилка: OptimizationManager не доступний"
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+	tool.mode = VoxelTool.MODE_SET
 
-func toggle_profiling() -> String:
-	"""Увімкнути/вимкнути профілювання"""
-	if not terrain_generator:
-		return "Помилка: TerrainGenerator не знайдено"
-	
-	if terrain_generator.optimization_module:
-		terrain_generator.optimization_module.enable_profiling = not terrain_generator.optimization_module.enable_profiling
-		var status = "увімкнено" if terrain_generator.optimization_module.enable_profiling else "вимкнено"
-		return "Профілювання " + status
-	return "Помилка: OptimizationManager не доступний"
+	# Ensure coordinates are in correct order
+	var min_pos = Vector3i(min(x1, x2), min(y1, y2), min(z1, z2))
+	var max_pos = Vector3i(max(x1, x2), max(y1, y2), max(z1, z2))
+
+	for x in range(min_pos.x, max_pos.x + 1):
+		for y in range(min_pos.y, max_pos.y + 1):
+			for z in range(min_pos.z, max_pos.z + 1):
+				tool.do_point(Vector3(x, y, z))
+
+	return "Область заповнено від " + str(min_pos) + " до " + str(max_pos)
+
+func create_sphere(center_x: int, center_y: int, center_z: int, radius: float, value: float = -1.0) -> String:
+	"""Створити сферу з SDF значенням"""
+	if not voxel_lod_terrain:
+		return "Помилка: VoxelLodTerrain не знайдено"
+
+	var tool = voxel_lod_terrain.get_voxel_tool()
+	if not tool:
+		return "Помилка: VoxelTool не доступний"
+
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+	tool.mode = VoxelTool.MODE_SET
+
+	var center = Vector3(center_x, center_y, center_z)
+	var radius_squared = radius * radius
+
+	# Create a bounding box for the sphere
+	var min_pos = Vector3i(center - Vector3(radius, radius, radius))
+	var max_pos = Vector3i(center + Vector3(radius, radius, radius))
+
+	for x in range(min_pos.x, max_pos.x + 1):
+		for y in range(min_pos.y, max_pos.y + 1):
+			for z in range(min_pos.z, max_pos.z + 1):
+				var pos = Vector3(x, y, z)
+				var distance_squared = pos.distance_squared_to(center)
+				if distance_squared <= radius_squared:
+					# Inside sphere - set solid
+					tool.do_point(pos)
+
+	return "Сферу створено в центрі " + str(center) + " з радіусом " + str(radius)
+
+func get_terrain_info() -> String:
+	"""Отримати інформацію про VoxelLodTerrain"""
+	if not voxel_lod_terrain:
+		return "Помилка: VoxelLodTerrain не знайдено"
+
+	var info = "VoxelLodTerrain інформація:\n"
+	info += "LOD Count: " + str(voxel_lod_terrain.lod_count) + "\n"
+	info += "View Distance: " + str(voxel_lod_terrain.view_distance) + "\n"
+	info += "Block Size: " + str(voxel_lod_terrain.block_size) + "\n"
+	info += "Full Load Mode: " + str(voxel_lod_terrain.full_load_mode) + "\n"
+
+	return info
 
 # ========== Допоміжні команди ==========
 
@@ -196,23 +210,22 @@ func help() -> String:
 	return """Доступні команди:
   === Переміщення ===
   Debug.teleport(x, y, z) - телепортувати гравця
-  Debug.teleport_to_starting_area() - телепорт на стартову зону
+  Debug.teleport_to_surface(x, z) - телепорт на поверхню над позицією
   Debug.get_player_position() - позиція гравця
-  
+
   === Рух та камера ===
   Debug.set_speed(multiplier) - встановити швидкість (0.1-10.0)
   Debug.toggle_flight() - перемкнути польотний режим (F)
   Debug.toggle_first_person() - камера від першої особи (V)
-  
+
   === Креативний режим ===
   Debug.toggle_xray() - X-ray режим для печер (X)
   Debug.set_break_radius(radius) - радіус ламання блоків (1-10)
-  
+
   === Генерація світу ===
-  Debug.regenerate_chunk(x, z) - перегенерувати чанк
-  Debug.regenerate_world() - перегенерувати весь світ
-  Debug.get_performance_report() - звіт про продуктивність
-  Debug.toggle_profiling() - увімкнути/вимкнути профілювання
-  
+  Debug.fill_area(x1,y1,z1,x2,y2,z2,value) - заповнити область SDF значеннями
+  Debug.create_sphere(x,y,z,radius,value) - створити сферу
+  Debug.get_terrain_info() - інформація про VoxelLodTerrain
+
   Debug.help() - показати цю довідку"""
 

@@ -8,8 +8,7 @@ var selected_block_id = 1 # Start with Stone (1)
 @export var break_radius = 2
 @export var enable_xray_mode = false
 
-var grid_map: GridMap
-var voxel_terrain: VoxelTerrain
+var voxel_lod_terrain: Node # VoxelLodTerrain
 var camera: Camera3D
 var ghost_mesh: MeshInstance3D
 var xray_material: StandardMaterial3D
@@ -33,18 +32,13 @@ func _ready():
 	xray_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	xray_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
-func get_voxel_terrain():
-	if not is_instance_valid(voxel_terrain):
-		# Try to find VoxelTerrain in the scene
-		voxel_terrain = get_tree().get_root().find_child("VoxelTerrain", true, false)
-	return voxel_terrain
+func get_voxel_lod_terrain():
+	if not is_instance_valid(voxel_lod_terrain):
+		# Try to find VoxelLodTerrain in the scene
+		voxel_lod_terrain = get_tree().get_root().find_child("VoxelLodTerrain", true, false)
+	return voxel_lod_terrain
 
-func get_grid_map():
-	if not is_instance_valid(grid_map):
-		var world_node = get_tree().get_root().get_node_or_null("World")
-		if world_node:
-			grid_map = world_node.get_node_or_null("GridMap")
-	return grid_map
+# Removed GridMap support - now using VoxelLodTerrain only
 
 func get_camera():
 	if not is_instance_valid(camera):
@@ -71,44 +65,35 @@ func _unhandled_input(event):
 	if build_mode and event is InputEventMouseButton and event.is_pressed():
 		var cam = get_camera()
 		if not cam: return
-		
+
 		var vt = null
-		if get_voxel_terrain():
-			vt = get_voxel_terrain().get_voxel_tool()
-		
+		var lod_terrain = get_voxel_lod_terrain()
+		if lod_terrain:
+			vt = lod_terrain.get_voxel_tool()
+
 		var mouse_pos = get_viewport().get_mouse_position()
 		var from = cam.project_ray_origin(mouse_pos)
 		var to = from + cam.project_ray_normal(mouse_pos) * 1000
 		var space_state = get_parent().get_world_3d().direct_space_state
 		var query = PhysicsRayQueryParameters3D.create(from, to)
 		var result = space_state.intersect_ray(query)
-		
+
 		if result:
 			if event.button_index == MOUSE_BUTTON_LEFT:
-				# Place
+				# Place (set negative SDF for solid)
 				if vt:
-					vt.channel = VoxelBuffer.CHANNEL_TYPE
-					vt.value = selected_block_id
-					# VoxelTool.do_point places at the position (handling normal internally if logic matches?)
-					# Usually do_point takes a position in world space and sets the voxel containing it.
-					# To place AGAINST a face, we need to move along normal.
+					vt.channel = VoxelBuffer.CHANNEL_SDF
+					vt.value = -1.0  # Solid material
 					vt.do_point(result.position + result.normal * 0.1)
-					print("Placed voxel ", selected_block_id)
-				elif get_grid_map():
-					var pos = grid_map.local_to_map(result.position + result.normal * 0.1)
-					grid_map.set_cell_item(pos, selected_block_id)
-					
+					print("Placed voxel (SDF)")
+
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
-				# Destroy
+				# Destroy (set positive SDF for air)
 				if vt:
-					vt.channel = VoxelBuffer.CHANNEL_TYPE
-					vt.value = 0 # Air
-					# Move slightly inside the block to hit it
+					vt.channel = VoxelBuffer.CHANNEL_SDF
+					vt.value = 1.0  # Air/empty space
 					vt.do_point(result.position - result.normal * 0.1)
-					print("Destroyed voxel")
-				elif get_grid_map():
-					var pos = grid_map.local_to_map(result.position - result.normal * 0.1)
-					grid_map.set_cell_item(pos, -1)
+					print("Destroyed voxel (SDF)")
 
 func _physics_process(_delta):
 	if build_mode:
