@@ -1,0 +1,31 @@
+[gd_resource type="ShaderMaterial" load_steps=7 format=3 uid="uid://lotl_terrain_mat"]
+
+[ext_resource type="Shader" path="res://LotL_Terrain_Material.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" uid="uid://bgdjmxwonat0w" path="res://assets/textures/Set 4 All/Grass/Grass_01_Green_2.png" id="2_grass"]
+[ext_resource type="Texture2D" uid="uid://civigweyspgfx" path="res://assets/textures/Set 2 128x128/Dirt/Dirt_02-128x128.png" id="3_dirt"]
+[ext_resource type="Texture2D" uid="uid://pcdh8f1n202s" path="res://assets/textures/Set 4 All/Rockface/Rock_Grey_01.png" id="4_rock"]
+[ext_resource type="Texture2D" uid="uid://cwuvp01sejc5d" path="res://assets/textures/Set 4 All/Snow/Snow_01_White_1.png" id="5_snow"]
+
+[sub_resource type="CompressedTexture2DArray" id="CompressedTexture2DArray_terrain"]
+layers = 5
+layer_0/texture = ExtResource("2_grass")
+layer_1/texture = ExtResource("3_dirt")
+layer_2/texture = ExtResource("4_rock")
+layer_3/texture = ExtResource("2_grass")
+layer_4/texture = ExtResource("5_snow")
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/terrain_textures = SubResource("CompressedTexture2DArray_terrain")
+shader_parameter/texture_count = 5
+shader_parameter/uv_scale = 0.08
+shader_parameter/normal_blend_threshold = 0.7
+shader_parameter/height_blend_start = 40.0
+shader_parameter/height_blend_end = 60.0
+shader_parameter/moss_strength = 0.3
+shader_parameter/moss_height_start = 15.0
+shader_parameter/moss_height_end = 35.0
+shader_parameter/moss_direction = Vector3(0, 0, -1)
+shader_parameter/roughness_base = 0.8
+shader_parameter/metallic_base = 0.0
