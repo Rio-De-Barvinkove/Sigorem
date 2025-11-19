@@ -56,7 +56,7 @@ float get_moss_factor(vec3 world_pos, vec3 normal, float height) {
 }
 
 void fragment() {
- vec3 world_pos = VERTEX;
+ vec3 world_pos = (WORLD_MATRIX * vec4(VERTEX, 1.0)).xyz;
 
 	// Base surface type determination
 	float height = world_pos.y;
