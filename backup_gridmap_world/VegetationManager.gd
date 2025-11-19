@@ -14,7 +14,7 @@ class_name VegetationManager
 @export_range(0.0, 1.0, 0.1) var multimesh_steep_threshold: float = 0.5
 @export_range(1.0, 10.0, 1.0) var multimesh_repeats: int = 1
 
-var multimesh_dict: Dictionary = {}  # ВИПРАВЛЕНО: Зберігає MultiMeshInstance3D назавжди → пам'ять росте. Потрібно видаляти при unload.
+var multimesh_dict: Dictionary = {}
 var terrain_height_multiplier: float = 150.0
 var terrain_height_offset: float = 0.0
 
@@ -67,34 +67,21 @@ func generate_multimesh_for_chunk(chunk_pos: Vector2i, gridmap: GridMap):
 		multimesh_instance.global_position.y = terrain_height_offset
 
 func generate_multimesh_positions(chunk_pos: Vector2i, gridmap: GridMap) -> PackedVector3Array:
-	"""Генерація позицій для multimesh
-	
-	КРИТИЧНА ПРОБЛЕМА ПРОДУКТИВНОСТІ: Робить тисячі get_height_at() → лагає на 50-200 мс на чанк.
-	
-	ВИПРАВЛЕНО: Збільшено крок з 2 до 4 для зменшення кількості викликів get_height_at().
-	Можна також робити 1 раз на 2×2 чанки для подальшої оптимізації.
-	"""
+	"""Генерація позицій для multimesh"""
 	var positions: PackedVector3Array = []
 
 	# Розмір чанка (адаптувати до налаштувань)
 	var chunk_size = Vector2i(50, 50)
-	if get_parent() and get_parent().has_method("get_chunk_size"):
-		chunk_size = get_parent().get_chunk_size()
-	
 	var chunk_world_pos = chunk_pos * chunk_size
 
-	# ВИПРАВЛЕНО: Збільшено крок з 2 до 4 для зменшення кількості викликів get_height_at()
-	# Це зменшує кількість викликів з ~625 (25×25) до ~156 (12.5×12.5) на чанк
-	var step = 4  # Крок для оптимізації (було 2)
-	
 	# Генеруємо точки всередині чанка
-	for x in range(chunk_world_pos.x, chunk_world_pos.x + chunk_size.x, step):
-		for z in range(chunk_world_pos.y, chunk_world_pos.y + chunk_size.y, step):
+	for x in range(chunk_world_pos.x, chunk_world_pos.x + chunk_size.x, 2):  # Крок 2 для оптимізації
+		for z in range(chunk_world_pos.y, chunk_world_pos.y + chunk_size.y, 2):
 			# Випадково вирішуємо, чи розмістити рослину тут
 			if randf() > multimesh_coverage:
 				continue
 
-			# ПРОБЛЕМА: Отримати висоту місцевості - тисячі викликів get_height_at()
+			# Отримати висоту місцевості
 			var height = get_terrain_height_at(x, z)
 			var pos_3d = Vector3(x, height, z)
 
@@ -130,14 +117,8 @@ func get_terrain_height_at(x: int, z: int) -> float:
 	return 5.0
 
 func remove_multimesh_for_chunk(chunk_pos: Vector2i):
-	"""Видалити multimesh для чанка
-	
-	ВИПРАВЛЕНО: Викликається з ChunkManager при unload чанка для запобігання витоку пам'яті.
-	"""
+	"""Видалити multimesh для чанка"""
 	if multimesh_dict.has(chunk_pos):
 		var multimesh_instance = multimesh_dict[chunk_pos]
-		if is_instance_valid(multimesh_instance):
-			multimesh_instance.queue_free()
+		multimesh_instance.queue_free()
 		multimesh_dict.erase(chunk_pos)
-		if get_parent() and get_parent().has_method("get_chunk_size"):
-			print("[VegetationManager] remove_multimesh_for_chunk: Видалено multimesh для чанка ", chunk_pos)

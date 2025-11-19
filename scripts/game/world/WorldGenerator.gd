@@ -66,7 +66,9 @@ func _setup_terrain_generator():
 		if not terrain_generator:
 			# Створюємо новий TerrainGenerator якщо не встановлений
 			var terrain_gen_node = Node.new()
-			terrain_gen_node.set_script(load("res://scripts/game/world/generation/TerrainGenerator.gd"))
+			# TerrainGenerator переміщено в backup_gridmap_world/ (GridMap система)
+			# terrain_gen_node.set_script(load("res://backup_gridmap_world/TerrainGenerator.gd"))
+			push_warning("[WorldGenerator] TerrainGenerator більше не використовується - використовується VoxelLodTerrain")
 			terrain_generator = terrain_gen_node
 			terrain_generator.target_gridmap = self
 			add_child(terrain_generator)

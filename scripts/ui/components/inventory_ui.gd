@@ -1,6 +1,6 @@
 extends Control
 
-const InventorySlot = preload("res://scripts/ui/inventory_slot.gd")
+const InventorySlot = preload("res://scripts/ui/components/inventory_slot.gd")
 
 @onready var grid_container = $Panel/GridContainer
 

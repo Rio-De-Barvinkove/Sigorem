@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://c8v1qkq6t6v7b"]
 
-[ext_resource type="Script" path="res://scripts/ui/WorldGenerationSettings.gd" id="1_0q4p6"]
+[ext_resource type="Script" path="res://scripts/ui/menus/WorldGenerationSettings.gd" id="1_0q4p6"]
 
 [node name="WorldGenerationSettings" type="Control"]
 layout_mode = 3
