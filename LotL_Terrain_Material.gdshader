@@ -20,6 +20,12 @@ uniform vec3 moss_direction = vec3(0.0, 0.0, -1.0); // Northern exposure
 uniform float roughness_base = 0.8;
 uniform float metallic_base = 0.0;
 
+varying vec3 v_world_pos;
+
+void vertex() {
+	v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+
 vec3 triplanar_sample(sampler2DArray tex, vec3 world_pos, vec3 normal, float layer) {
 	vec3 blend = abs(normal);
 	blend = normalize(max(blend, 0.00001));
@@ -56,7 +62,7 @@ float get_moss_factor(vec3 world_pos, vec3 normal, float height) {
 }
 
 void fragment() {
- vec3 world_pos = WORLD_POSITION;
+ vec3 world_pos = v_world_pos;
 
 	// Base surface type determination
 	float height = world_pos.y;
