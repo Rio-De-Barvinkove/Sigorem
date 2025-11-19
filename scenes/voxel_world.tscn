@@ -1,5 +1,7 @@
-[gd_scene load_steps=14 format=3 uid="uid://bquqyerqh1fk7"]
+[gd_scene load_steps=17 format=3 uid="uid://bquqyerqh1fk7"]
 
+[ext_resource type="Script" uid="uid://p8ub8qbg5p32" path="res://scripts/game/world/generation/VoxelGeneratorAdapter.gd" id="1_generator"]
+[ext_resource type="Material" path="res://LotL_Terrain_Material.tres" id="2_lotl_mat"]
 [ext_resource type="Texture2D" uid="uid://dyjqnuf8lpdq6" path="res://assets/textures/Test/60-Sky-gradiant-pack1/Sky_gradient_1.png" id="3_sky"]
 [ext_resource type="PackedScene" uid="uid://dps3xrk1e80j7" path="res://scenes/player.tscn" id="3_sqft2"]
 [ext_resource type="Script" uid="uid://bgxhog0gtcg6q" path="res://scripts/game/player/CameraController.gd" id="5_5g68j"]
@@ -22,6 +24,10 @@ sky = SubResource("Sky_1")
 tonemap_mode = 2
 glow_enabled = true
 
+[sub_resource type="VoxelGeneratorScript" id="VoxelGeneratorScript_sqft2"]
+script = ExtResource("1_generator")
+metadata/_custom_type_script = "uid://p8ub8qbg5p32"
+
 [sub_resource type="VoxelMesherTransvoxel" id="VoxelMesherTransvoxel_1"]
 
 [node name="VoxelWorld" type="Node3D"]
@@ -34,8 +40,13 @@ transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -
 shadow_enabled = true
 
 [node name="VoxelLodTerrain" type="VoxelLodTerrain" parent="."]
-lod_count = 5
+material_override = ExtResource("2_lotl_mat")
+stream = SubResource("VoxelGeneratorScript_sqft2")
 mesher = SubResource("VoxelMesherTransvoxel_1")
+lod_count = 5
+view_distance = 512.0
+full_load_mode = true
+block_size = 32
 
 [node name="Player" parent="." instance=ExtResource("3_sqft2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 20, 0)
