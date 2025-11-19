@@ -2,7 +2,7 @@ shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
 // Texture array for different terrain types
-uniform sampler2DArray terrain_textures : hint_albedo;
+uniform sampler2DArray terrain_textures;
 
 // Terrain parameters
 uniform float uv_scale = 0.08;
