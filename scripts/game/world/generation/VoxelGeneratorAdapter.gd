@@ -28,7 +28,8 @@ func _init():
 func _setup_noise():
 	noise = FastNoiseLite.new()
 	noise.seed = randi()
-	noise.frequency = 0.005
+	# Збільшена частота для мікровокселів (0.25м замість 1м = 4x більше деталей)
+	noise.frequency = 0.02  # Було 0.005, тепер 4x більше для дрібніших блоків
 	noise.noise_type = FastNoiseLite.TYPE_PERLIN
 	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	noise.fractal_octaves = 4
@@ -42,7 +43,7 @@ func _setup_noise():
 	cave_noise = FastNoiseLite.new()
 	cave_noise.seed = noise.seed + 4242
 	cave_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	cave_noise.frequency = 0.02
+	cave_noise.frequency = 0.08  # Збільшено для мікровокселів (було 0.02)
 	cave_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	cave_noise.fractal_octaves = 3
 
@@ -95,7 +96,8 @@ func _generate_block(out_buffer: VoxelBuffer, origin: Vector3i, lod: int):
 					block_type = BLOCK_AIR
 
 				# Для печер: якщо шум негативний в певному діапазоні, створюємо порожнину
-				var cave_value = cave_noise.get_noise_3d(world_x * 0.05, world_y * 0.05, world_z * 0.05)
+				# Масштаб для мікровокселів (0.25м замість 1м)
+				var cave_value = cave_noise.get_noise_3d(world_x * 0.2, world_y * 0.2, world_z * 0.2)
 				if cave_value < -0.3 and world_y < surface_height - 5 and block_type != BLOCK_AIR:
 					block_type = BLOCK_AIR  # Повітря всередині печери
 
