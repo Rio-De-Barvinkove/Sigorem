@@ -32,9 +32,15 @@ func _run():
 			print("Додано базовий блок: %s (index %d)" % [block_name, block_index])
 			block_index += 1
 	
-	# Опціонально: додати текстури з Set 4 All (тільки для терейну, не всі)
-	# Можна додати конкретні категорії: Stones, Dirt, Grass, Rockface
-	var terrain_categories = ["Stones", "Dirt", "Grass", "Rockface", "Sand", "Gravel"]
+	# Додаємо текстури з Set 4 All - всі категорії для максимального вибору
+	var terrain_categories = [
+		"Stones", "Dirt", "Grass", "Rockface", "Sand", "Gravel", 
+		"Snow", "Pebbles", "Cobble Stone",
+		"Bricks", "Concrete", "Wood", "Metal", "Tiles", "Wall",
+		"Water", "Foliage", "Glass", "Roofing", "Plaster Wall",
+		"Painted Wall", "Windows", "Doors", "Debris", "Decorations",
+		"Patterns", "Paper", "Fabric"
+	]
 	var set4_path = "res://assets/textures/Set 4 All"
 	
 	print("\n=== Сканування Set 4 All для терейну ===")
@@ -80,8 +86,12 @@ func create_cube_model(name: String, texture_path: String) -> VoxelBlockyModelCu
 	return model
 
 func scan_category_for_textures(library: VoxelBlockyLibrary, category_path: String, category_name: String, start_index: int) -> int:
-	"""Сканування категорії текстур та додавання їх до бібліотеки"""
-	var dir = DirAccess.open(category_path)
+	"""Рекурсивне сканування категорії текстур та додавання їх до бібліотеки"""
+	return scan_directory_recursive(library, category_path, category_name)
+
+func scan_directory_recursive(library: VoxelBlockyLibrary, dir_path: String, prefix: String) -> int:
+	"""Рекурсивне сканування директорії з текстурами"""
+	var dir = DirAccess.open(dir_path)
 	if not dir:
 		return 0
 	
@@ -90,9 +100,15 @@ func scan_category_for_textures(library: VoxelBlockyLibrary, category_path: Stri
 	var file_name = dir.get_next()
 	
 	while file_name != "":
-		if file_name.ends_with(".png") and not file_name.ends_with(".import"):
-			var full_path = category_path + "/" + file_name
-			var block_name = category_name + "_" + file_name.replace(".png", "").replace(" ", "_")
+		var full_path = dir_path + "/" + file_name
+		
+		# Якщо це директорія - рекурсивно скануємо
+		if dir.current_is_dir() and file_name != "." and file_name != "..":
+			var sub_prefix = prefix + "_" + file_name.to_lower().replace(" ", "_")
+			added_count += scan_directory_recursive(library, full_path, sub_prefix)
+		# Якщо це PNG файл - додаємо до бібліотеки
+		elif file_name.ends_with(".png") and not file_name.ends_with(".import"):
+			var block_name = prefix + "_" + file_name.replace(".png", "").replace(" ", "_").to_lower()
 			
 			var model = create_cube_model(block_name, full_path)
 			if model:
@@ -103,4 +119,3 @@ func scan_category_for_textures(library: VoxelBlockyLibrary, category_path: Stri
 	
 	dir.list_dir_end()
 	return added_count
-

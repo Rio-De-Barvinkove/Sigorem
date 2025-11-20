@@ -26,6 +26,8 @@ glow_enabled = true
 
 [sub_resource type="VoxelMesherBlocky" id="VoxelMesherBlocky_1"]
 library = ExtResource("14_voxel_library")
+greedy_meshing = true
+occlusion_darkness = 0.7
 
 [node name="VoxelWorld" type="Node3D"]
 

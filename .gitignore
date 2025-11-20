@@ -2,6 +2,9 @@
 .godot/
 /android/
 
+# Godot executables
+Godot/
+
 # Removed incompatible addons
 addons/dialogue_nodes/
 addons/**/~*.dll

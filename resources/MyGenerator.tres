@@ -1,6 +1,6 @@
-[gd_resource type="VoxelGeneratorScript" load_steps=2 format=3 uid="uid://c8v5k3n8m2r4d"]
+[gd_resource type="VoxelGeneratorScript" script_class="VoxelGeneratorAdapter" load_steps=2 format=3 uid="uid://c8v5k3n8m2r4d"]
 
-[ext_resource type="Script" path="res://scripts/game/world/generation/VoxelGeneratorAdapter.gd" id="1_adapter"]
+[ext_resource type="Script" uid="uid://p8ub8qbg5p32" path="res://scripts/game/world/generation/VoxelGeneratorAdapter.gd" id="1_adapter"]
 
 [resource]
 script = ExtResource("1_adapter")
