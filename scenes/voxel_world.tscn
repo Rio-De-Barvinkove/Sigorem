@@ -10,7 +10,7 @@
 [ext_resource type="Script" uid="uid://b0a0qpcpkqt7m" path="res://scripts/game/debug/ConsoleCommands.gd" id="11_console_commands"]
 [ext_resource type="VoxelGeneratorScript" uid="uid://c8v5k3n8m2r4d" path="res://resources/MyGenerator.tres" id="12_generator"]
 [ext_resource type="VoxelStreamScript" uid="uid://d4f6g7h8jaj0k" path="res://resources/MyStream.tres" id="13_stream"]
-[ext_resource type="VoxelBlockyLibrary" uid="uid://dwomnamqvyaqf" path="res://assets/voxel_library.tres" id="14_voxel_library"]
+[ext_resource type="VoxelBlockyLibrary" uid="uid://dv6pdpbww14x3" path="res://assets/voxel_library.tres" id="14_voxel_library"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_1"]
 panorama = ExtResource("3_sky")
@@ -26,8 +26,6 @@ glow_enabled = true
 
 [sub_resource type="VoxelMesherBlocky" id="VoxelMesherBlocky_1"]
 library = ExtResource("14_voxel_library")
-greedy_meshing = true
-occlusion_darkness = 0.7
 
 [node name="VoxelWorld" type="Node3D"]
 
@@ -44,6 +42,7 @@ run_stream_in_editor = false
 stream = ExtResource("13_stream")
 generator = ExtResource("12_generator")
 mesher = SubResource("VoxelMesherBlocky_1")
+transform = Transform3D(0.125, 0, 0, 0, 0.125, 0, 0, 0, 0.125, 0, 0, 0)
 
 [node name="Player" parent="." instance=ExtResource("3_sqft2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0)

@@ -803,7 +803,7 @@ func _create_block_from_texture(block_id: String, texture_path: String, comment:
 	
 	id_to_mesh_index[block_id] = next_mesh_index
 	blocks[block_id] = {"id": block_id, "texture_path": texture_path, "comment": comment}
-	print("Created block: ", block_id, " (", comment, ") with index: ", next_mesh_index)
+	# print("Created block: ", block_id, " (", comment, ") with index: ", next_mesh_index)
 	emit_signal("block_registered", block_id)
 	next_mesh_index += 1
 
@@ -825,7 +825,7 @@ func _create_simple_block(block_id: String, color: Color):
 	# Примітка: Тіні контролюються через world.tscn (mesh_cast_shadow = 0)
 	id_to_mesh_index[block_id] = next_mesh_index
 	blocks[block_id] = {"id": block_id}
-	print("Created block: ", block_id, " with index: ", next_mesh_index)
+	# print("Created block: ", block_id, " with index: ", next_mesh_index)
 	next_mesh_index += 1
 
 func get_mesh_library() -> MeshLibrary:

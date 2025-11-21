@@ -6,6 +6,12 @@ extends CharacterBody3D
 @export var jump_velocity := 6.0
 @export var max_fall_speed := 40.0
 
+# World generation freeze
+@export var freeze_during_world_generation := true
+@export var world_generation_freeze_frames := 300  # 5 секунд при 60 FPS
+
+var world_generation_frame_count := 0
+
 # Debug/Test режими
 @export_group("Debug/Test Tools")
 @export var flight_mode := false
@@ -18,14 +24,16 @@ func _ready():
 	_ensure_movement_actions()
 	_setup_voxel_viewer()
 
+	if freeze_during_world_generation:
+		print("PlayerController: Freezing player during world generation")
+		# Вимикаємо гравітацію і рух
+		gravity = 0.0
+		velocity = Vector3.ZERO
+
 func _setup_voxel_viewer():
-	# Ensure VoxelViewer exists for VoxelTerrain loading
-	if not has_node("VoxelViewer"):
-		var viewer = VoxelViewer.new()
-		viewer.name = "VoxelViewer"
-		add_child(viewer)
-		# viewer.view_distance = 128 # Default is usually fine
-		print("PlayerController: VoxelViewer added")
+	# VoxelViewer вже є в сцені як дочірній вузол Player
+	# Не створюємо дубль, щоб уникнути конфліктів
+	pass
 
 func _on_voxel_terrain_block_loaded(pos):
 	# Check if this block is below player
@@ -35,6 +43,19 @@ func _on_voxel_terrain_block_loaded(pos):
 		pass
 
 func _physics_process(delta: float):
+	# Перевіряємо чи потрібно розморозити гравця
+	if freeze_during_world_generation and world_generation_frame_count < world_generation_freeze_frames:
+		world_generation_frame_count += 1
+		# Тримаємо гравця на місці
+		velocity = Vector3.ZERO
+		return
+
+	# Якщо тільки що розморозили - відновлюємо гравітацію
+	if freeze_during_world_generation and world_generation_frame_count == world_generation_freeze_frames:
+		print("PlayerController: Unfreezing player - world generation complete")
+		gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
+		freeze_during_world_generation = false
+
 	if flight_mode:
 		_handle_flight_movement(delta)
 	else:
