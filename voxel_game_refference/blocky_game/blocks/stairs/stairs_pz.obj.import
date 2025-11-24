@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b3t5agd28fn0v"
+path="res://.godot/imported/stairs_pz.obj-fb23bbb6e5d088b0c718dac94ff1f2a6.mesh"
+
+[deps]
+
+files=["res://.godot/imported/stairs_pz.obj-fb23bbb6e5d088b0c718dac94ff1f2a6.mesh"]
+
+source_file="res://voxel_game_refference/blocky_game/blocks/stairs/stairs_pz.obj"
+dest_files=["res://.godot/imported/stairs_pz.obj-fb23bbb6e5d088b0c718dac94ff1f2a6.mesh", "res://.godot/imported/stairs_pz.obj-fb23bbb6e5d088b0c718dac94ff1f2a6.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=false
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

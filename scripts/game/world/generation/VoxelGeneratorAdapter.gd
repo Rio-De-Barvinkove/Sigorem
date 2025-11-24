@@ -12,19 +12,24 @@ var biome_noise: FastNoiseLite
 var temperature_noise: FastNoiseLite  # Температура для біомів
 var humidity_noise: FastNoiseLite  # Вологість для біомів
 var cave_noise: FastNoiseLite
-# Параметри для рівнини з невеликими пагорбами
-var height_amplitude := 8  # Невелика амплітуда для низьких пагорбів
-var base_height := 10  # Базовий рівень
-var max_height := 32  # Максимальна висота (невеликі пагорби)
-var biome_scale := 200.0  # Великі біоми для плавних переходів
+# Параметри для різноманітного рельєфу
+var height_amplitude := 50  # Амплітуда висоти для різноманітності
+var base_height := 30  # Базовий рівень
+var max_height := 120  # Максимальна висота
+var biome_scale := 500.0  # Великі біоми для плавних переходів
 
 # Фіксований seed для відтворюваності генерації
 @export var world_seed: int = 1337
 
-# TYPE channel for blocky terrain
+# Діагностика
+var has_printed_diagnostic = false
+
+# SDF channel for smooth terrain (VoxelMesherTransvoxel)
+const CHANNEL_SDF = VoxelBuffer.CHANNEL_SDF
+# TYPE channel для сумісності (якщо потрібно)
 const CHANNEL_TYPE = VoxelBuffer.CHANNEL_TYPE
 
-# Block type IDs (matching assets/voxel_library.tres)
+# Block type IDs (для майбутнього використання)
 const BLOCK_AIR = 0
 const BLOCK_STONE = 1
 const BLOCK_DIRT = 2
@@ -39,6 +44,7 @@ const BLOCK_ROCK = 4
 func _init():
 	resource_name = "VoxelGeneratorAdapter"
 	_setup_noise()
+	push_warning("[GEN] VoxelGeneratorAdapter initialized: base_height=%d, height_amplitude=%d, max_height=%d, world_seed=%d" % [base_height, height_amplitude, max_height, world_seed])
 
 func _setup_noise():
 	var base_seed = world_seed
@@ -98,7 +104,8 @@ func _setup_noise():
 	cave_noise.fractal_octaves = 3
 
 func _get_used_channels_mask() -> int:
-	return 1 << CHANNEL_TYPE
+	# VoxelMesherTransvoxel використовує SDF канал
+	return 1 << CHANNEL_SDF
 
 func _generate_block(out_buffer: VoxelBuffer, origin: Vector3i, lod: int):
 	var size := out_buffer.get_size()
@@ -106,125 +113,128 @@ func _generate_block(out_buffer: VoxelBuffer, origin: Vector3i, lod: int):
 	var size_y := size.y
 	var size_z := size.z
 
-	# Діагностика - завжди виводимо, щоб перевірити чи викликається
-	print("[GEN] _generate_block CALLED: origin=", origin, " size=", size, " lod=", lod)
-	
 	# Перевірка чи буфер валідний
 	if size.x == 0 or size.y == 0 or size.z == 0:
 		push_error("VoxelGeneratorAdapter: Invalid buffer size!")
 		return
 
+	# VoxelTerrain (без LOD) завжди викликає з lod=0
+	# Координати вже в правильному масштабі світу
+
+	# ДІАГНОСТИКА: виводимо інформацію про перший виклик (безумовно)
+	if not has_printed_diagnostic:
+		push_warning("[GEN] _generate_block CALLED: origin=%s, size=%s, lod=%d, base_height=%d, height_amplitude=%d, max_height=%d" % [origin, size, lod, base_height, height_amplitude, max_height])
+		has_printed_diagnostic = true
+
+	# Створюємо RNG один раз для всього блоку (детерміністичний)
+	var rng = RandomNumberGenerator.new()
+
 	# Проходимо по всіх вокселях в блоці
-	# Важливо: origin вже враховує LOD від VoxelLodTerrain, тому просто додаємо локальні координати
+	# Для VoxelTerrain координати вже в правильному масштабі світу
 	for x in range(0, size_x, 1):
 		var world_x = origin.x + x
 		for z in range(0, size_z, 1):
 			var world_z = origin.z + z
 
+			# Координати в правильному масштабі світу
+			var noise_x = float(world_x)
+			var noise_z = float(world_z)
+
 			# Отримуємо біом для цієї координати
-			var biome_data = _get_biome_at_position(world_x, world_z)
+			var biome_data = _get_biome_at_position(noise_x, noise_z)
 
-			# Отримуємо висоту поверхні з плавною інтерполяцією
-			var surface_height_float = _get_height_at(world_x, world_z, biome_data)
-			# Використовуємо плавне округлення для більш природних переходів
-			var surface_height = int(round(surface_height_float))
+			# Отримуємо висоту поверхні
+			var surface_height_float = _get_height_at(noise_x, noise_z, biome_data)
+			var surface_height = int(surface_height_float + 0.5)
 
-			# Генеруємо блоки для кожного Y рівня в цьому стовпчику
+			# ДІАГНОСТИКА: виводимо значення для першого стовпчика (тільки один раз)
+			if world_x == 0 and world_z == 0 and origin.y == 0:
+				push_warning("[GEN] First column: world_x=%d, world_z=%d, noise_x=%.2f, noise_z=%.2f, surface_height=%d (float=%.2f), base_height=%d, height_amplitude=%d, max_height=%d" % [world_x, world_z, noise_x, noise_z, surface_height, surface_height_float, base_height, height_amplitude, max_height])
+
+			# Генеруємо SDF значення для кожного Y рівня в цьому стовпчику
+			# SDF (Signed Distance Field): позитивне = повітря, негативне = тверде
 			for y in range(0, size_y, 1):
 				var world_y = origin.y + y
-				var block_type = BLOCK_AIR
+				var sdf_value: float = 1.0  # За замовчуванням повітря (позитивне)
 
 				# Перевірка чи ця позиція в стартовій зоні
 				var in_starting_area = enable_starting_area and _is_position_in_starting_area(world_x, world_z)
 
 				if in_starting_area:
 					# Стартова зона - плоска платформа
-					if world_y < starting_area_height - 1:
-						# Кам'яна основа
-						block_type = BLOCK_STONE
-					elif world_y == starting_area_height - 1:
-						# Земля
-						block_type = BLOCK_DIRT
-					elif world_y == starting_area_height:
-						# Трава на поверхні
-						block_type = BLOCK_GRASS
-					else:
-						# Повітря над стартовою зоною
-						block_type = BLOCK_AIR
+					var platform_height = float(starting_area_height)
+					sdf_value = platform_height - world_y
 				else:
-					# Звичайна генерація світу
-					# Визначаємо тип блоку на основі висоти з плавними переходами
+					# Звичайна генерація світу з SDF
+					# SDF = відстань від поверхні (позитивне = вище поверхні, негативне = нижче)
 					var height_diff = surface_height_float - world_y
+					
+					# Базове SDF значення (відстань від поверхні)
+					sdf_value = height_diff
+					
+					# Додаємо плавність для мікровокселів (smooth transitions)
+					# Використовуємо шум для додавання деталей
+					var detail_noise = micro_noise.get_noise_3d(noise_x * 0.1, world_y * 0.1, noise_z * 0.1) * 0.5
+					sdf_value += detail_noise
+					
+					# Для печер: якщо шум негативний, збільшуємо SDF (створюємо порожнину)
+					if world_y < surface_height - 5:
+						var cave_value = cave_noise.get_noise_3d(
+							noise_x * 0.2,
+							world_y * 0.2,
+							noise_z * 0.2
+						)
+						if cave_value < -0.3:
+							# Збільшуємо SDF для створення порожнини
+							sdf_value += (cave_value + 0.3) * 5.0
 
-					if world_y <= 2:
-						# Базальтовий шар на дні
-						block_type = BLOCK_STONE
-					elif world_y < surface_height - 3:
-						# Камінь глибоко під землею
-						block_type = BLOCK_STONE
-					elif height_diff > 0.5:
-						# Земля під поверхнею (плавний перехід)
-						block_type = BLOCK_DIRT
-					elif height_diff > 0.0:
-						# Перехідна зона між землею і поверхнею (плавний перехід)
-						# Чим ближче до поверхні, тим більше шанс на траву
-						if randf() < height_diff * 2.0:
-							var biome_name = biome_data.get("name", "plains")
-							if biome_name == "desert":
-								block_type = BLOCK_ROCK
-							else:
-								block_type = BLOCK_GRASS
-						else:
-							block_type = BLOCK_DIRT
-					elif height_diff > -0.5:
-						# Поверхня - залежить від біому
-						var biome_name = biome_data.get("name", "plains")
-						if biome_name == "desert":
-							block_type = BLOCK_ROCK
-						else:
-							block_type = BLOCK_GRASS
-					else:
-						# Повітря над поверхнею
-						block_type = BLOCK_AIR
+				# Встановлюємо SDF значення (негативне = тверде, позитивне = повітря)
+				out_buffer.set_voxel_f(sdf_value, x, y, z, CHANNEL_SDF)
+	
+	# Оптимізація: стискаємо однорідні канали (з референсної гри)
+	out_buffer.compress_uniform_channels()
 
-					# Для печер: якщо шум негативний в певному діапазоні, створюємо порожнину
-					# Масштаб для мікровокселів (0.25м замість 1м)
-					var cave_value = cave_noise.get_noise_3d(world_x * 0.2, world_y * 0.2, world_z * 0.2)
-					if cave_value < -0.3 and world_y < surface_height - 5 and block_type != BLOCK_AIR:
-						block_type = BLOCK_AIR  # Повітря всередині печери
-
-				out_buffer.set_voxel(block_type, x, y, z, CHANNEL_TYPE)
-
-func _get_height_at(x: int, z: int, biome_data: Dictionary) -> float:
+func _get_height_at(x: float, z: float, biome_data: Dictionary) -> float:
 	var height_modifier = biome_data.get("height_modifier", 0.0)
 	var surface_roughness = biome_data.get("surface_roughness", 1.0)
 	
+	# Координати вже масштабовані для правильного шуму (поділені на lod_factor)
+	# Використовуємо їх безпосередньо для шуму
+	var x_scaled = x
+	var z_scaled = z
+	
 	# Багатошаровий шум для створення плато
 	# Макро-рельєф (70% впливу) - великі плавні форми, створюють плато
-	var macro_height = macro_noise.get_noise_2d(x, z) * height_amplitude * 0.7
+	var macro_height = macro_noise.get_noise_2d(x_scaled, z_scaled) * height_amplitude * 0.7
 	
 	# Основний шум (25% впливу) - середні пагорби
-	var main_height = noise.get_noise_2d(x, z) * height_amplitude * 0.25
+	var main_height = noise.get_noise_2d(x_scaled, z_scaled) * height_amplitude * 0.25
 	
 	# Мікро-деталі (5% впливу) - мінімальні нерівності
-	var micro_height = micro_noise.get_noise_2d(x, z) * height_amplitude * 0.05
+	var micro_height = micro_noise.get_noise_2d(x_scaled, z_scaled) * height_amplitude * 0.05
 	
 	# Комбінуємо шари
 	var combined_height = macro_height + main_height + micro_height
 	
-	# Застосовуємо модифікатори біому (зменшений вплив для рівнини)
-	var final_height = combined_height * surface_roughness * (1.0 + height_modifier * 0.3) + base_height
+	# Застосовуємо модифікатори біому
+	# height_modifier: -0.2 (desert) до 2.5 (mountains)
+	var final_height = combined_height * surface_roughness * (1.0 + height_modifier) + base_height
 	
 	# Обмежуємо максимальну висоту
 	return clamp(final_height, 0.0, max_height)
 
-func _get_biome_at_position(x: int, z: int) -> Dictionary:
+func _get_biome_at_position(x: float, z: float) -> Dictionary:
 	var scale = max(0.001, biome_scale)
 	
+	# Координати вже масштабовані для правильного шуму (поділені на lod_factor)
+	# Використовуємо їх безпосередньо для шуму
+	var x_scaled = x
+	var z_scaled = z
+	
 	# Отримуємо температуру та вологість
-	var temperature = temperature_noise.get_noise_2d(x / (scale * 1.5), z / (scale * 1.5))
-	var humidity = humidity_noise.get_noise_2d(x / (scale * 1.2), z / (scale * 1.2))
-	var biome_value = biome_noise.get_noise_2d(x / scale, z / scale)
+	var temperature = temperature_noise.get_noise_2d(x_scaled / (scale * 1.5), z_scaled / (scale * 1.5))
+	var humidity = humidity_noise.get_noise_2d(x_scaled / (scale * 1.2), z_scaled / (scale * 1.2))
+	var biome_value = biome_noise.get_noise_2d(x_scaled / scale, z_scaled / scale)
 	
 	# Визначаємо біом на основі температури, вологості та основного значення
 	# Плавні переходи між біомами
@@ -267,13 +277,13 @@ func _get_biome_data(biome_name: String) -> Dictionary:
 		},
 		"mountains": {
 			"name": "mountains",
-			"height_modifier": 0.3,  # Мінімальний вплив для рівнини
-			"surface_roughness": 1.0  # Плавні переходи
+			"height_modifier": 2.5,  # Значний вплив для гір
+			"surface_roughness": 1.5  # Більша нерівність для гір
 		}
 	}
 	return biomes.get(biome_name, biomes["plains"])
 
-func _is_position_in_starting_area(x: int, z: int) -> bool:
+func _is_position_in_starting_area(x: float, z: float) -> bool:
 	"""Перевірити чи позиція знаходиться в стартовій зоні"""
 	var half_size = starting_area_size / 2
 	return abs(x) <= half_size and abs(z) <= half_size

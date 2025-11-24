@@ -78,10 +78,36 @@ func _setup_terrain_generator():
 		await get_tree().process_frame
 
 		# Знаходимо гравця в сцені та встановлюємо його для генератора
-		var player = get_node("/root/World/Player")
+		# Старий GridMap WorldGenerator - не використовується з VoxelLodTerrain
+		# Залишаємо для сумісності зі старими сценами
+		var player = null
+		# Спробуємо знайти Player в різних місцях
+		if has_node("/root/World/Player"):
+			player = get_node("/root/World/Player")
+		elif has_node("/root/VoxelWorld/Player"):
+			player = get_node("/root/VoxelWorld/Player")
+		else:
+			# Шукаємо по типу
+			var root = get_tree().root
+			player = _find_player(root)
+		
 		if player and terrain_generator:
 			terrain_generator.player = player
 			print("WorldGenerator: Встановлено гравця для TerrainGenerator")
+		else:
+			push_warning("[WorldGenerator] Player not found - this is normal if using VoxelLodTerrain instead")
+
+func _find_player(node: Node) -> Node:
+	# Рекурсивно шукаємо Player
+	if node.name == "Player" and node is CharacterBody3D:
+		return node
+	
+	for child in node.get_children():
+		var result = _find_player(child)
+		if result:
+			return result
+	
+	return null
 
 		# Налаштовуємо базові параметри (тільки в грі)
 		if terrain_generator and terrain_generator.has_method("set"):

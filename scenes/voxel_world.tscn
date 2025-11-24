@@ -10,7 +10,7 @@
 [ext_resource type="Script" uid="uid://b0a0qpcpkqt7m" path="res://scripts/game/debug/ConsoleCommands.gd" id="11_console_commands"]
 [ext_resource type="VoxelGeneratorScript" uid="uid://c8v5k3n8m2r4d" path="res://resources/MyGenerator.tres" id="12_generator"]
 [ext_resource type="VoxelStreamScript" uid="uid://d4f6g7h8jaj0k" path="res://resources/MyStream.tres" id="13_stream"]
-[ext_resource type="VoxelBlockyLibrary" uid="uid://dv6pdpbww14x3" path="res://assets/voxel_library.tres" id="14_voxel_library"]
+[ext_resource type="Script" uid="uid://bka4ao2kmpieq" path="res://scripts/game/world/VoxelTerrainSetup.gd" id="16_terrain_setup"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_1"]
 panorama = ExtResource("3_sky")
@@ -24,8 +24,7 @@ sky = SubResource("Sky_1")
 tonemap_mode = 2
 glow_enabled = true
 
-[sub_resource type="VoxelMesherBlocky" id="VoxelMesherBlocky_1"]
-library = ExtResource("14_voxel_library")
+[sub_resource type="VoxelMesherTransvoxel" id="VoxelMesherTransvoxel_1"]
 
 [node name="VoxelWorld" type="Node3D"]
 
@@ -36,18 +35,17 @@ environment = SubResource("Environment_1")
 transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
 shadow_enabled = true
 
-[node name="VoxelLodTerrain" type="VoxelLodTerrain" parent="."]
-lod_count = 5
+[node name="VoxelTerrain" type="VoxelTerrain" parent="."]
+max_view_distance = 256
+generate_collisions = false
 run_stream_in_editor = false
 stream = ExtResource("13_stream")
 generator = ExtResource("12_generator")
-mesher = SubResource("VoxelMesherBlocky_1")
-transform = Transform3D(0.125, 0, 0, 0, 0.125, 0, 0, 0, 0.125, 0, 0, 0)
+mesher = SubResource("VoxelMesherTransvoxel_1")
+script = ExtResource("16_terrain_setup")
 
 [node name="Player" parent="." instance=ExtResource("3_sqft2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0)
-
-[node name="VoxelViewer" type="VoxelViewer" parent="Player"]
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 15, 15)
