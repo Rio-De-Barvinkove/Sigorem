@@ -8,3 +8,6 @@ Godot/
 # Removed incompatible addons
 addons/dialogue_nodes/
 addons/**/~*.dll
+
+# Voxdot module (C++ source, not needed in repo)
+Voxdot-0.7.0/

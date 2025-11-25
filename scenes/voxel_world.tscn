@@ -44,6 +44,12 @@ generator = ExtResource("12_generator")
 mesher = SubResource("VoxelMesherTransvoxel_1")
 script = ExtResource("16_terrain_setup")
 
+# [node name="TerrainManager" type="Node3D" parent="."]
+# script = ExtResource("17_terrain_manager")
+# terrain_type = 0
+# auto_switch = true
+# ЗАКОМЕНТОВАНО: Voxdot потребує збірки модуля
+
 [node name="Player" parent="." instance=ExtResource("3_sqft2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0)
 
