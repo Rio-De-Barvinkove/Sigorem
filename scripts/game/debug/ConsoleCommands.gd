@@ -5,17 +5,24 @@ class_name ConsoleCommands
 # Доступ до команд через консоль: Player.teleport(x, y, z) або TerrainGenerator.regenerate_chunk(x, z)
 
 var player: Node3D
-var voxel_lod_terrain: Node
+var voxel_terrain: Node
+
+# Block types for building
+const BLOCK_AIR = 0
+const BLOCK_STONE = 1
+const BLOCK_DIRT = 2
+const BLOCK_GRASS = 3
+const BLOCK_ROCK = 4
 
 func _ready():
 	# Чекаємо один кадр, щоб сцена встигла завантажитися
 	await get_tree().process_frame
 
-	# Знаходимо гравця та VoxelLodTerrain
+	# Знаходимо гравця та VoxelTerrain
 	var world = get_tree().get_root().get_node_or_null("VoxelWorld")
 	if world:
 		player = world.get_node_or_null("Player")
-		voxel_lod_terrain = world.get_node_or_null("VoxelLodTerrain")
+		voxel_terrain = world.get_node_or_null("VoxelTerrain")
 	
 	# Реєструємо команди в Panku Console
 	_register_commands()
@@ -50,8 +57,8 @@ func teleport(x: float, y: float, z: float) -> String:
 
 func teleport_to_surface(x: float, z: float) -> String:
 	"""Телепортувати гравця на поверхню над позицією (x, z)"""
-	if not player or not voxel_lod_terrain:
-		return "Помилка: Гравець або VoxelLodTerrain не знайдено"
+	if not player or not voxel_terrain:
+		return "Помилка: Гравець або VoxelTerrain не знайдено"
 
 	# Raycast down from high altitude to find surface
 	var space_state = player.get_world_3d().direct_space_state
@@ -88,16 +95,16 @@ func toggle_flight() -> String:
 
 # ========== Команди для генерації світу ==========
 
-func fill_area(x1: int, y1: int, z1: int, x2: int, y2: int, z2: int, value: float = -1.0) -> String:
-	"""Заповнити область SDF значеннями (за замовчуванням - твердий матеріал)"""
-	if not voxel_lod_terrain:
-		return "Помилка: VoxelLodTerrain не знайдено"
+func fill_area(x1: int, y1: int, z1: int, x2: int, y2: int, z2: int, block_id: int = BLOCK_STONE) -> String:
+	"""Заповнити область блоками (за замовчуванням - камінь)"""
+	if not voxel_terrain:
+		return "Помилка: VoxelTerrain не знайдено"
 
-	var tool = voxel_lod_terrain.get_voxel_tool()
+	var tool = voxel_terrain.get_voxel_tool()
 	if not tool:
 		return "Помилка: VoxelTool не доступний"
 
-	tool.channel = VoxelBuffer.CHANNEL_SDF
+	tool.channel = VoxelBuffer.CHANNEL_TYPE
 	tool.mode = VoxelTool.MODE_SET
 
 	# Ensure coordinates are in correct order
@@ -107,20 +114,20 @@ func fill_area(x1: int, y1: int, z1: int, x2: int, y2: int, z2: int, value: floa
 	for x in range(min_pos.x, max_pos.x + 1):
 		for y in range(min_pos.y, max_pos.y + 1):
 			for z in range(min_pos.z, max_pos.z + 1):
-				tool.do_point(Vector3(x, y, z))
+				tool.set_voxel(Vector3i(x, y, z), block_id)
 
-	return "Область заповнено від " + str(min_pos) + " до " + str(max_pos)
+	return "Область заповнено від " + str(min_pos) + " до " + str(max_pos) + " блоком ID=" + str(block_id)
 
-func create_sphere(center_x: int, center_y: int, center_z: int, radius: float, value: float = -1.0) -> String:
-	"""Створити сферу з SDF значенням"""
-	if not voxel_lod_terrain:
-		return "Помилка: VoxelLodTerrain не знайдено"
+func create_sphere(center_x: int, center_y: int, center_z: int, radius: float, block_id: int = BLOCK_STONE) -> String:
+	"""Створити сферу з блоків"""
+	if not voxel_terrain:
+		return "Помилка: VoxelTerrain не знайдено"
 
-	var tool = voxel_lod_terrain.get_voxel_tool()
+	var tool = voxel_terrain.get_voxel_tool()
 	if not tool:
 		return "Помилка: VoxelTool не доступний"
 
-	tool.channel = VoxelBuffer.CHANNEL_SDF
+	tool.channel = VoxelBuffer.CHANNEL_TYPE
 	tool.mode = VoxelTool.MODE_SET
 
 	var center = Vector3(center_x, center_y, center_z)
@@ -136,21 +143,25 @@ func create_sphere(center_x: int, center_y: int, center_z: int, radius: float, v
 				var pos = Vector3(x, y, z)
 				var distance_squared = pos.distance_squared_to(center)
 				if distance_squared <= radius_squared:
-					# Inside sphere - set solid
-					tool.do_point(pos)
+					# Inside sphere - set block
+					tool.set_voxel(Vector3i(x, y, z), block_id)
 
 	return "Сферу створено в центрі " + str(center) + " з радіусом " + str(radius)
 
 func get_terrain_info() -> String:
-	"""Отримати інформацію про VoxelLodTerrain"""
-	if not voxel_lod_terrain:
-		return "Помилка: VoxelLodTerrain не знайдено"
+	"""Отримати інформацію про VoxelTerrain"""
+	if not voxel_terrain:
+		return "Помилка: VoxelTerrain не знайдено"
 
-	var info = "VoxelLodTerrain інформація:\n"
-	info += "LOD Count: " + str(voxel_lod_terrain.lod_count) + "\n"
-	info += "View Distance: " + str(voxel_lod_terrain.view_distance) + "\n"
-	info += "Block Size: " + str(voxel_lod_terrain.block_size) + "\n"
-	info += "Full Load Mode: " + str(voxel_lod_terrain.full_load_mode) + "\n"
+	var info = "VoxelTerrain інформація:\n"
+	info += "Max View Distance: " + str(voxel_terrain.max_view_distance) + "\n"
+	info += "Mesh Block Size: " + str(voxel_terrain.mesh_block_size) + "\n"
+	info += "Generate Collisions: " + str(voxel_terrain.generate_collisions) + "\n"
+	
+	if voxel_terrain.generator:
+		info += "Generator: " + str(voxel_terrain.generator.resource_name) + "\n"
+	if voxel_terrain.mesher:
+		info += "Mesher: " + str(voxel_terrain.mesher.get_class()) + "\n"
 
 	return info
 
@@ -223,9 +234,8 @@ func help() -> String:
   Debug.set_break_radius(radius) - радіус ламання блоків (1-10)
 
   === Генерація світу ===
-  Debug.fill_area(x1,y1,z1,x2,y2,z2,value) - заповнити область SDF значеннями
-  Debug.create_sphere(x,y,z,radius,value) - створити сферу
-  Debug.get_terrain_info() - інформація про VoxelLodTerrain
+  Debug.fill_area(x1,y1,z1,x2,y2,z2,block_id) - заповнити область блоками (0=air,1=stone,2=dirt,3=grass)
+  Debug.create_sphere(x,y,z,radius,block_id) - створити сферу з блоків
+  Debug.get_terrain_info() - інформація про VoxelTerrain
 
   Debug.help() - показати цю довідку"""
-

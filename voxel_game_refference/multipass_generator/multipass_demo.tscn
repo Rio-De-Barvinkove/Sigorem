@@ -1,8 +1,8 @@
 [gd_scene load_steps=7 format=3 uid="uid://d0dodvwrj0biu"]
 
-[ext_resource type="VoxelGeneratorMultipassCB" uid="uid://dqgjcqp0m4ae2" path="res://multipass_generator/multipass_generator.tres" id="1_bubjg"]
-[ext_resource type="VoxelMesherBlocky" uid="uid://m85p22yb1ft0" path="res://multipass_generator/blocky_mesher.tres" id="2_pgkoq"]
-[ext_resource type="PackedScene" uid="uid://dljqckrx50m8t" path="res://common/spectator_avatar.tscn" id="3_tecxx"]
+[ext_resource type="VoxelGeneratorMultipassCB" uid="uid://dqgjcqp0m4ae2" path="res://voxel_game_refference/multipass_generator/multipass_generator.tres" id="1_bubjg"]
+[ext_resource type="VoxelMesherBlocky" uid="uid://m85p22yb1ft0" path="res://voxel_game_refference/multipass_generator/blocky_mesher.tres" id="2_pgkoq"]
+[ext_resource type="PackedScene" uid="uid://dljqckrx50m8t" path="res://voxel_game_refference/common/spectator_avatar.tscn" id="3_tecxx"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_8h45h"]
 sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)

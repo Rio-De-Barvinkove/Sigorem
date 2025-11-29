@@ -6,8 +6,8 @@ extends VoxelViewer
 func _ready():
 	# Якщо target встановлений через NodePath в сцені, використовуємо його
 	if not target:
-		# Якщо VoxelViewer дочірній вузол VoxelLodTerrain, шукаємо Player через NodePath
-		if get_parent() and get_parent().name == "VoxelLodTerrain":
+		# Якщо VoxelViewer дочірній вузол VoxelTerrain, шукаємо Player через NodePath
+		if get_parent() and get_parent().name == "VoxelTerrain":
 			# Перевіряємо NodePath target
 			var target_path = get("target")
 			if target_path and target_path is NodePath:
@@ -29,17 +29,17 @@ func _ready():
 	else:
 		push_warning("VoxelViewerFollower: target not found!")
 	
-	# Явно підключаємо до VoxelLodTerrain
+	# Явно підключаємо до VoxelTerrain
 	call_deferred("_connect_to_terrain")
 
 func _connect_to_terrain():
-	# Шукаємо VoxelLodTerrain в сцені
+	# Шукаємо VoxelTerrain в сцені
 	var terrain = null
 	
 	# Спробуємо знайти через батьківський вузол
 	if get_parent() and get_parent().name == "Player":
-		# Якщо VoxelViewer дочірній вузол Player, шукаємо VoxelLodTerrain на рівні VoxelWorld
-		terrain = get_node_or_null("../../VoxelLodTerrain")
+		# Якщо VoxelViewer дочірній вузол Player, шукаємо VoxelTerrain на рівні VoxelWorld
+		terrain = get_node_or_null("../../VoxelTerrain")
 	
 	# Якщо не знайшли, шукаємо по всьому дереву
 	if not terrain:
@@ -50,7 +50,7 @@ func _connect_to_terrain():
 	if terrain:
 		print("[VoxelViewer] Terrain found: ", terrain.name, " at ", terrain.global_position)
 		push_warning("[VoxelViewer] Connected to terrain: %s" % terrain.name)
-		# VoxelViewer автоматично підключається до найближчого VoxelLodTerrain
+		# VoxelViewer автоматично підключається до найближчого VoxelTerrain
 		# Переконаємося, що ми в правильній позиції
 		if target:
 			global_position = target.global_position
@@ -62,14 +62,14 @@ func _connect_to_terrain():
 		if terrain.stream:
 			push_warning("[VoxelViewer] Terrain has stream: %s" % terrain.stream)
 		else:
-			push_warning("[VoxelViewer] WARNING: Terrain has NO stream!")
+			push_warning("[VoxelViewer] Stream: None (generation only)")
 	else:
-		push_warning("[VoxelViewer] VoxelLodTerrain not found! Generation will not work.")
+		push_warning("[VoxelViewer] VoxelTerrain not found! Generation will not work.")
 
-func _find_voxel_terrain(node: Node) -> VoxelLodTerrain:
-	# Рекурсивно шукаємо VoxelLodTerrain
-	if node is VoxelLodTerrain:
-		return node as VoxelLodTerrain
+func _find_voxel_terrain(node: Node) -> VoxelTerrain:
+	# Рекурсивно шукаємо VoxelTerrain
+	if node is VoxelTerrain:
+		return node as VoxelTerrain
 	
 	for child in node.get_children():
 		var result = _find_voxel_terrain(child)

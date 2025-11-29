@@ -8,7 +8,7 @@ var selected_block_id = 1 # Start with Stone (1)
 @export var break_radius = 2
 @export var enable_xray_mode = false
 
-var voxel_lod_terrain: Node # VoxelLodTerrain
+var voxel_terrain: Node # VoxelTerrain
 var camera: Camera3D
 var ghost_mesh: MeshInstance3D
 var xray_material: StandardMaterial3D
@@ -32,13 +32,13 @@ func _ready():
 	xray_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	xray_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
-func get_voxel_lod_terrain():
-	if not is_instance_valid(voxel_lod_terrain):
-		# Try to find VoxelLodTerrain in the scene
-		voxel_lod_terrain = get_tree().get_root().find_child("VoxelLodTerrain", true, false)
-	return voxel_lod_terrain
+func get_voxel_terrain():
+	if not is_instance_valid(voxel_terrain):
+		# Try to find VoxelTerrain in the scene
+		voxel_terrain = get_tree().get_root().find_child("VoxelTerrain", true, false)
+	return voxel_terrain
 
-# Removed GridMap support - now using VoxelLodTerrain only
+# Removed GridMap support - now using VoxelTerrain only
 
 func get_camera():
 	if not is_instance_valid(camera):
@@ -67,9 +67,9 @@ func _unhandled_input(event):
 		if not cam: return
 
 		var vt = null
-		var lod_terrain = get_voxel_lod_terrain()
-		if lod_terrain:
-			vt = lod_terrain.get_voxel_tool()
+		var terrain = get_voxel_terrain()
+		if terrain:
+			vt = terrain.get_voxel_tool()
 
 		var mouse_pos = get_viewport().get_mouse_position()
 		var from = cam.project_ray_origin(mouse_pos)
@@ -80,20 +80,22 @@ func _unhandled_input(event):
 
 		if result:
 			if event.button_index == MOUSE_BUTTON_LEFT:
-				# Place (set negative SDF for solid)
+				# Place block (blocky terrain uses TYPE channel)
 				if vt:
-					vt.channel = VoxelBuffer.CHANNEL_SDF
-					vt.value = -1.0  # Solid material
-					vt.do_point(result.position + result.normal * 0.1)
-					print("Placed voxel (SDF)")
+					vt.channel = VoxelBuffer.CHANNEL_TYPE
+					vt.mode = VoxelTool.MODE_SET
+					var place_pos = (result.position + result.normal * 0.5).floor()
+					vt.set_voxel(place_pos, selected_block_id)
+					print("Placed block ID: ", selected_block_id)
 
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
-				# Destroy (set positive SDF for air)
+				# Destroy block (set to air = 0)
 				if vt:
-					vt.channel = VoxelBuffer.CHANNEL_SDF
-					vt.value = 1.0  # Air/empty space
-					vt.do_point(result.position - result.normal * 0.1)
-					print("Destroyed voxel (SDF)")
+					vt.channel = VoxelBuffer.CHANNEL_TYPE
+					vt.mode = VoxelTool.MODE_SET
+					var destroy_pos = (result.position - result.normal * 0.5).floor()
+					vt.set_voxel(destroy_pos, 0)  # 0 = AIR
+					print("Destroyed block")
 
 func _physics_process(_delta):
 	if build_mode:

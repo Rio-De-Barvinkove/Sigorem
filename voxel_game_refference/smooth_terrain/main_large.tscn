@@ -1,12 +1,12 @@
 [gd_scene load_steps=12 format=3 uid="uid://cliwi34yk5hra"]
 
-[ext_resource type="Script" path="res://smooth_terrain/main.gd" id="1_u04kx"]
-[ext_resource type="PackedScene" path="res://common/spectator_avatar.tscn" id="2_7v3sv"]
-[ext_resource type="Script" path="res://smooth_terrain/interaction.gd" id="3_y28lg"]
-[ext_resource type="Script" path="res://smooth_terrain/rigidbody_spawner.gd" id="4_03ngp"]
-[ext_resource type="Script" path="res://smooth_terrain/sdf_stamper.gd" id="5_ao6xu"]
-[ext_resource type="VoxelGeneratorNoise2D" uid="uid://c2tarm5o7wox0" path="res://smooth_terrain/voxel_generator_noise_2d_smooth.tres" id="6_wrdog"]
-[ext_resource type="Material" uid="uid://p7s1kd8whqab" path="res://smooth_terrain/transvoxel_terrain_material.tres" id="7_nipxs"]
+[ext_resource type="Script" path="res://voxel_game_refference/smooth_terrain/main.gd" id="1_u04kx"]
+[ext_resource type="PackedScene" path="res://voxel_game_refference/common/spectator_avatar.tscn" id="2_7v3sv"]
+[ext_resource type="Script" path="res://voxel_game_refference/smooth_terrain/interaction.gd" id="3_y28lg"]
+[ext_resource type="Script" path="res://voxel_game_refference/smooth_terrain/rigidbody_spawner.gd" id="4_03ngp"]
+[ext_resource type="Script" path="res://voxel_game_refference/smooth_terrain/sdf_stamper.gd" id="5_ao6xu"]
+[ext_resource type="VoxelGeneratorNoise2D" uid="uid://c2tarm5o7wox0" path="res://voxel_game_refference/smooth_terrain/voxel_generator_noise_2d_smooth.tres" id="6_wrdog"]
+[ext_resource type="Material" uid="uid://p7s1kd8whqab" path="res://voxel_game_refference/smooth_terrain/transvoxel_terrain_material.tres" id="7_nipxs"]
 
 [sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_1vceu"]
 

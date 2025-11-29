@@ -5,6 +5,16 @@
 [resource]
 script = ExtResource("1_adapter")
 world_seed = 1337
-enable_starting_area = true
-starting_area_size = 8
-starting_area_height = 16
+base_height = 40.0
+max_height = 150.0
+continent_scale = 600.0
+mountain_scale = 150.0
+hill_scale = 60.0
+detail_scale = 15.0
+continent_weight = 0.35
+mountain_weight = 0.4
+hill_weight = 0.2
+detail_weight = 0.05
+cave_scale = 25.0
+cave_threshold = 0.6
+cave_min_depth = 8.0

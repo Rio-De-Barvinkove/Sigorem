@@ -19,16 +19,18 @@ const _process_stat_names = [
 func _process(delta):
 	var stats = _terrain.get_statistics()
 	
-	DDD.set_text("FPS", Engine.get_frames_per_second())
-	DDD.set_text("Static memory", _format_memory(OS.get_static_memory_usage()))
-	DDD.set_text("Blocked lods", stats.blocked_lods)
-	DDD.set_text("Position", _avatar.position)
+	# DDD - debug helper з демо, не існує в цьому проекті
+	# DDD.set_text("FPS", Engine.get_frames_per_second())
+	# DDD.set_text("Static memory", _format_memory(OS.get_static_memory_usage()))
+	# DDD.set_text("Blocked lods", stats.blocked_lods)
+	# DDD.set_text("Position", _avatar.position)
 
 	var global_stats = VoxelEngine.get_stats()
 	for p in global_stats:
 		var pool_stats = global_stats[p]
 		for k in pool_stats:
-			DDD.set_text(str(p, "_", k), pool_stats[k])
+			# DDD.set_text(str(p, "_", k), pool_stats[k])
+			pass
 
 	for k in _process_stat_names:
 		var v = stats[k]
@@ -44,7 +46,8 @@ func _process(delta):
 		_process_stats = {}
 
 	for k in _displayed_process_stats:
-		DDD.set_text(k, _displayed_process_stats[k])
+		# DDD.set_text(k, _displayed_process_stats[k])
+		pass
 
 	_terrain.debug_set_draw_enabled(true)
 	_terrain.debug_set_draw_flag(VoxelLodTerrain.DEBUG_DRAW_MESH_UPDATES, true)

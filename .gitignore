@@ -9,5 +9,8 @@ Godot/
 addons/dialogue_nodes/
 addons/**/~*.dll
 
-# Voxdot module (C++ source, not needed in repo)
+# Voxdot module (C++ source, not compiled)
 Voxdot-0.7.0/
+
+# Reference voxel game (for learning only, not part of project)
+voxel_game_refference/

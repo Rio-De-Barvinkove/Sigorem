@@ -8,8 +8,8 @@ func _init():
 	resource_name = "VoxelStreamAdapter"
 
 func _get_used_channels_mask() -> int:
-	# VoxelMesherTransvoxel використовує SDF канал
-	var mask = 1 << VoxelBuffer.CHANNEL_SDF
+	# VoxelMesherBlocky використовує TYPE канал
+	var mask = 1 << VoxelBuffer.CHANNEL_TYPE
 	return mask
 
 func _load_voxel_block(out_buffer: VoxelBuffer, position: Vector3i, lod: int) -> int:
@@ -46,7 +46,7 @@ func _load_voxel_block(out_buffer: VoxelBuffer, position: Vector3i, lod: int) ->
 			return 0  # RESULT_ERROR - помилка завантаження
 	else:
 		# Чанк не знайдено - потрібно генерувати
-		return 1  # RESULT_BLOCK_NOT_FOUND - VoxelLodTerrain запустить генератор
+		return 1  # RESULT_BLOCK_NOT_FOUND - VoxelTerrain запустить генератор
 
 func _save_voxel_block(buffer: VoxelBuffer, position: Vector3i, lod: int) -> void:
 	# VoxelTerrain завжди викликає з lod=0, але зберігаємо lod в імені файлу для сумісності

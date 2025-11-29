@@ -1,6 +1,6 @@
 [gd_resource type="VoxelGeneratorMultipassCB" load_steps=2 format=3 uid="uid://dqgjcqp0m4ae2"]
 
-[ext_resource type="Script" path="res://multipass_generator/multipass_generator.gd" id="1_jgwux"]
+[ext_resource type="Script" path="res://voxel_game_refference/multipass_generator/multipass_generator.gd" id="1_jgwux"]
 
 [resource]
 pass_count = 3

@@ -2,7 +2,7 @@
 
 [ext_resource type="VoxelBlockyFluid" uid="uid://c6vx5y5jeyonp" path="res://blocky_fluid/fluid.tres" id="1_c10fk"]
 [ext_resource type="Script" uid="uid://c1utoe07a8ly8" path="res://blocky_fluid/blocky_fluid_demo.gd" id="1_d8b43"]
-[ext_resource type="PackedScene" uid="uid://dljqckrx50m8t" path="res://common/spectator_avatar.tscn" id="3_wl5l8"]
+[ext_resource type="PackedScene" uid="uid://dljqckrx50m8t" path="res://voxel_game_refference/common/spectator_avatar.tscn" id="3_wl5l8"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_npdw6"]
 sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)

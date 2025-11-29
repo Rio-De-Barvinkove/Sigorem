@@ -41,9 +41,9 @@ func set_active(active: bool):
 		# Check source code of `VoxelMeshSDF` to see why `get_tree()` is necessary...
 		assert(is_inside_tree())
 
-		var mesh = load("res://smooth_terrain/suzanne.obj")
-		#var mesh = load("res://smooth_terrain/icosphere.obj")
-		#var mesh = load("res://smooth_terrain/cube.obj")
+		var mesh = load("res://voxel_game_refference/smooth_terrain/suzanne.obj")
+		#var mesh = load("res://voxel_game_refference/smooth_terrain/icosphere.obj")
+		#var mesh = load("res://voxel_game_refference/smooth_terrain/cube.obj")
 		_mesh_sdf.mesh = mesh
 		_mesh_sdf.baked.connect(_on_mesh_sdf_baked)
 		_mesh_sdf.bake_async(get_tree())

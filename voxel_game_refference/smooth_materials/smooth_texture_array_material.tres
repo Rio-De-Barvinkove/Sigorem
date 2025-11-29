@@ -1,7 +1,7 @@
 [gd_resource type="ShaderMaterial" load_steps=3 format=3 uid="uid://crm5bn4mubcny"]
 
-[ext_resource type="Shader" path="res://smooth_materials/smooth_texture_array_shader.gdshader" id="1_mi5kh"]
-[ext_resource type="CompressedTexture2DArray" uid="uid://cm6o0dm35povx" path="res://smooth_materials/texture_array.png" id="2_0haw0"]
+[ext_resource type="Shader" path="res://voxel_game_refference/smooth_materials/smooth_texture_array_shader.gdshader" id="1_mi5kh"]
+[ext_resource type="CompressedTexture2DArray" uid="uid://cm6o0dm35povx" path="res://voxel_game_refference/smooth_materials/texture_array.png" id="2_0haw0"]
 
 [resource]
 render_priority = 0

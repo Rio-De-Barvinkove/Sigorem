@@ -1,9 +1,9 @@
 [gd_scene load_steps=11 format=3 uid="uid://ct3c7fmvwwa8h"]
 
-[ext_resource type="Material" uid="uid://crm5bn4mubcny" path="res://smooth_materials/smooth_texture_array_material.tres" id="1_70lhy"]
-[ext_resource type="Script" path="res://smooth_materials/smooth_materials_demo.gd" id="1_byxln"]
-[ext_resource type="VoxelGeneratorGraph" uid="uid://b1dejnck20at8" path="res://smooth_materials/smooth_textured_generator.tres" id="1_kaat1"]
-[ext_resource type="Script" path="res://smooth_materials/hud.gd" id="4_t67fl"]
+[ext_resource type="Material" uid="uid://crm5bn4mubcny" path="res://voxel_game_refference/smooth_materials/smooth_texture_array_material.tres" id="1_70lhy"]
+[ext_resource type="Script" path="res://voxel_game_refference/smooth_materials/smooth_materials_demo.gd" id="1_byxln"]
+[ext_resource type="VoxelGeneratorGraph" uid="uid://b1dejnck20at8" path="res://voxel_game_refference/smooth_materials/smooth_textured_generator.tres" id="1_kaat1"]
+[ext_resource type="Script" path="res://voxel_game_refference/smooth_materials/hud.gd" id="4_t67fl"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_5edv4"]
 sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)

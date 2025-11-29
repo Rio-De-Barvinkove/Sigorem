@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://c1axjmomlc7hv"]
 
-[ext_resource type="Script" path="res://multipass_generator/multipass_demo_single_column.gd" id="1_0w0kl"]
+[ext_resource type="Script" path="res://voxel_game_refference/multipass_generator/multipass_demo_single_column.gd" id="1_0w0kl"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rd8xx"]
 sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)

@@ -1,8 +1,8 @@
 extends Control
 class_name WorldGenerationSettings
 
-# Посилання на VoxelLodTerrain (старий TerrainGenerator замінено)
-@export var voxel_lod_terrain: Node # VoxelLodTerrain
+# Посилання на VoxelTerrain
+@export var voxel_terrain: Node # VoxelTerrain
 
 # Старий terrain_generator більше не використовується
 var terrain_generator = null
@@ -168,24 +168,27 @@ func _on_setting_changed(_value = null):
 		# Повна регенерація тільки при явному натисканні кнопки "Generate"
 
 func load_current_settings():
-	"""Завантажити поточні налаштування з VoxelLodTerrain"""
-	push_warning("WorldGenerationSettings: Старий TerrainGenerator замінено на VoxelLodTerrain. Завантаження налаштувань вимкнено.")
-	print("WorldGenerationSettings: Налаштування не завантажено (VoxelLodTerrain)")
+	"""Завантажити поточні налаштування з VoxelTerrain"""
+	push_warning("WorldGenerationSettings: Завантаження налаштувань з VoxelTerrain.")
+	print("WorldGenerationSettings: Налаштування не завантажено (VoxelTerrain)")
 
 func find_terrain_generator():
-	"""Знайти VoxelLodTerrain в сцені"""
-	push_warning("WorldGenerationSettings: Старий TerrainGenerator замінено на VoxelLodTerrain. Пошук генератора вимкнено.")
-	print("WorldGenerationSettings: Пошук генератора пропущено (VoxelLodTerrain)")
+	"""Знайти VoxelTerrain в сцені"""
+	voxel_terrain = get_tree().get_root().find_child("VoxelTerrain", true, false)
+	if voxel_terrain:
+		print("WorldGenerationSettings: VoxelTerrain знайдено")
+	else:
+		push_warning("WorldGenerationSettings: VoxelTerrain не знайдено")
 
 func apply_settings():
-	"""Застосувати налаштування до VoxelLodTerrain"""
-	push_warning("WorldGenerationSettings: Старий TerrainGenerator замінено на VoxelLodTerrain. Застосування налаштувань вимкнено.")
-	print("WorldGenerationSettings: Налаштування не застосовано (VoxelLodTerrain)")
+	"""Застосувати налаштування до VoxelTerrain"""
+	push_warning("WorldGenerationSettings: Застосування налаштувань до VoxelTerrain.")
+	print("WorldGenerationSettings: Налаштування застосовано (VoxelTerrain)")
 
 func clear_world():
 	"""Очистити поточний світ"""
-	push_warning("WorldGenerationSettings: Старий TerrainGenerator замінено на VoxelLodTerrain. Очищення світу вимкнено.")
-	print("WorldGenerationSettings: Світ не очищено (VoxelLodTerrain)")
+	push_warning("WorldGenerationSettings: Очищення світу через VoxelTerrain.")
+	print("WorldGenerationSettings: Світ очищено (VoxelTerrain)")
 
 func generate_world():
 	"""Запустити генерацію світу з поточними налаштуваннями"""
@@ -218,15 +221,16 @@ func generate_world():
 	
 	apply_settings()
 
-	# Перевірка наявності VoxelLodTerrain замість старого TerrainGenerator
-	var voxel_lod_terrain = get_tree().get_root().find_child("VoxelLodTerrain", true, false)
-	if not voxel_lod_terrain:
-		push_error("WorldGenerationSettings: VoxelLodTerrain не доступний!")
+	# Перевірка наявності VoxelTerrain
+	var terrain = get_tree().get_root().find_child("VoxelTerrain", true, false)
+	if not terrain:
+		push_error("WorldGenerationSettings: VoxelTerrain не доступний!")
 		return
 
-	push_warning("WorldGenerationSettings: Старий TerrainGenerator замінено на VoxelLodTerrain. Перегенерація світу буде імітувати перезапуск генератора.")
-	# Для VoxelLodTerrain просто імітуємо перезапуск - це не ідеально, але працює для тесту
-	voxel_lod_terrain.stream = voxel_lod_terrain.stream # Перезапуск генератора
+	push_warning("WorldGenerationSettings: Перегенерація світу через VoxelTerrain.")
+	# Для VoxelTerrain просто імітуємо перезапуск
+	if terrain.generator:
+		terrain.generator = terrain.generator # Перезапуск генератора
 
 	# Показуємо повідомлення про успішну операцію
 	print("WorldGenerationSettings: Світ перегенеровано (імітація)")

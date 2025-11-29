@@ -108,15 +108,3 @@ func _find_player(node: Node) -> Node:
 			return result
 	
 	return null
-
-		# Налаштовуємо базові параметри (тільки в грі)
-		if terrain_generator and terrain_generator.has_method("set"):
-			if "use_procedural_generation" in terrain_generator:
-				terrain_generator.use_procedural_generation = true
-			if "use_chunking" in terrain_generator:
-				terrain_generator.use_chunking = true  # Увімкнути chunking для кращої продуктивності
-			if "noise" in terrain_generator:
-				if not terrain_generator.noise:
-					terrain_generator.noise = FastNoiseLite.new()
-				terrain_generator.noise.seed = randi()
-				terrain_generator.noise.frequency = 0.05
