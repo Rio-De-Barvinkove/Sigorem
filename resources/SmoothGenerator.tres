@@ -1,0 +1,25 @@
+[gd_resource type="VoxelGeneratorScript" script_class="VoxelGeneratorSmooth" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/game/world/generation/VoxelGeneratorSmooth.gd" id="1_smooth_generator"]
+
+[resource]
+script = ExtResource("1_smooth_generator")
+world_seed = 1337
+base_height = 40.0
+max_height = 150.0
+continent_scale = 600.0
+mountain_scale = 150.0
+hill_scale = 60.0
+detail_scale = 15.0
+continent_weight = 0.35
+mountain_weight = 0.4
+hill_weight = 0.2
+detail_weight = 0.05
+cave_scale = 25.0
+cave_threshold = 0.65
+cave_min_depth = 8.0
+sdf_scale = 1.0
+blocky_steepness_threshold = 0.3
+blocky_voxel_size = 1.0
+blocky_mix_factor = 0.5
+

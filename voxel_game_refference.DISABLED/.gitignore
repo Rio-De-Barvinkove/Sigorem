@@ -1,0 +1,24 @@
+# Godot generated files
+*.import
+*.uid
+
+# Godot cache
+.godot/
+
+# Save files and runtime data
+*.vxr
+*.vxrm
+save/
+user://
+
+# Compiled resources (if any)
+*.tres.uid
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor backups
+*~
+
+
