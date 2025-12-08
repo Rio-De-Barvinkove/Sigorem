@@ -1,7 +1,6 @@
-# ROADMAP - ПЛАНИ РОЗВИТКУ ПРОЕКТУ SIGOREM
+# ROADMAP - SIGOREM (Voxdot)
 
-> Детальний план реалізації всіх систем та механік гри
-
+> Поточний план під Voxdot. GridMap-версія застаріла.
 **Оновлено:** 19 грудня 2025
 
 ---
@@ -21,139 +20,41 @@
 - **Видимий терейн:** Мікровоксельний меш з greedy meshing, скосами, плавними схилами
 - **Масштаб блоку:** 0.25-0.5 м "логічного" кроку, рендеринг об'єднує у більші сегменти
 - **Камера/стиль:** Ізометрична 3/4, глибина різкості, bloom, піксельні текстури
+--
 
-### Жорсткі обмеження стилю (неповертаємось до «гігантських кубів»):
-- **Жодних масштабів 1м+**: логічний блок = 0.25–0.5 м, для будь-яких експериментів масштаби погоджуються в цьому документі.
-- **Поверхня завжди мікровоксельна**: навіть якщо використовуємо blocky mesher, результуючий меш повинен агрегувати малі вокселі, а не залишати світ з «майнкрафтними» кубами.
-- **Процедурна деталізація обов'язкова**: висота, вологість, ерозія, дрібні структури й рослинність генеруються на кількох шарах шуму; “гладкі” експерименти допускаються лише в окремих дослідницьких сценах.
-- **Пайплайн матеріалів незмінний**: один спільний атлас/texture array, triplanar detail + LUT, жодних випадкових матеріалів у GridMap.
+## ФАЗА 1: ГРА 🔧
 
-### План впровадження Lay of Land стилю (ієрархія задач):
-1. **VoxelLibrary 0.25 м** – єдина таблиця ID → меш → матеріали (див. деталі у §2.5 · VoxelLibrary).
-2. **Mesher Pipeline** – VoxelMesherBlocky + greedy mesher для 0.25 м сітки (§2.5 · MesherBlocky+Greedy).
-3. **Generator 2.0** – багатошарові шуми, річки, печери, біоми (§2.5 · Generator 2.0).
-4. **Stream/Storage** – RAM/disk кеш для редагованих світів (§2.5 · Stream/Storage).
-5. **Lighting & PostFX** – LUT, volumetric fog, DOF, bloom, SSAO (§2.5 · Lighting preset).
-6. **Vegetation & Props** – MultiMesh трава/дерева, POI (§2.5 · Vegetation pass).
-
-> Нагадування: будь-який тимчасовий експеримент (гладкі меші, куби по 1 м) документується як research-only та не йде у `main` без цієї дорожньої карти.
-
----
-
-## 🚨 КРИТИЧНІ ПРІОРИТЕТИ (ТЕРМІНОВО)
-
-### 1. Виправлення регресій генерації ✅ (листопад-грудень 2025)
-
-**Статус:** Завершено. Всі критичні баги виправлено.
-
-**Вирішені проблеми:**
-- [x] Початкове завантаження ~5 хв → ~10 сек (вимкнено `use_optimization`)
-- [x] Фризи при русі до межі чанків (rate limiting для chunk culling)
-- [x] Висота рельєфу обмежена ≈5 блоками → `height_amplitude=32`, `max_height=128`
-- [x] Печери не працюють → `enable_caves=true` з 3D шумом
-- [x] Різкі стики чанків → noise-based smoothing, розширена зона blending
-- [x] Safe spawn zone → StartingAreaGenerator з перевіркою колізій
-
-**Відкладені задачі (перенесені в ФАЗА 2):**
-- Greedy Meshing (замість cull hidden faces) → §2.1
-- Threading для генерації → §2.2
-
-### 5. Вирівнювання візуального стилю під Lay of Land (грудень 2025)
-**Ціль:** послідовно виконати pipeline із §2.5.
-
-1. [A] `VoxelLibrary 0.25 м` – atlas+ID таблиця.
-2. [B] `MesherBlocky + Greedy` – мікровокселі з AO/UV.
-3. [C] `Generator 2.0` – біоми, річки, печери.
-4. [D] `Stream cache` – RAM/disk для перегенерацій.
-5. [E] `Lighting preset` – LUT, volumetric fog, DOF, bloom, SSAO.
-6. [F] `Vegetation pass` – MultiMesh трава/квіти/POI.
-
----
-
-## 📋 ФАЗИ РОЗРОБКИ
-
----
-
-## ФАЗА 0: БАЗОВЕ НАЛАШТУВАННЯ ✅
-
-**Статус:** Завершено
-
-### Реалізовано:
-- [x] Базове налаштування проекту
-- [x] Flat/procedural terrain toggle
-- [x] Input actions (build, inventory, pause)
-- [x] Autoload системи (BlockRegistry, ResourceManager, GameEvents, InventorySystem, CraftingSystem)
-- [x] 2.5D камера з діорамним ефектом (45°)
-- [x] Pixel-perfect рендеринг налаштування
-- [x] Воксельна фізика обвалів
-- [x] Поворот камери (Q/E)
-- [x] Зум камери (колесо миші)
-- [x] Player movement (WASD)
-- [x] Build Mode (B) - розміщення/видалення блоків
-
----
-
-## ФАЗА 1: MVP - МІНІМАЛЬНО ГРАБЕЛЬНА ГРА 🔧
-
-**Статус:** Частково завершено (1.1 ✅, решта відкладено до завершення §2.5)
-
-### 1.1 Виправлення критичних багів генерації ✅
-**Статус:** Завершено. Деталі див. §Критичні пріоритети → 1.
-
-- [x] Mesh Optimization - вимкнено (потребує повного переписування → перенесено в §2.1)
-- [x] Chunk Boundaries - виправлено (noise-based smoothing)
-- [x] Завантаження світу - оптимізовано (5 хв → ~10 сек)
-- [x] Висота рельєфу та печери - виправлено (висота 32, печери увімкнено)
-- [x] Safe spawn zone з валідацією колізій - реалізовано (StartingAreaGenerator)
-- [x] Інкрементальне видалення чанків (черга очищення + ліміт `max_chunk_clear_ops_per_frame`)
-
-**Залишилось (оптимізації, не критично):**
-- [ ] Черга генерації чанків (pending tasks + ліміт нових чанків за кадр) → §2.2
-- [ ] ThreadingManager: перенести generate/remove у окремі воркери → §2.2
-- [ ] Логування часу генерації/видалення (WorldLogger.performance) → §2.2
-
----
-
-### 2.5 Lay of Land pipeline (зв'язка генератор → матеріали → освітлення)
-- [ ] **(A) `VoxelLibrary` 0.25 м** – texture atlas/array ≤2048², UV схема, vertex color маски.
-- [ ] **(B) `MesherBlocky+Greedy`** – підтримка каналів TYPE/DATA, AO, height blend, slope-aware UV.
-- [ ] **(C) `Generator 2.0`** – біоми (height/temperature/humidity), carve для річок/озер/печер.
-- [ ] **(D) `Stream/Storage`** – RAM cache + `_save_voxel_block` (SQLite або chunk files).
-- [ ] **(E) `Lighting preset`** – LUT, volumetric fog, SSAO, DOF, bloom, погодні варіації.
-- [ ] **(F) `Vegetation pass`** – MultiMesh трава/кущі/дерева, props/POI (вежі, мости, руїни) з біомними обмеженнями.
-
----
-
-## ФАЗА 1.2: MVP - ГЕЙМПЛЕЙНІ МЕХАНІКИ (ПІСЛЯ §2.5) 🎮
-
-**Статус:** Відкладено до завершення §2.5
-
-### 1.2 Імпорт та налаштування асетів
-- [ ] Y-sort для правильної глибини
-- [ ] Pixel snapping для спрайтів
-- [ ] Налаштування шарів (terrain, objects, player, UI)
-
-### 1.3 Система збору ресурсів
-- [ ] Gatherable objects (дерева, камені, рослини)
-- [ ] Анімація збору
-- [ ] Додавання ресурсів в інвентар
-- [ ] Drop на землю якщо інвентар повний
-
-### 1.4 UI інвентаря (покращення)
-- [x] Базовий інвентар (48 слотів)
-- [ ] Drag & drop предметів
-- [ ] Інформація про предмет (tooltip)
-- [ ] Розділення стеків (Shift+click)
-- [ ] Сортування інвентаря
-- [ ] Інтегрувати `rubonnek.inventory_manager` як бекенд (синхронізація ItemRegistry, save/load, перехід UI)
-
-### 1.5 Базовий крафтинг
-- [x] Система рецептів (CraftingRecipe)
-- [x] UI крафтингу (crafting_menu)
-- [ ] Рецепти: stone axe, stone pickaxe, campfire, bandage
-- [ ] Категорії рецептів (tools, survival, building)
-
-### 1.6 Збереження/завантаження світу
+- [] Mesh Optimization  
+  - Greedy meshing (мердж площин)  
+  - Fallback: cull hidden faces + stitch/skirt між чанками  
+- [] Chunk Boundaries  
+  - Узгоджені шви по XZ, врахування сусідніх чанків  
+- [] Safe spawn zone з валідацією колізій 
+- [] Інкрементальне видалення чанків (черга очищення + ліміт `max_chunk_clear_ops_per_frame`)
+- [] Черга генерації чанків (pending tasks + ліміт нових чанків за кадр)  
+  - Пріоритет ближніх чанків, ліміт операцій/кадр  
+- [] ThreadingManager: перенести generate/remove у окремі воркери  
+  - Worker threads для генерації/мешингу, синхронізація в головний потік  
+- [] Логування часу генерації/видалення (WorldLogger.performance)  
+- [] Frustum culling (AABB чанка)  
+- [] Partial mesh updates (патчити змінені грані; ліміт rebuild-пулу)  
+- [] Y-sort для правильної глибини
+- [] Pixel snapping для спрайтів
+- [] Налаштування шарів (terrain, objects, player, UI)
+- [] Gatherable objects (дерева, камені, рослини)
+- [] Анімація збору
+- [] Додавання ресурсів в інвентар
+- [] Drop на землю якщо інвентар повний
+- [] Базовий інвентар (48 слотів)
+- [] Drag & drop предметів
+- [] Інформація про предмет (tooltip)
+- [] Розділення стеків (Shift+click)
+- [] Сортування інвентаря
+- [] Інтегрувати `rubonnek.inventory_manager` як бекенд (синхронізація ItemRegistry, save/load, перехід UI)
+- [] Система рецептів (CraftingRecipe)
+- [] UI крафтингу (crafting_menu)
+- [] Рецепти: stone axe, stone pickaxe, campfire, bandage
+- [] Категорії рецептів (tools, survival, building)
 - [ ] SaveLoadManager інтеграція
 - [ ] Збереження чанків (per-chunk data)
 - [ ] Збереження інвентаря гравця
@@ -161,67 +62,48 @@
 - [ ] Екран "Створити світ" (name, seed/randomize, preset)
 - [ ] Екран "Список світів" (Continue/Delete/Rename)
 
-### 1.7 Тестування та баланс
-- [ ] Тест: зміна chunk_size у UI → правильна кількість блоків
-- [ ] Тест: seed A і B → різні патерни, повторне A → той самий
-- [ ] Тест: рух гравця → підвантаження/вивантаження чанків
-- [ ] Тест: WASD управління працює
-- [ ] Тест: Build Mode без лагів
+## ФАЗА 2.1: ПРОЦЕДУРНА ГЕНЕРАЦІЯ - ДОДАТКОВІ ПОКРАЩЕННЯ 🏔️
 
----
-
-## ФАЗА 2.1: ПРОЦЕДУРНА ГЕНЕРАЦІЯ - ДОДАТКОВІ ПОКРАЩЕННЯ (ПІСЛЯ §2.5) 🏔️
-
-**Статус:** Відкладено до завершення §2.5
-
-### 2.1 Покращення якості генерації
-- [ ] **Greedy Meshing** (замість cull hidden faces) - частина §2.5 [B]
-- [ ] **Large-scale structures** (гори, каньйони) - увімкнути та інтегрувати
-- [x] **Cave generation** (3D шум для підземель) - ✅ базово працює, покращити → §2.5 [C]
-- [ ] **Erosion simulation** (природніший рельєф) - увімкнути та інтегрувати
-- [ ] **Points of Interest** (руїни, печери, ресурсні зони) - повна інтеграція → §2.5 [F]
-- [ ] **Розширена система біомів**: noise layering (FBM, domain warp, ridged/billow), humidity/temperature карти → §2.5 [C]
-- [ ] **Високий світ**: підняти `height_amplitude` 96–128 та `max_height` 256+ з підтримкою у ChunkManager/types
-- [ ] **Vertical chunking / custom mesh** для роботи з високими свірами без GridMap-стелі
-
-### 2.2 Оптимізація продуктивності
+- [ ] **Large-scale structures** (гори, каньйони) 
+- [ ] **Cave generation** (3D шум для підземель)  
+- [ ] **Erosion simulation** (природніший рельєф) 
+- [ ] **Points of Interest** (руїни, печери, ресурсні зони) 
+- [ ] **Розширена система біомів**: noise layering (FBM, domain warp, ridged/billow), humidity/temperature карти 
 - [ ] **Indexed Buffers / GPU Optimization**
-- [ ] **Occlusion Culling** (покращити - перевірка висот)
+- [ ] **Occlusion Culling** (перевірка висот/оточення)
 - [ ] **Physics Optimization** (окрема фізика для активних чанків)
-- [ ] **Memory Pooling** (для блоків)
-- [ ] **Повна реалізація Partial Mesh Updates**
-- [ ] **Spatial Partitioning** (Quadtree) - інтегрувати в ChunkManager *(індекс оновлюється, лишилось використати для culling/запитів)*
+- [ ] **Memory Pooling** (для блоків/mesh buffers)
+- [ ] **Spatial Partitioning** (Quadtree; Octree опційно)
 - [ ] **Asynchronous chunk queue** (обробка 1-2 завдань за кадр)
-- [ ] **ThreadingManager** для генерації/видалення + безпечний merge у GridMap
 - [ ] **Lazy chunk removal** (clear по стовпах або chunk-node)
-- [ ] **Profiler hooks** у ChunkManager/ProceduralGeneration/OptimizationManager
-
-### 2.3 Інструменти огляду та дебагу
-- [ ] Польотний режим + регульована швидкість (вже є базово)
+- [ ] **Profiler hooks** 
+- [ ] **Triplanar/Texture array** матеріали (16 текстур, індекси/ваги)
+- [ ] **Multipass generation** (основа → структури → декор)
+- [ ] **Water simulation (0–7 рівні)**, дві черги оновлення
+- [ ] **Random ticks** (рост/оновлення)
+- [ ] **LOD** (3–4 рівні, спрощений меш, фейд)
+- [ ] **Streaming/Preloading** (ліміт часу/кадр, попереднє завантаження)
+- [ ] **Noise stack** (FBM/ridged/billow, seed збереження)
+- [ ] Польотний режим + регульована швидкість 
 - [ ] X-ray/підсвітка печер
 - [ ] Тумблер освітлення
 - [ ] Creative/build mode з динамічним масштабуванням області
 - [ ] Режим камери від першої особи
-- [ ] Внутрішня консоль (телепорт, регенерація чанків, профілювання) - вже є базово
-
+- [ ] Внутрішня консоль (телепорт, регенерація чанків, профілювання)
 ### 2.4 Візуальні покращення терейну
-**Примітка:** Більшість цих задач перенесено в §2.5 Lay of Land pipeline.
-
-- [x] Базовий mesh-пайплайн (VoxelLodTerrain + VoxelMesherBlocky) - ✅ працює
-- [ ] Реалізувати greedy meshing з bevel/скосами (мікровоксельний стиль) → §2.5 [B]
-- [ ] Зібрати тестову сцену (міст + берег + схили) - після завершення §2.5
-- [ ] Додати fallback get_mesh_index_for_block - якщо потрібно для сумісності
-- [ ] Інтегрувати `day_and_night_cycle` (CycleController + CycleData, WorldEnvironment, DirectionalLight сигнали) → §2.5 [E]
-
----
+- [] Базовий mesh-пайплайн 
+- [] Додати fallback get_mesh_index_for_block - якщо потрібно для сумісності
+- [] Інтегрувати `day_and_night_cycle` (CycleController + CycleData, WorldEnvironment, DirectionalLight сигнали)
+- [] Octree/SVO (для LOD/RT)
+- []  Lighting optimization
+  Лише активні чанки у світлі.
+  Опційно воксельний lightmap / baked probes.
 
 ## ФАЗА 3: ВИЖИВАННЯ - CORE МЕХАНІКИ 🔥
 
-**Статус:** Частково (системи є, геймплей відсутній)
-
 ### 3.1 Система потреб (вже реалізована технічно)
-- [x] NeedsSystem (hunger, thirst, sleepiness)
-- [x] StatusEffects (STARVING, DEHYDRATED, EXHAUSTED)
+- [] NeedsSystem (hunger, thirst, sleepiness)
+- [] StatusEffects (STARVING, DEHYDRATED, EXHAUSTED)
 - [ ] UI для потреб (прогрес-бари в CharacterMenu)
 - [ ] Їжа та вода (предмети, консумабли)
 - [ ] Ефекти голоду/спраги на гравця (вже є базово)
@@ -229,7 +111,7 @@
 - [ ] Фізіологічні потреби (туалет/гігієна) з дебаффами при ігноруванні
 
 ### 3.2 Система здоров'я та пошкоджень
-- [x] PlayerStats (health, stamina)
+- [] PlayerStats (health, stamina)
 - [ ] Система пошкоджень (падіння, голод, вороги)
 - [ ] Bandages та healing предмети
 - [ ] Регенерація здоров'я (повільна)
@@ -279,7 +161,7 @@
 **Статус:** Базова система є, контент відсутній
 
 ### 5.1 Розширений крафтинг
-- [x] Базова система (CraftingSystem, recipes)
+- [] Базова система (CraftingSystem, recipes)
 - [ ] Workbench тирів (простий → просунутий)
 - [ ] Crafting stations (furnace, anvil, loom)
 - [ ] Tier прогресія (stone → iron → steel)

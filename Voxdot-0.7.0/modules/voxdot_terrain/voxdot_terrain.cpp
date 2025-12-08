@@ -66,7 +66,7 @@ VoxdotTerrain::VoxdotTerrain() :
 			shared_material->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA_DEPTH_PRE_PASS);
 			shared_material->set_flag(BaseMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 		}*/
-		
+
 	}
 }
 
@@ -218,7 +218,7 @@ void VoxdotTerrain::init_terrain_system(float initial_voxel_scale, int noise_see
 		collision_shape->set_owner(this); // Set owner for proper scene tree management
 		collision_shape_pool_free.push_back(collision_shape);
 	}
-	
+
 
 
 	// You can set other noise properties here as needed
@@ -270,9 +270,9 @@ void VoxdotTerrain::add_chunk(const Vector3 &coords, bool empty) {
 		} else {
 			new_chunk_metadata.generate_terrain = false;
 		}
-		
+
 		chunk_map.insert(coords, new_chunk_metadata);
-		
+
 		//OS::get_singleton()->print(vformat("Chunk added: %s\n", coords));
 	} else {
 		//OS::get_singleton()->print(vformat("Chunk already exists: %s\n", coords));
@@ -379,7 +379,7 @@ void VoxdotTerrain::generate_mesh_data(MeshData &outMeshData, const std::vector<
 	memset(outMeshData.forwardMerged, 0, sizeof(uint8_t) * CS_2_LOCAL);
 	memset(outMeshData.rightMerged, 0, sizeof(uint8_t) * CS_LOCAL);
 
-	
+
 	// Generate opaque mask
 	for (int z = 0; z < CS_P_LOCAL; ++z) {
 		for (int y = 0; y < CS_P_LOCAL; ++y) {
@@ -396,9 +396,9 @@ void VoxdotTerrain::generate_mesh_data(MeshData &outMeshData, const std::vector<
 	// Call the mesh function from mesher.cpp
 	// Ensure mesher.cpp expects raw uint8_t* for voxels.
 	// Godot's Vector<uint8_t>::ptr() gives a raw pointer.
-	
+
 	mesh(voxels.data(), outMeshData);
-	
+
 	// Trim the vertices vector
 	if (outMeshData.vertices) {
 		outMeshData.vertices->resize(outMeshData.vertexCount);
@@ -1084,7 +1084,7 @@ void VoxdotTerrain::populate_chunk_voxels(
 
 		for (int y = local_min_y; y <= local_max_y; ++y) {
 			const float worldY_pos_scaled = (chunk_offset_in_voxels.y + y - pad) * voxel_scale;
-			
+
 			const size_t y_stride = static_cast<size_t>(y) * cs_p2_val;
 			for (int x = local_min_x; x <= local_max_x; ++x) {
 				const float worldX_pos_scaled = (chunk_offset_in_voxels.x + x - pad) * voxel_scale;
@@ -1222,7 +1222,7 @@ void VoxdotTerrain::generate_godot_mesh_for_chunk(GodotMeshData &outGodotMeshDat
 	if (!md->UnprocessedEdits.is_empty()) {
 		update_chunk_voxels(md->voxels, CS_P_VAL, CS_P2_VAL, CS_P3_VAL, chunk_offset_in_voxels);
 	}
-	
+
 	auto gen_end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double, std::micro> gen_duration_micro = gen_end - gen_start;
 	std::cout << "Generator execution time: " << gen_duration_micro.count() << " us" << std::endl;
@@ -1232,11 +1232,11 @@ void VoxdotTerrain::generate_godot_mesh_for_chunk(GodotMeshData &outGodotMeshDat
 	OS::get_singleton()->print(oss_voxel_gen_complete.str().c_str());*/
 
 	// Quick check if voxels actually contain any data
-	
-	
-	
+
+
+
 	// 2. Generate raw mesh data using your existing mesher.cpp
-	
+
 	generate_mesh_data(m_reuseable_meshdata, md->voxels);
 	/*std::ostringstream oss_raw_mesh_data;
 	oss_raw_mesh_data << "Raw mesh data generated for chunk " << chunk_coords.x << "," << chunk_coords.y << "," << chunk_coords.z
@@ -1244,7 +1244,7 @@ void VoxdotTerrain::generate_godot_mesh_for_chunk(GodotMeshData &outGodotMeshDat
 	OS::get_singleton()->print(oss_raw_mesh_data.str().c_str());*/
 
 	// 3. Convert raw mesh data to GodotMeshData using MeshConverter
-	
+
 	// You might want to set material colors on the mesher if needed:
 	// mesher.setMaterialColor(1, Vector4(1.0f, 0.0f, 0.0f, 1.0f)); // Example for material type 1
 	auto convert_start = std::chrono::high_resolution_clock::now();
@@ -1672,5 +1672,5 @@ void VoxdotTerrain::_bind_methods() {
 
 
 
-	
+
 }
