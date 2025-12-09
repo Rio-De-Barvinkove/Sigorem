@@ -1,4 +1,5 @@
 extends Node
+class_name PlayerStats
 
 signal stat_changed(stat_name, value, max_value)
 signal health_depleted

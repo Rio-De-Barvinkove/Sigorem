@@ -36,4 +36,4 @@ func _update_progress():
 
 func _on_loading_complete():
 	hide()
-	get_tree().change_scene_to_file("res://scenes/world.tscn")
+	get_tree().change_scene_to_file("res://voxdot_demo/voxdot_demo.tscn")
