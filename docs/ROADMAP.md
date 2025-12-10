@@ -34,32 +34,16 @@
   - Fallback: cull hidden faces + stitch/skirt між чанками  
 - [] Chunk Boundaries  
   - Узгоджені шви по XZ, врахування сусідніх чанків  
-
 - [] Інкрементальне видалення чанків (черга очищення + ліміт `max_chunk_clear_ops_per_frame`)
 - [] Черга генерації чанків (pending tasks + ліміт нових чанків за кадр)  
   - Пріоритет ближніх чанків, ліміт операцій/кадр  
 - [] ThreadingManager: перенести generate/remove у окремі воркери  
   - Worker threads для генерації/мешингу, синхронізація в головний потік  
-
 - [] Frustum culling (AABB чанка)  
 - [] Partial mesh updates (патчити змінені грані; ліміт rebuild-пулу)  
 - [] Y-sort для правильної глибини
 - [] Pixel snapping для спрайтів
 - [] Налаштування шарів (terrain, objects, player, UI)
-- [] Gatherable objects (дерева, камені, рослини)
-- [] Анімація збору
-- [] Додавання ресурсів в інвентар
-- [] Drop на землю якщо інвентар повний
-- [] Базовий інвентар (48 слотів)
-- [] Drag & drop предметів
-- [] Інформація про предмет (tooltip)
-- [] Розділення стеків (Shift+click)
-- [] Сортування інвентаря
-- [] Інтегрувати `rubonnek.inventory_manager` як бекенд (синхронізація ItemRegistry, save/load, перехід UI)
-- [] Система рецептів (CraftingRecipe)
-- [] UI крафтингу (crafting_menu)
-- [] Рецепти: stone axe, stone pickaxe, campfire, bandage
-- [] Категорії рецептів (tools, survival, building)
 - [ ] SaveLoadManager інтеграція
 - [ ] Збереження чанків (per-chunk data)
 - [ ] Збереження інвентаря гравця
@@ -105,7 +89,20 @@
   Опційно воксельний lightmap / baked probes.
 
 ## ФАЗА 3: ВИЖИВАННЯ - CORE МЕХАНІКИ 🔥
-
+- [] Gatherable objects (дерева, камені, рослини)
+- [] Анімація збору
+- [] Додавання ресурсів в інвентар
+- [] Drop на землю якщо інвентар повний
+- [] Базовий інвентар (48 слотів)
+- [] Drag & drop предметів
+- [] Інформація про предмет (tooltip)
+- [] Розділення стеків (Shift+click)
+- [] Сортування інвентаря
+- [] Інтегрувати `rubonnek.inventory_manager` як бекенд (синхронізація ItemRegistry, save/load, перехід UI)
+- [] Система рецептів (CraftingRecipe)
+- [] UI крафтингу (crafting_menu)
+- [] Рецепти: stone axe, stone pickaxe, campfire, bandage
+- [] Категорії рецептів (tools, survival, building)
 ### 3.1 Система потреб (вже реалізована технічно)
 - [] NeedsSystem (hunger, thirst, sleepiness)
 - [] StatusEffects (STARVING, DEHYDRATED, EXHAUSTED)

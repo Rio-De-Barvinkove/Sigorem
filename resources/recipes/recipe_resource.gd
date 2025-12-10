@@ -6,3 +6,4 @@ class_name CraftingRecipe
 @export var result_item: ItemResource
 @export var result_count: int = 1
 
+
