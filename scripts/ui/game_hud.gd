@@ -1,15 +1,13 @@
 extends CanvasLayer
 
-@onready var info_label = $InfoLabel
 @onready var debug_label = $DebugLabel
 @onready var build_mode_label = $BuildModeLabel
-@onready var world_gen_settings = get_node_or_null("../UI/WorldGenerationSettings")
+@onready var world_gen_settings = get_node_or_null("../UILayer/WorldGenerationSettings")
 
 var debug_hud_enabled := false
 
 func _ready():
 	build_mode_label.text = ""
-	info_label.text = "WASD - рух | I - інвентар | B - build mode | Q/E - поворот камери | Mouse Wheel - зум | F10 - налаштування генерації"
 	debug_label.visible = debug_hud_enabled
 	debug_label.text = ""
 
