@@ -236,7 +236,10 @@ func _update_chunks_around_player() -> void:
 
 		# Застосувати збережені модифікації після генерації
 		if _chunk_save_manager:
+			print("VoxdotController: Applying saved modifications for chunk ", chunk_coords)
 			_chunk_save_manager.apply_modifications_to_chunk(terrain, chunk_coords)
+			# Immediately process any dirty chunks after applying modifications
+			terrain.process_dirty_chunks(chunks_per_frame, true)
 	
 	# Вивантажити зайві чанки
 	for chunk_coords in chunks_to_unload:

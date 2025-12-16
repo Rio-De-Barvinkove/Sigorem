@@ -76,6 +76,7 @@ func add_voxel_modification(world_pos: Vector3, material: int) -> void:
 	var chunk_data = load_chunk_modifications(chunk_coords)
 	chunk_data.modifications[world_pos] = material
 	chunk_data.timestamp = Time.get_unix_time_from_system()
+	print("ChunkSaveManager: Added modification at ", world_pos, " material=", material, " chunk=", chunk_coords)
 
 ## Отримати модифікацію вокселя (null якщо немає)
 func get_voxel_modification(world_pos: Vector3) -> Variant:
@@ -116,6 +117,7 @@ func apply_modifications_to_chunk(terrain: VoxdotTerrain, chunk_coords: Vector3)
 		var material = chunk_data.modifications[world_pos]
 		# Використовуємо place_edit для відновлення вокселя
 		var voxel_size = Vector3.ONE * voxel_scale
+		print("  Applying at ", world_pos, " material=", material, " size=", voxel_size)
 		terrain.place_edit(voxel_size, world_pos, material, 1 if material > 0 else 0)
 
 ## Завантажити chunk data з диска
