@@ -136,12 +136,20 @@ func _load_chunk_from_disk(chunk_data: Dictionary) -> bool:
 		push_error("ChunkSaveManager: Failed to load chunk ", chunk_data.chunk_coords, " from ", save_path)
 		return false
 
-	var compressed_data = file.get_buffer(file.get_length())
+	var file_data = file.get_buffer(file.get_length())
 	file.close()
 
-	var decompressed_data = compressed_data.decompress(compressed_data.size() * 10, FileAccess.COMPRESSION_GZIP)
-	var json = decompressed_data.get_string_from_utf8()
-	var data = JSON.parse_string(json)
+	var json: String
+	var data: Variant
+
+	# Спробувати завантажити як стиснутий файл (новий формат)
+	var decompressed_data = file_data.decompress(file_data.size() * 10, FileAccess.COMPRESSION_GZIP)
+	if decompressed_data.size() > 0:  # Якщо декомпресія успішна
+		json = decompressed_data.get_string_from_utf8()
+		data = JSON.parse_string(json)
+	else:  # Якщо декомпресія не вдалася, спробувати як звичайний JSON (старий формат)
+		json = file_data.get_string_from_utf8()
+		data = JSON.parse_string(json)
 	if not data or typeof(data) != TYPE_DICTIONARY:
 		push_error("ChunkSaveManager: Invalid JSON in ", save_path)
 		return false
