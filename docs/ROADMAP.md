@@ -43,8 +43,9 @@
 - [] Partial mesh updates (патчити змінені грані; ліміт rebuild-пулу)  
 
 
-- [ ] SaveLoadManager інтеграція
-- [ ] Збереження чанків (per-chunk data)
+- [x] **ChunkSaveManager створений** - збереження воксельних модифікацій чанків
+- [ ] SaveLoadManager інтеграція (частково: chunk data ready)
+- [x] Збереження чанків (per-chunk data) - JSON файли на чанк
 - [ ] Збереження інвентаря гравця
 - [ ] Збереження позиції гравця
 - [ ] Екран "Створити світ" (name, seed/randomize, preset)
