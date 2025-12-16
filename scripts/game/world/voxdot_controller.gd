@@ -315,13 +315,3 @@ func place_cube(world_pos: Vector3, size: Vector3, material: int = 1) -> void:
 func place_vox_model(world_pos: Vector3, vox_path: String, material: int = 0) -> void:
 	## Поставити .vox модель (MagicaVoxel)
 	terrain.place_vox_edit(vox_path, world_pos, material)
-
-## Конвертувати світові координати в координати чанка
-func _world_to_chunk(world_pos: Vector3) -> Vector3:
-	const CHUNK_SIZE = 62  # Внутрішній розмір чанка
-	var chunk_world_size = CHUNK_SIZE * voxel_scale
-	return Vector3(
-		floor(world_pos.x / chunk_world_size),
-		floor(world_pos.y / chunk_world_size),
-		floor(world_pos.z / chunk_world_size)
-	)
