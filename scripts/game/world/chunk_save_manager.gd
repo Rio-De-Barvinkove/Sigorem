@@ -3,100 +3,11 @@ class_name ChunkSaveManager
 ## Менеджер збереження/завантаження модифікацій чанків
 ## Зберігає воксельні зміни гравця для персистентності
 
-## Структура даних для збереження модифікацій чанка
-class ChunkModifications:
-	var chunk_coords: Vector3
-	var modifications: Dictionary  # Vector3 -> int (позиція -> матеріал)
-	var timestamp: int  # час останньої модифікації
-
-	var save_path: String
-
-	func _init(coords: Vector3, path: String):
-		chunk_coords = coords
-		modifications = {}
-		timestamp = Time.get_unix_time_from_system()
-		save_path = path
-
-	## Додати модифікацію вокселя
-	func add_modification(world_pos: Vector3, material: int) -> void:
-		modifications[world_pos] = material
-		timestamp = Time.get_unix_time_from_system()
-
-	## Отримати матеріал на позиції (null якщо немає модифікації)
-	func get_modification(world_pos: Vector3) -> Variant:
-		return modifications.get(world_pos)
-
-	## Чи є модифікації в цьому чанку
-	func has_modifications() -> bool:
-		return not modifications.is_empty()
-
-	## Зберегти на диск
-	func save_to_disk() -> void:
-		if modifications.is_empty():
-			# Видалити файл якщо немає модифікацій
-			var dir = DirAccess.open(save_path.get_base_dir())
-			if dir and dir.file_exists(save_path):
-				dir.remove(save_path)
-			return
-
-		var data = {
-			"chunk_coords": {"x": chunk_coords.x, "y": chunk_coords.y, "z": chunk_coords.z},
-			"timestamp": timestamp,
-			"modifications": {}
-		}
-
-		# Конвертувати Vector3 ключі в серіалізований формат
-		for pos in modifications.keys():
-			var key = "%d,%d,%d" % [pos.x, pos.y, pos.z]
-			data.modifications[key] = modifications[pos]
-
-		var json = JSON.stringify(data)
-		var file = FileAccess.open(save_path, FileAccess.WRITE)
-		if file:
-			file.store_string(json)
-			file.close()
-		else:
-			push_error("ChunkSaveManager: Failed to save chunk ", chunk_coords, " to ", save_path)
-
-	## Завантажити з диска
-	func load_from_disk() -> bool:
-		if not FileAccess.file_exists(save_path):
-			return false
-
-		var file = FileAccess.open(save_path, FileAccess.READ)
-		if not file:
-			push_error("ChunkSaveManager: Failed to load chunk ", chunk_coords, " from ", save_path)
-			return false
-
-		var json = file.get_as_text()
-		file.close()
-
-		var data = JSON.parse_string(json)
-		if not data or typeof(data) != TYPE_DICTIONARY:
-			push_error("ChunkSaveManager: Invalid JSON in ", save_path)
-			return false
-
-		modifications.clear()
-		timestamp = data.get("timestamp", Time.get_unix_time_from_system())
-
-		# Відновити модифікації
-		var mods_data = data.get("modifications", {})
-		for key in mods_data.keys():
-			var coords_str = key.split(",")
-			if coords_str.size() == 3:
-				var pos = Vector3(
-					float(coords_str[0]),
-					float(coords_str[1]),
-					float(coords_str[2])
-				)
-				modifications[pos] = mods_data[key]
-
-		return true
-
 @export_dir var save_directory: String = "user://worlds/current"
 @export var world_name: String = "default_world"
 
-var loaded_chunks: Dictionary = {}  # Vector3 -> ChunkModifications
+# Структура для збереження модифікацій чанка
+var loaded_chunks: Dictionary = {}  # Vector3 -> Dictionary (chunk data)
 var _world_seed: int = 0
 
 func _ready() -> void:
@@ -122,29 +33,37 @@ func _get_chunk_save_path(chunk_coords: Vector3) -> String:
 	return save_directory + "/chunk_%d_%d_%d.json" % [chunk_coords.x, chunk_coords.y, chunk_coords.z]
 
 ## Завантажити модифікації чанка
-func load_chunk_modifications(chunk_coords: Vector3) -> ChunkModifications:
+func load_chunk_modifications(chunk_coords: Vector3) -> Dictionary:
 	if loaded_chunks.has(chunk_coords):
 		return loaded_chunks[chunk_coords]
 
-	var mods = ChunkModifications.new(chunk_coords, _get_chunk_save_path(chunk_coords))
-	if mods.load_from_disk():
-		loaded_chunks[chunk_coords] = mods
-		print("ChunkSaveManager: Loaded modifications for chunk ", chunk_coords, " (", mods.modifications.size(), " modifications)")
-	else:
-		loaded_chunks[chunk_coords] = mods
+	var chunk_data = {
+		"chunk_coords": chunk_coords,
+		"modifications": {},  # Vector3 -> int
+		"timestamp": Time.get_unix_time_from_system(),
+		"save_path": _get_chunk_save_path(chunk_coords)
+	}
 
-	return mods
+	# Спробувати завантажити з диска
+	if _load_chunk_from_disk(chunk_data):
+		print("ChunkSaveManager: Loaded modifications for chunk ", chunk_coords, " (", chunk_data.modifications.size(), " modifications)")
+	else:
+		print("ChunkSaveManager: Created new chunk data for ", chunk_coords)
+
+	loaded_chunks[chunk_coords] = chunk_data
+	return chunk_data
 
 ## Зберегти модифікації чанка
 func save_chunk_modifications(chunk_coords: Vector3) -> void:
 	if not loaded_chunks.has(chunk_coords):
 		return
 
-	var mods = loaded_chunks[chunk_coords]
-	mods.save_to_disk()
+	var chunk_data = loaded_chunks[chunk_coords]
+	_save_chunk_to_disk(chunk_data)
 
-	if mods.has_modifications():
-		print("ChunkSaveManager: Saved modifications for chunk ", chunk_coords, " (", mods.modifications.size(), " modifications)")
+	var mod_count = chunk_data.modifications.size()
+	if mod_count > 0:
+		print("ChunkSaveManager: Saved modifications for chunk ", chunk_coords, " (", mod_count, " modifications)")
 	else:
 		print("ChunkSaveManager: Cleared empty modifications for chunk ", chunk_coords)
 
@@ -152,8 +71,9 @@ func save_chunk_modifications(chunk_coords: Vector3) -> void:
 func add_voxel_modification(world_pos: Vector3, material: int) -> void:
 	# Конвертувати світові координати в координати чанка
 	var chunk_coords = _world_to_chunk(world_pos)
-	var mods = load_chunk_modifications(chunk_coords)
-	mods.add_modification(world_pos, material)
+	var chunk_data = load_chunk_modifications(chunk_coords)
+	chunk_data.modifications[world_pos] = material
+	chunk_data.timestamp = Time.get_unix_time_from_system()
 
 ## Отримати модифікацію вокселя (null якщо немає)
 func get_voxel_modification(world_pos: Vector3) -> Variant:
@@ -161,14 +81,14 @@ func get_voxel_modification(world_pos: Vector3) -> Variant:
 	if not loaded_chunks.has(chunk_coords):
 		return null
 
-	var mods = loaded_chunks[chunk_coords]
-	return mods.get_modification(world_pos)
+	var chunk_data = loaded_chunks[chunk_coords]
+	return chunk_data.modifications.get(world_pos)
 
 ## Чи є модифікації в чанку
 func chunk_has_modifications(chunk_coords: Vector3) -> bool:
 	if not loaded_chunks.has(chunk_coords):
 		return false
-	return loaded_chunks[chunk_coords].has_modifications()
+	return not loaded_chunks[chunk_coords].modifications.is_empty()
 
 ## Вивантажити чанк із пам'яті (але зберегти на диск)
 func unload_chunk(chunk_coords: Vector3) -> void:
@@ -183,18 +103,87 @@ func apply_modifications_to_chunk(terrain: VoxdotTerrain, chunk_coords: Vector3)
 	if not loaded_chunks.has(chunk_coords):
 		return
 
-	var mods = loaded_chunks[chunk_coords]
-	if not mods.has_modifications():
+	var chunk_data = loaded_chunks[chunk_coords]
+	if chunk_data.modifications.is_empty():
 		return
 
-	print("ChunkSaveManager: Applying ", mods.modifications.size(), " modifications to chunk ", chunk_coords)
+	print("ChunkSaveManager: Applying ", chunk_data.modifications.size(), " modifications to chunk ", chunk_coords)
 
 	# Застосувати кожну модифікацію
-	for world_pos in mods.modifications.keys():
-		var material = mods.modifications[world_pos]
+	for world_pos in chunk_data.modifications.keys():
+		var material = chunk_data.modifications[world_pos]
 		# Використовуємо place_edit для відновлення вокселя
 		# Розмір 0.1 - базовий розмір вокселя
 		terrain.place_edit(Vector3(0.1, 0.1, 0.1), world_pos, material, 1 if material > 0 else 0)
+
+## Завантажити chunk data з диска
+func _load_chunk_from_disk(chunk_data: Dictionary) -> bool:
+	var save_path = chunk_data.save_path
+	if not FileAccess.file_exists(save_path):
+		return false
+
+	var file = FileAccess.open(save_path, FileAccess.READ)
+	if not file:
+		push_error("ChunkSaveManager: Failed to load chunk ", chunk_data.chunk_coords, " from ", save_path)
+		return false
+
+	var json = file.get_as_text()
+	file.close()
+
+	var data = JSON.parse_string(json)
+	if not data or typeof(data) != TYPE_DICTIONARY:
+		push_error("ChunkSaveManager: Invalid JSON in ", save_path)
+		return false
+
+	chunk_data.timestamp = data.get("timestamp", Time.get_unix_time_from_system())
+
+	# Відновити модифікації
+	var mods_data = data.get("modifications", {})
+	chunk_data.modifications.clear()
+	for key in mods_data.keys():
+		var coords_str = key.split(",")
+		if coords_str.size() == 3:
+			var pos = Vector3(
+				float(coords_str[0]),
+				float(coords_str[1]),
+				float(coords_str[2])
+			)
+			chunk_data.modifications[pos] = mods_data[key]
+
+	return true
+
+## Зберегти chunk data на диск
+func _save_chunk_to_disk(chunk_data: Dictionary) -> void:
+	var save_path = chunk_data.save_path
+	if chunk_data.modifications.is_empty():
+		# Видалити файл якщо немає модифікацій
+		var dir = DirAccess.open(save_path.get_base_dir())
+		if dir and dir.file_exists(save_path):
+			dir.remove(save_path)
+		return
+
+	var data = {
+		"chunk_coords": {
+			"x": chunk_data.chunk_coords.x,
+			"y": chunk_data.chunk_coords.y,
+			"z": chunk_data.chunk_coords.z
+		},
+		"timestamp": chunk_data.timestamp,
+		"modifications": {}
+	}
+
+	# Конвертувати Vector3 ключі в серіалізований формат
+	for pos in chunk_data.modifications.keys():
+		var key = "%d,%d,%d" % [pos.x, pos.y, pos.z]
+		data.modifications[key] = chunk_data.modifications[pos]
+
+	var json = JSON.stringify(data)
+	var file = FileAccess.open(save_path, FileAccess.WRITE)
+	if file:
+		file.store_string(json)
+		file.close()
+	else:
+		push_error("ChunkSaveManager: Failed to save chunk ", chunk_data.chunk_coords, " to ", save_path)
 
 ## Конвертувати світові координати в координати чанка
 func _world_to_chunk(world_pos: Vector3) -> Vector3:
@@ -243,9 +232,9 @@ func get_stats() -> Dictionary:
 	var total_modifications = 0
 	var chunks_with_mods = 0
 
-	for mods in loaded_chunks.values():
-		if mods.has_modifications():
-			total_modifications += mods.modifications.size()
+	for chunk_data in loaded_chunks.values():
+		if not chunk_data.modifications.is_empty():
+			total_modifications += chunk_data.modifications.size()
 			chunks_with_mods += 1
 
 	return {
