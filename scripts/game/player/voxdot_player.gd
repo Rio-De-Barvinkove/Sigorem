@@ -47,6 +47,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotation.y = _yaw
 		camera.rotation.x = _pitch
 	
+	# Mouse button handling
+	if event is InputEventMouseButton and event.pressed:
+		print("VoxdotPlayer: Mouse button ", event.button_index, " pressed")
+		_interaction_handler.handle_mouse_button(event.button_index)
+
 	# Escape - вийти/увійти в захоплення миші
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE:

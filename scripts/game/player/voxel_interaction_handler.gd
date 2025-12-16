@@ -169,10 +169,13 @@ func handle_input(event: InputEvent) -> void:
 
 
 func handle_mouse_button(button: int) -> void:
+	print("VoxelInteractionHandler: handle_mouse_button called with button ", button)
 	if not voxdot_controller or not camera:
+		print("VoxelInteractionHandler: voxdot_controller or camera is null")
 		return
 
 	if not is_inside_tree():
+		print("VoxelInteractionHandler: not in scene tree")
 		return
 
 	var from = camera.global_position

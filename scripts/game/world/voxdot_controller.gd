@@ -151,15 +151,16 @@ func _initialize_managers() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	# Debug: check if input is being received
 	if event is InputEventKey and event.pressed:
-		print("VoxdotController: Key pressed: ", event.keycode, " (F5=", KEY_F5, ", F9=", KEY_F9, ")")
+		print("VoxdotController: Key pressed: ", event.keycode, " (F5=116, F9=120)")
 
 	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_F5:
+		# Use physical keycodes instead of KEY_* constants
+		if event.keycode == 4194336:  # F5 physical keycode
 			if _chunk_save_manager:
 				print("VoxdotController: Force saving all chunks (F5 pressed)")
 				_chunk_save_manager.force_save_all()
 				get_viewport().set_input_as_handled()
-		elif event.keycode == KEY_F9:
+		elif event.keycode == 4194340:  # F9 physical keycode
 			if _chunk_save_manager:
 				print("VoxdotController: Force loading all chunks (F9 pressed)")
 				_load_all_modifications()
