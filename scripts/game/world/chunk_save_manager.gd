@@ -93,8 +93,8 @@ func chunk_has_modifications(chunk_coords: Vector3) -> bool:
 ## Вивантажити чанк із пам'яті (але зберегти на диск)
 func unload_chunk(chunk_coords: Vector3) -> void:
 	if loaded_chunks.has(chunk_coords):
-		var mods = loaded_chunks[chunk_coords]
-		mods.save_to_disk()
+		var chunk_data = loaded_chunks[chunk_coords]
+		_save_chunk_to_disk(chunk_data)
 		loaded_chunks.erase(chunk_coords)
 		print("ChunkSaveManager: Unloaded chunk ", chunk_coords, " from memory")
 
