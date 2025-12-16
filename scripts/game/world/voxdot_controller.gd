@@ -210,9 +210,14 @@ func _update_chunks_around_player() -> void:
 	for chunk_coords in needed_chunks.keys():
 		if not loaded_chunks.has(chunk_coords):
 			chunks_to_load.append(chunk_coords)
-	
-	# Тимчасово не вивантажуємо, щоб уникнути зникнення наповнених чанків
-	chunks_to_unload = []
+
+	# Знайти чанки для вивантаження (поза зоною видимості + буфер)
+	var unload_distance_sq = (view_distance + 1) * (view_distance + 1)
+	for chunk_coords in loaded_chunks.keys():
+		var delta = chunk_coords - player_chunk
+		var dist_sq = delta.x * delta.x + delta.z * delta.z  # Тільки XZ відстань
+		if dist_sq > unload_distance_sq:
+			chunks_to_unload.append(chunk_coords)
 	
 	# Завантажити нові чанки
 	for chunk_coords in chunks_to_load:
