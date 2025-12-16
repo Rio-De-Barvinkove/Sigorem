@@ -133,8 +133,14 @@ func _initialize_managers() -> void:
 		print("  - ", child.name, " (", child.get_class(), ")")
 		if child is MeshInstance3D:
 			print("    MeshInstance3D: visible=", child.visible)
-			if child.mesh:
-				print("      mesh vertices=", child.mesh.get_vertex_count() if child.mesh is ArrayMesh else "N/A")
+			if child.mesh and child.mesh is ArrayMesh:
+				var array_mesh = child.mesh as ArrayMesh
+				var vertex_count = 0
+				for surface_idx in array_mesh.get_surface_count():
+					var arrays = array_mesh.surface_get_arrays(surface_idx)
+					if arrays[Mesh.ARRAY_VERTEX]:
+						vertex_count += arrays[Mesh.ARRAY_VERTEX].size()
+				print("      mesh vertices=", vertex_count)
 
 	print("VoxdotController: Ініціалізовано. voxel_scale=", voxel_scale, ", view_distance=", view_distance)
 
