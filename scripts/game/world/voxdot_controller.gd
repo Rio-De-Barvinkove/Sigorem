@@ -151,7 +151,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _chunk_save_manager:
 				print("VoxdotController: Force saving all chunks (F5 pressed)")
 				_chunk_save_manager.force_save_all()
-				accept_event()
+				get_viewport().set_input_as_handled()
 
 func _process(_delta: float) -> void:
 	if not terrain or not player:
