@@ -5,6 +5,7 @@ class_name ChunkSaveManager
 
 @export_dir var save_directory: String = "user://worlds/current"
 @export var world_name: String = "default_world"
+@export var voxel_scale: float = 0.1
 
 # Структура для збереження модифікацій чанка
 var loaded_chunks: Dictionary = {}  # Vector3 -> Dictionary (chunk data)
@@ -16,9 +17,10 @@ func _ready() -> void:
 	if dir:
 		dir.make_dir_recursive(save_directory)
 
-func initialize(world_seed: int, world_name_param: String = "default_world") -> void:
+func initialize(world_seed: int, world_name_param: String = "default_world", voxel_scale_param: float = 0.1) -> void:
 	_world_seed = world_seed
 	world_name = world_name_param
+	voxel_scale = voxel_scale_param
 	save_directory = "user://worlds/" + world_name
 
 	# Створити директорію
@@ -26,7 +28,7 @@ func initialize(world_seed: int, world_name_param: String = "default_world") -> 
 	if dir:
 		dir.make_dir_recursive(save_directory)
 
-	print("ChunkSaveManager: Initialized for world '", world_name, "' with seed ", _world_seed)
+	print("ChunkSaveManager: Initialized for world '", world_name, "' with seed ", _world_seed, " voxel_scale=", voxel_scale)
 
 ## Отримати шлях до файлу чанка
 func _get_chunk_save_path(chunk_coords: Vector3) -> String:
@@ -113,8 +115,8 @@ func apply_modifications_to_chunk(terrain: VoxdotTerrain, chunk_coords: Vector3)
 	for world_pos in chunk_data.modifications.keys():
 		var material = chunk_data.modifications[world_pos]
 		# Використовуємо place_edit для відновлення вокселя
-		# Розмір 0.1 - базовий розмір вокселя
-		terrain.place_edit(Vector3(0.1, 0.1, 0.1), world_pos, material, 1 if material > 0 else 0)
+		var voxel_size = Vector3.ONE * voxel_scale
+		terrain.place_edit(voxel_size, world_pos, material, 1 if material > 0 else 0)
 
 ## Завантажити chunk data з диска
 func _load_chunk_from_disk(chunk_data: Dictionary) -> bool:
@@ -187,11 +189,12 @@ func _save_chunk_to_disk(chunk_data: Dictionary) -> void:
 
 ## Конвертувати світові координати в координати чанка
 func _world_to_chunk(world_pos: Vector3) -> Vector3:
-	const CHUNK_SIZE = 6.2  # Приблизний розмір чанка в метрах (62 * 0.1)
+	const CHUNK_SIZE = 62  # Внутрішній розмір чанка
+	var chunk_world_size = CHUNK_SIZE * voxel_scale
 	return Vector3(
-		floor(world_pos.x / CHUNK_SIZE),
-		floor(world_pos.y / CHUNK_SIZE),
-		floor(world_pos.z / CHUNK_SIZE)
+		floor(world_pos.x / chunk_world_size),
+		floor(world_pos.y / chunk_world_size),
+		floor(world_pos.z / chunk_world_size)
 	)
 
 ## Зберегти всі незбережені чанки

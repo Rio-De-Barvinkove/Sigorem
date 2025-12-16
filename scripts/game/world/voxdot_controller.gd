@@ -76,7 +76,7 @@ func _initialize_managers() -> void:
 	# Ініціалізація менеджера збереження чанків
 	_chunk_save_manager = ChunkSaveManager.new()
 	add_child(_chunk_save_manager)
-	_chunk_save_manager.initialize(randi(), "default_world")  # Тимчасово, потім буде з UI
+	_chunk_save_manager.initialize(randi(), "default_world", voxel_scale)
 
 	# Ініціалізація менеджера глибини
 	_depth_manager = TerrainDepthManager.new()
