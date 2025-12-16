@@ -169,6 +169,8 @@ func _input(event: InputEvent) -> void:
 			if _chunk_save_manager:
 				print("VoxdotController: Force loading all chunks (9 pressed)")
 				_load_all_modifications()
+				# Застосувати завантажені модифікації до всіх поточних чанків
+				_apply_loaded_modifications_to_current_chunks()
 				get_viewport().set_input_as_handled()
 
 func _process(_delta: float) -> void:
@@ -387,3 +389,20 @@ func _load_all_modifications() -> void:
 			print("VoxdotController: Loaded modifications for chunk ", chunk_coords)
 
 	print("VoxdotController: Finished loading all chunk modifications")
+}
+
+## Застосувати завантажені модифікації до всіх поточних чанків
+func _apply_loaded_modifications_to_current_chunks() -> void:
+	if not _chunk_save_manager or not terrain:
+		return
+
+	print("VoxdotController: Applying loaded modifications to current chunks...")
+
+	for chunk_coords in loaded_chunks.keys():
+		if _chunk_save_manager.loaded_chunks.has(chunk_coords):
+			print("VoxdotController: Re-applying modifications for current chunk ", chunk_coords)
+			_chunk_save_manager.apply_modifications_to_chunk(terrain, chunk_coords)
+			# Immediately process any dirty chunks after applying modifications
+			terrain.process_dirty_chunks(chunks_per_frame, true)
+
+	print("VoxdotController: Finished re-applying modifications to current chunks")
