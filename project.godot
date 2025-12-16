@@ -17,14 +17,15 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GameEvents="*res://scripts/game/systems/game_events.gd"
-ResourceManager="*res://scripts/autoload/ResourceManager.gd"
-BlockRegistry="*res://scripts/autoload/BlockRegistry.gd"
-InventorySystem="*res://scripts/game/systems/inventory_system.gd"
-CraftingSystem="*res://scripts/game/systems/crafting_system.gd"
-VoxelPhysics="*res://scripts/game/world/physics/voxel_physics.gd"
-Panku="*res://addons/panku_console/console.tscn"
-Questify="*res://addons/questify/quest_manager.gd"
+# Temporarily disabled problematic autoloads for testing
+# GameEvents="*res://scripts/game/systems/game_events.gd"
+# ResourceManager="*res://scripts/autoload/ResourceManager.gd"
+# BlockRegistry="*res://scripts/autoload/BlockRegistry.gd"
+# InventorySystem="*res://scripts/game/systems/inventory_system.gd"
+# CraftingSystem="*res://scripts/game/systems/crafting_system.gd"
+# VoxelPhysics="*res://scripts/game/world/physics/voxel_physics.gd"
+# Panku="*res://addons/panku_console/console.tscn"
+# Questify="*res://addons/questify/quest_manager.gd"
 DialogueManager="*res://addons/dialogue_manager/dialogue_manager.gd"
 
 [display]
