@@ -164,9 +164,12 @@ func _load_chunk_from_disk(chunk_data: Dictionary) -> bool:
 			if data and typeof(data) == TYPE_DICTIONARY:
 				print("ChunkSaveManager: Loaded compressed chunk ", chunk_data.chunk_coords)
 			else:
+				print("ChunkSaveManager: Failed to parse compressed chunk ", chunk_data.chunk_coords)
+				print("ChunkSaveManager: Decompressed content preview: ", json.substr(0, 200), "..." if json.length() > 200 else "")
 				push_error("ChunkSaveManager: Failed to parse compressed chunk ", chunk_data.chunk_coords)
 				return false
 		else:
+			print("ChunkSaveManager: Failed to decompress chunk ", chunk_data.chunk_coords, " - file may be corrupted")
 			push_error("ChunkSaveManager: Failed to decompress chunk ", chunk_data.chunk_coords)
 			return false
 	else:
@@ -176,7 +179,17 @@ func _load_chunk_from_disk(chunk_data: Dictionary) -> bool:
 		if data and typeof(data) == TYPE_DICTIONARY:
 			print("ChunkSaveManager: Loaded uncompressed chunk ", chunk_data.chunk_coords)
 		else:
-			push_error("ChunkSaveManager: Failed to parse uncompressed chunk ", chunk_data.chunk_coords)
+			print("ChunkSaveManager: Failed to parse uncompressed chunk ", chunk_data.chunk_coords)
+			print("ChunkSaveManager: File content preview: ", json.substr(0, 200), "..." if json.length() > 200 else "")
+			print("ChunkSaveManager: File size: ", file_data.size(), " bytes")
+
+			# Якщо файл пошкоджений або порожній, видалити його
+			if file_data.size() < 10 or not json.strip_edges():
+				print("ChunkSaveManager: Deleting corrupted/empty chunk file ", save_path)
+				DirAccess.remove_absolute(save_path)
+			else:
+				push_error("ChunkSaveManager: Invalid JSON in chunk file ", save_path, " - keeping file for manual inspection")
+
 			return false
 	if not data or typeof(data) != TYPE_DICTIONARY:
 		push_error("ChunkSaveManager: Invalid JSON in ", save_path)
