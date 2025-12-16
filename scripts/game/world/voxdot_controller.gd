@@ -145,6 +145,14 @@ func _initialize_managers() -> void:
 	print("VoxdotController: Ініціалізовано. voxel_scale=", voxel_scale, ", view_distance=", view_distance)
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_F5:
+			if _chunk_save_manager:
+				print("VoxdotController: Force saving all chunks (F5 pressed)")
+				_chunk_save_manager.force_save_all()
+				accept_event()
+
 func _process(_delta: float) -> void:
 	if not terrain or not player:
 		return
@@ -225,7 +233,7 @@ func _update_chunks_around_player() -> void:
 			chunks_to_load.append(chunk_coords)
 
 	# Знайти чанки для вивантаження (поза зоною видимості + буфер)
-	var unload_distance_sq = (view_distance + 1) * (view_distance + 1)
+	var unload_distance_sq = (view_distance + 2) * (view_distance + 2)  # Збільшений буфер
 	for chunk_coords in loaded_chunks.keys():
 		var delta = chunk_coords - player_chunk
 		var dist_sq = delta.x * delta.x + delta.z * delta.z  # Тільки XZ відстань
@@ -233,6 +241,7 @@ func _update_chunks_around_player() -> void:
 			chunks_to_unload.append(chunk_coords)
 	
 	# Завантажити нові чанки
+	print("VoxdotController: Loading ", chunks_to_load.size(), " new chunks")
 	for chunk_coords in chunks_to_load:
 		var t_add := Time.get_ticks_usec()
 		terrain.add_chunk(chunk_coords, false)  # API: add_chunk(coords, empty) - false = generate terrain
@@ -248,7 +257,10 @@ func _update_chunks_around_player() -> void:
 			terrain.process_dirty_chunks(chunks_per_frame, true)
 	
 	# Вивантажити зайві чанки
+	print("VoxdotController: Unloading ", chunks_to_unload.size(), " chunks (total loaded: ", loaded_chunks.size(), ")")
 	for chunk_coords in chunks_to_unload:
+		print("VoxdotController: Unloading chunk ", chunk_coords)
+
 		# Зберегти модифікації перед вивантаженням
 		if _chunk_save_manager:
 			_chunk_save_manager.save_chunk_modifications(chunk_coords)
@@ -275,6 +287,8 @@ func place_voxel(world_pos: Vector3, material: int = 1) -> void:
 	# Зберегти модифікацію для персистентності
 	if _chunk_save_manager:
 		_chunk_save_manager.add_voxel_modification(world_pos, material)
+		var chunk_coords = _world_to_chunk(world_pos)
+		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
 
 
 func remove_voxel(world_pos: Vector3, radius: float = 0.3) -> void:
@@ -284,6 +298,8 @@ func remove_voxel(world_pos: Vector3, radius: float = 0.3) -> void:
 	# Зберегти модифікацію для персистентності (матеріал 0 = повітря)
 	if _chunk_save_manager:
 		_chunk_save_manager.add_voxel_modification(world_pos, 0)
+		var chunk_coords = _world_to_chunk(world_pos)
+		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
 
 
 func place_sphere(world_pos: Vector3, radius: float, material: int = 1) -> void:
@@ -299,3 +315,13 @@ func place_cube(world_pos: Vector3, size: Vector3, material: int = 1) -> void:
 func place_vox_model(world_pos: Vector3, vox_path: String, material: int = 0) -> void:
 	## Поставити .vox модель (MagicaVoxel)
 	terrain.place_vox_edit(vox_path, world_pos, material)
+
+## Конвертувати світові координати в координати чанка
+func _world_to_chunk(world_pos: Vector3) -> Vector3:
+	const CHUNK_SIZE = 62  # Внутрішній розмір чанка
+	var chunk_world_size = CHUNK_SIZE * voxel_scale
+	return Vector3(
+		floor(world_pos.x / chunk_world_size),
+		floor(world_pos.y / chunk_world_size),
+		floor(world_pos.z / chunk_world_size)
+	)

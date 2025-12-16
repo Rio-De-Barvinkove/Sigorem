@@ -10,6 +10,7 @@ class_name ChunkSaveManager
 # Структура для збереження модифікацій чанка
 var loaded_chunks: Dictionary = {}  # Vector3 -> Dictionary (chunk data)
 var _world_seed: int = 0
+var _world_version: String = "1.0"
 
 func _ready() -> void:
 	# Створити директорію для збереження
@@ -19,6 +20,7 @@ func _ready() -> void:
 
 func initialize(world_seed: int, world_name_param: String = "default_world", voxel_scale_param: float = 0.1) -> void:
 	_world_seed = world_seed
+	_world_version = "1.0"
 	world_name = world_name_param
 	voxel_scale = voxel_scale_param
 	save_directory = "user://worlds/" + world_name
@@ -27,6 +29,9 @@ func initialize(world_seed: int, world_name_param: String = "default_world", vox
 	var dir = DirAccess.open("user://")
 	if dir:
 		dir.make_dir_recursive(save_directory)
+
+	# Зберегти world metadata
+	_save_world_metadata()
 
 	print("ChunkSaveManager: Initialized for world '", world_name, "' with seed ", _world_seed, " voxel_scale=", voxel_scale)
 
@@ -131,9 +136,11 @@ func _load_chunk_from_disk(chunk_data: Dictionary) -> bool:
 		push_error("ChunkSaveManager: Failed to load chunk ", chunk_data.chunk_coords, " from ", save_path)
 		return false
 
-	var json = file.get_as_text()
+	var compressed_data = file.get_buffer(file.get_length())
 	file.close()
 
+	var decompressed_data = compressed_data.decompress(compressed_data.size() * 10, FileAccess.COMPRESSION_GZIP)
+	var json = decompressed_data.get_string_from_utf8()
 	var data = JSON.parse_string(json)
 	if not data or typeof(data) != TYPE_DICTIONARY:
 		push_error("ChunkSaveManager: Invalid JSON in ", save_path)
@@ -182,9 +189,12 @@ func _save_chunk_to_disk(chunk_data: Dictionary) -> void:
 		data.modifications[key] = chunk_data.modifications[pos]
 
 	var json = JSON.stringify(data)
+	var compressed_data = json.to_utf8_buffer()
+	compressed_data = compressed_data.compress(FileAccess.COMPRESSION_GZIP)
+
 	var file = FileAccess.open(save_path, FileAccess.WRITE)
 	if file:
-		file.store_string(json)
+		file.store_buffer(compressed_data)
 		file.close()
 	else:
 		push_error("ChunkSaveManager: Failed to save chunk ", chunk_data.chunk_coords, " to ", save_path)
@@ -205,6 +215,19 @@ func save_all_chunks() -> void:
 	for chunk_coords in loaded_chunks.keys():
 		save_chunk_modifications(chunk_coords)
 	print("ChunkSaveManager: All chunks saved")
+
+## Примусове збереження всіх чанків (для ручного виклику)
+func force_save_all() -> void:
+	print("ChunkSaveManager: Force saving all chunks...")
+	save_all_chunks()
+	print("ChunkSaveManager: Force save completed")
+
+## Позначити чанк як змінений (для відстеження модифікацій)
+func mark_chunk_dirty(chunk_coords: Vector3) -> void:
+	if loaded_chunks.has(chunk_coords):
+		var chunk_data = loaded_chunks[chunk_coords]
+		chunk_data.timestamp = Time.get_unix_time_from_system()
+		print("ChunkSaveManager: Marked chunk ", chunk_coords, " as dirty")
 
 ## Очистити всі дані (для нового світу)
 func clear_all_data() -> void:
@@ -247,3 +270,30 @@ func get_stats() -> Dictionary:
 		"chunks_with_modifications": chunks_with_mods,
 		"total_modifications": total_modifications
 	}
+
+## Зберегти metadata світу
+func _save_world_metadata() -> void:
+	var metadata = {
+		"seed": _world_seed,
+		"version": _world_version,
+		"voxel_scale": voxel_scale,
+		"name": world_name
+	}
+
+	var json = JSON.stringify(metadata)
+	var file = FileAccess.open(save_directory + "/world.json", FileAccess.WRITE)
+	if file:
+		file.store_string(json)
+		file.close()
+
+## Завантажити metadata світу
+func _load_world_metadata() -> void:
+	var file = FileAccess.open(save_directory + "/world.json", FileAccess.READ)
+	if file:
+		var json = file.get_as_text()
+		file.close()
+		var data = JSON.parse_string(json)
+		if data is Dictionary:
+			_world_seed = data.get("seed", 0)
+			_world_version = data.get("version", "1.0")
+			voxel_scale = data.get("voxel_scale", 0.1)
