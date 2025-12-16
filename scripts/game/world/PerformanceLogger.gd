@@ -37,6 +37,9 @@ var average_vertices: int = 0
 # FPS метрики
 var fps_history: Array[float] = []
 var average_fps: float = 0.0
+
+# Таймер для зменшення частоти логування
+var _log_timer: float = 0.0
 var min_fps: float = INF
 var max_fps: float = 0.0
 
