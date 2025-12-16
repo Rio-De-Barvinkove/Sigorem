@@ -56,11 +56,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else Input.MOUSE_MODE_CAPTURED
-		
-		# F - перемкнути режим польоту
+
+		# F - перемкнути режим польоту (не F5!)
 		elif event.keycode == KEY_F:
 			fly_mode = not fly_mode
 			print("Fly mode: ", fly_mode)
+
+		# Не обробляти F5/F9 - це для VoxdotController
+		elif event.keycode in [4194336, 4194340]:  # F5, F9
+			return  # Пропустити, нехай VoxdotController обробить
 	
 	# Передати подію в interaction handler
 	if interaction_handler:

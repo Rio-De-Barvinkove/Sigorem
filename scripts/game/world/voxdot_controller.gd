@@ -73,6 +73,9 @@ func _on_performance_optimized(optimization_type: String) -> void:
 func _initialize_managers() -> void:
 	## Відкладена ініціалізація всіх менеджерів
 
+	# Увімкнути обробку input для цього нода
+	set_process_input(true)
+
 	# Ініціалізація менеджера збереження чанків
 	_chunk_save_manager = ChunkSaveManager.new()
 	add_child(_chunk_save_manager)
@@ -148,10 +151,10 @@ func _initialize_managers() -> void:
 	print("VoxdotController: Ініціалізовано. voxel_scale=", voxel_scale, ", view_distance=", view_distance)
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	# Debug: check if input is being received
 	if event is InputEventKey and event.pressed:
-		print("VoxdotController: Key pressed: ", event.keycode, " (F5=116, F9=120)")
+		print("VoxdotController: Key pressed: ", event.keycode)
 
 	if event is InputEventKey and event.pressed:
 		# Use physical keycodes instead of KEY_* constants
