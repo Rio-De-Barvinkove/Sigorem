@@ -283,6 +283,8 @@ func _update_chunks_around_player() -> void:
 
 		# Зберегти модифікації перед вивантаженням
 		if _chunk_save_manager:
+			var has_mods = _chunk_save_manager.loaded_chunks.has(chunk_coords) and not _chunk_save_manager.loaded_chunks[chunk_coords].modifications.is_empty()
+			print("VoxdotController: Chunk ", chunk_coords, " has modifications: ", has_mods)
 			_chunk_save_manager.save_chunk_modifications(chunk_coords)
 			_chunk_save_manager.unload_chunk(chunk_coords)
 

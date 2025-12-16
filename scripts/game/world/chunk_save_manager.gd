@@ -131,8 +131,12 @@ func save_chunk_modifications(chunk_coords: Vector3) -> void:
 	var mod_count = chunk_data.modifications.size()
 	if mod_count > 0:
 		print("ChunkSaveManager: Saved modifications for chunk ", chunk_coords, " (", mod_count, " modifications)")
+		# Очистити з dirty_chunks після успішного збереження
+		dirty_chunks.erase(chunk_coords)
 	else:
 		print("ChunkSaveManager: Cleared empty modifications for chunk ", chunk_coords)
+		# Також очистити з dirty_chunks навіть для порожніх чанків
+		dirty_chunks.erase(chunk_coords)
 
 ## Додати модифікацію вокселя
 func add_voxel_modification(world_pos: Vector3, material: int) -> void:
