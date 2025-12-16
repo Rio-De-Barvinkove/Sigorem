@@ -46,7 +46,8 @@ Legend for status tags:
 - `[PLACEHOLDER]` `physics/voxel_physics.gd` – stub to satisfy autoload name; real voxel physics TBD.
 
 ## scripts/game/player/
-- `[ACTIVE]` `voxdot_player.gd` – main player controller: movement (walk/fly/jump), first-person camera mode, visible character mesh (small green capsule), voxel pick/place/remove via Voxdot API, integrates PlayerStats/NeedsSystem/StatusEffects child nodes. Controls: WASD movement, Shift sprint, Space jump/fly up, Ctrl fly down, F toggle fly mode, mouse look.
+- `[ACTIVE]` `voxdot_player.gd` – main player controller: movement (walk/fly/jump), first-person camera mode, visible character mesh (small green capsule), integrates PlayerStats/NeedsSystem/StatusEffects/VoxelInteractionHandler child nodes. Controls: WASD movement, Shift sprint, Space jump/fly up, Ctrl fly down, F toggle fly mode, mouse look.
+- `[ACTIVE]` `voxel_interaction_handler.gd` – voxel interaction system: creative/normal modes (B key), tool switching (1-3 keys), dynamic area scaling (mouse wheel), visual previews (semi-transparent cubes), tool-specific area shapes (hands: single voxel, shovel: flat area, pickaxe: vertical column).
 - `[ACTIVE]` `PlayerStats.gd` – health/stamina component with class_name for typing; basic regen/damage hooks.
 - `[ACTIVE]` `NeedsSystem.gd` – hunger/thirst/sleepiness decay and thresholds; emits to status effects.
 - `[ACTIVE]` `StatusEffects.gd` – applies effects based on needs (e.g., debuffs when starving/thirsty/sleepy).
