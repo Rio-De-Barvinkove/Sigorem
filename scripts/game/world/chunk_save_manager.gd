@@ -177,13 +177,25 @@ func apply_modifications_to_chunk(terrain: VoxdotTerrain, chunk_coords: Vector3)
 
 	print("ChunkSaveManager: Applying ", chunk_data.modifications.size(), " modifications to chunk ", chunk_coords)
 
+	# Ліміт на кількість модифікацій за кадр щоб уникнути зависання
+	var max_modifications_per_frame = 50
+	var applied_count = 0
+
 	# Застосувати кожну модифікацію
 	for world_pos in chunk_data.modifications.keys():
+		if applied_count >= max_modifications_per_frame:
+			print("ChunkSaveManager: Applied ", applied_count, " modifications, remaining: ", chunk_data.modifications.size() - applied_count)
+			break
+
 		var material = chunk_data.modifications[world_pos]
 		# Використовуємо place_edit для відновлення вокселя
 		var voxel_size = Vector3.ONE * voxel_scale
-		print("  Applying at ", world_pos, " material=", material, " size=", voxel_size)
 		terrain.place_edit(voxel_size, world_pos, material, 1 if material > 0 else 0)
+		applied_count += 1
+
+	if applied_count < chunk_data.modifications.size():
+		print("ChunkSaveManager: Chunk ", chunk_coords, " still has ", chunk_data.modifications.size() - applied_count, " modifications to apply")
+		# Тут можна додати логіку для продовження в наступному кадрі
 
 ## Завантажити chunk data з диска
 func _load_chunk_from_disk(chunk_data: Dictionary) -> bool:

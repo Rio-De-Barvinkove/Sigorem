@@ -323,10 +323,26 @@ func place_sphere(world_pos: Vector3, radius: float, material: int = 1) -> void:
 	## Поставити сферу
 	terrain.place_edit(Vector3(radius, radius, radius), world_pos, material, 0)
 
+	# Зберегти модифікацію для персистентності
+	if _chunk_save_manager:
+		print("VoxdotController: Adding sphere modification at ", world_pos, " radius=", radius, " material=", material)
+		_chunk_save_manager.add_voxel_modification(world_pos, material)
+		var chunk_coords = _world_to_chunk(world_pos)
+		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
+		print("VoxdotController: Marked chunk ", chunk_coords, " as dirty")
+
 
 func place_cube(world_pos: Vector3, size: Vector3, material: int = 1) -> void:
 	## Поставити куб
 	terrain.place_edit(size, world_pos, material, 1)
+
+	# Зберегти модифікацію для персистентності
+	if _chunk_save_manager:
+		print("VoxdotController: Adding cube modification at ", world_pos, " size=", size, " material=", material)
+		_chunk_save_manager.add_voxel_modification(world_pos, material)
+		var chunk_coords = _world_to_chunk(world_pos)
+		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
+		print("VoxdotController: Marked chunk ", chunk_coords, " as dirty")
 
 
 func place_vox_model(world_pos: Vector3, vox_path: String, material: int = 0) -> void:
