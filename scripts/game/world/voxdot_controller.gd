@@ -145,13 +145,12 @@ func _process(_delta: float) -> void:
 	if _depth_manager:
 		_depth_manager.process_delta(_delta)
 
-	# Обробити dirty chunks тільки якщо є що обробляти
-	var dirty_count = terrain.get_dirty_chunk_count()
-	if dirty_count > 0:
-		var t0 := Time.get_ticks_usec()
-		terrain.process_dirty_chunks(chunks_per_frame, true)
-		var dt = Time.get_ticks_usec() - t0
+	# Обробити dirty chunks
+	var t0 := Time.get_ticks_usec()
+	var processed_count = terrain.process_dirty_chunks(chunks_per_frame, true)
+	var dt = Time.get_ticks_usec() - t0
 
+	if processed_count > 0:  # Якщо було оброблено хоч один чанк
 		if _perf_logger:
 			_perf_logger.log_mesh_time(t0)
 			_perf_logger.request_report()
@@ -171,7 +170,7 @@ func _process(_delta: float) -> void:
 		if dt > 10000:  # тільки якщо час > 10ms (було оброблено багато чанків)
 			PerformanceLogger.log_chunk_generation_time(dt)  # загальний час на кадр
 			PerformanceLogger.log_custom_metric("chunk_processing_time", dt / 1000.0, "ms")
-			print("Processed ", dirty_count, " dirty chunks in ", dt / 1000.0, "ms")
+			print("Processed ", processed_count, " dirty chunks in ", dt / 1000.0, "ms")
 
 
 func _world_to_chunk(world_pos: Vector3) -> Vector3:
