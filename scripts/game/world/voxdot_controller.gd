@@ -17,6 +17,7 @@ class_name VoxdotController
 @export_node_path("PerformanceLogger") var performance_logger_path: NodePath
 
 var _noise: FastNoiseLite
+var _chunk_save_manager: ChunkSaveManager
 
 const CHUNK_SIZE: int = 62  ## Внутрішній розмір чанка (з mesher.h)
 
@@ -50,8 +51,8 @@ func _ready() -> void:
 		push_error("VoxdotController: player не призначено!")
 		return
 
-	# Створення та ініціалізація менеджера глибини (відкладено для надійності)
-	call_deferred("_initialize_depth_manager")
+	# Створення та ініціалізація менеджерів (відкладено для надійності)
+	call_deferred("_initialize_managers")
 
 
 func _on_depth_settings_changed() -> void:
@@ -69,13 +70,20 @@ func _on_performance_optimized(optimization_type: String) -> void:
 	print("VoxdotController: Performance optimized: ", optimization_type)
 
 
-func _initialize_depth_manager() -> void:
-	## Відкладена ініціалізація менеджера глибини
+func _initialize_managers() -> void:
+	## Відкладена ініціалізація всіх менеджерів
+
+	# Ініціалізація менеджера збереження чанків
+	_chunk_save_manager = ChunkSaveManager.new()
+	add_child(_chunk_save_manager)
+	_chunk_save_manager.initialize(randi(), "default_world")  # Тимчасово, потім буде з UI
+
+	# Ініціалізація менеджера глибини
 	_depth_manager = TerrainDepthManager.new()
 	add_child(_depth_manager)
 	_depth_manager.initialize(terrain, player, view_distance, voxel_scale)
 
-	# Підключення сигналів від менеджера глибини
+	# Підключення сигналів від менеджерів
 	_depth_manager.depth_settings_changed.connect(_on_depth_settings_changed)
 	_depth_manager.y_sort_updated.connect(_on_y_sort_updated)
 	_depth_manager.performance_optimized.connect(_on_performance_optimized)
@@ -225,10 +233,18 @@ func _update_chunks_around_player() -> void:
 		if _perf_logger:
 			_perf_logger.log_add_time(t_add)
 		loaded_chunks[chunk_coords] = true
-		# _generate_chunk_content(chunk_coords) # Відключаємо ручну генерацію
+
+		# Застосувати збережені модифікації після генерації
+		if _chunk_save_manager:
+			_chunk_save_manager.apply_modifications_to_chunk(terrain, chunk_coords)
 	
 	# Вивантажити зайві чанки
 	for chunk_coords in chunks_to_unload:
+		# Зберегти модифікації перед вивантаженням
+		if _chunk_save_manager:
+			_chunk_save_manager.save_chunk_modifications(chunk_coords)
+			_chunk_save_manager.unload_chunk(chunk_coords)
+
 		terrain.remove_chunk(chunk_coords)
 		loaded_chunks.erase(chunk_coords)
 	
@@ -247,10 +263,18 @@ func place_voxel(world_pos: Vector3, material: int = 1) -> void:
 	## Поставити воксель (куб 1x1x1)
 	terrain.place_edit(Vector3(voxel_scale, voxel_scale, voxel_scale), world_pos, material, 1)
 
+	# Зберегти модифікацію для персистентності
+	if _chunk_save_manager:
+		_chunk_save_manager.add_voxel_modification(world_pos, material)
+
 
 func remove_voxel(world_pos: Vector3, radius: float = 0.3) -> void:
 	## Видалити воксель (сфера)
 	terrain.place_edit(Vector3(radius, radius, radius), world_pos, 0, 0)
+
+	# Зберегти модифікацію для персистентності (матеріал 0 = повітря)
+	if _chunk_save_manager:
+		_chunk_save_manager.add_voxel_modification(world_pos, 0)
 
 
 func place_sphere(world_pos: Vector3, radius: float, material: int = 1) -> void:
