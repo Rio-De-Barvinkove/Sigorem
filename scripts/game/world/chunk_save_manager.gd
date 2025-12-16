@@ -9,16 +9,74 @@ class_name ChunkSaveManager
 
 # Структура для збереження модифікацій чанка
 var loaded_chunks: Dictionary = {}  # Vector3 -> Dictionary (chunk data)
+var dirty_chunks: Dictionary = {}    # Vector3 -> timestamp (змінені чанки)
 var _world_seed: int = 0
 var _world_version: String = "1.0"
+var _auto_save_timer: float = 0.0
+var _background_save_thread: Thread = null
+var _save_queue: Array = []  # Черга чанків для збереження
 
 const COMPRESSED_HEADER = "VOXDOT_CHUNK_V1_COMPRESSED\n"  # Заголовок для ідентифікації стиснутих файлів
+
+# Region-based система (як в Minecraft)
+const REGION_SIZE = 32  # 32x32 чанки в регіоні
+const AUTO_SAVE_INTERVAL = 300.0  # Автозбереження кожні 5 хвилин
 
 func _ready() -> void:
 	# Створити директорію для збереження
 	var dir = DirAccess.open("user://")
 	if dir:
 		dir.make_dir_recursive(save_directory)
+		dir.make_dir_recursive(save_directory + "/region")  # Директорія для регіонів
+
+func _process(delta: float) -> void:
+	# Автозбереження кожні AUTO_SAVE_INTERVAL секунд
+	_auto_save_timer += delta
+	if _auto_save_timer >= AUTO_SAVE_INTERVAL:
+		_auto_save_timer = 0.0
+		_auto_save_dirty_chunks()
+
+	# Обробити чергу background saving (якщо немає активного потоку)
+	if _background_save_thread == null and not _save_queue.is_empty():
+		_start_background_save()
+
+func _auto_save_dirty_chunks() -> void:
+	if dirty_chunks.is_empty():
+		return
+
+	print("ChunkSaveManager: Auto-saving ", dirty_chunks.size(), " dirty chunks...")
+
+	# Додати всі dirty чанки в чергу збереження
+	for chunk_coords in dirty_chunks.keys():
+		if not _save_queue.has(chunk_coords):
+			_save_queue.append(chunk_coords)
+
+	dirty_chunks.clear()
+
+func _start_background_save() -> void:
+	if _save_queue.is_empty() or _background_save_thread != null:
+		return
+
+	_background_save_thread = Thread.new()
+	_background_save_thread.start(_background_save_worker.bind(_save_queue.duplicate()))
+
+func _background_save_worker(queue: Array) -> void:
+	print("ChunkSaveManager: Background save started for ", queue.size(), " chunks")
+
+	for chunk_coords in queue:
+		if loaded_chunks.has(chunk_coords):
+			save_chunk_modifications(chunk_coords)
+
+	# Очистити чергу після завершення
+	call_deferred("_on_background_save_complete", queue.size())
+
+func _on_background_save_complete(saved_count: int) -> void:
+	if _background_save_thread:
+		_background_save_thread.wait_to_finish()
+		_background_save_thread = null
+
+	print("ChunkSaveManager: Background save completed (", saved_count, " chunks)")
+	_save_queue.clear()
 
 func initialize(world_seed: int, world_name_param: String = "default_world", voxel_scale_param: float = 0.1) -> void:
 	_world_seed = world_seed
@@ -263,6 +321,18 @@ func _world_to_chunk(world_pos: Vector3) -> Vector3:
 		floor(world_pos.z / chunk_world_size)
 	)
 
+## Конвертувати координати чанка в координати регіону
+func _chunk_to_region(chunk_coords: Vector3) -> Vector3:
+	return Vector3(
+		floor(chunk_coords.x / REGION_SIZE),
+		0,  # Y не використовується для регіонів
+		floor(chunk_coords.z / REGION_SIZE)
+	)
+
+## Отримати шлях до файлу регіону
+func _get_region_file_path(region_coords: Vector3) -> String:
+	return save_directory + "/region/r.%d.%d.mca" % [region_coords.x, region_coords.z]
+
 ## Зберегти всі незбережені чанки
 func save_all_chunks() -> void:
 	print("ChunkSaveManager: Saving all chunks...")
@@ -281,7 +351,8 @@ func mark_chunk_dirty(chunk_coords: Vector3) -> void:
 	if loaded_chunks.has(chunk_coords):
 		var chunk_data = loaded_chunks[chunk_coords]
 		chunk_data.timestamp = Time.get_unix_time_from_system()
-		print("ChunkSaveManager: Marked chunk ", chunk_coords, " as dirty")
+		dirty_chunks[chunk_coords] = Time.get_unix_time_from_system()
+		print("ChunkSaveManager: Marked chunk ", chunk_coords, " as dirty (total dirty: ", dirty_chunks.size(), ")")
 
 ## Очистити всі дані (для нового світу)
 func clear_all_data() -> void:
