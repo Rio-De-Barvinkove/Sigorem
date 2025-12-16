@@ -78,6 +78,9 @@ func _initialize_managers() -> void:
 	add_child(_chunk_save_manager)
 	_chunk_save_manager.initialize(randi(), "default_world", voxel_scale)
 
+	# Автоматичне завантаження всіх збережених модифікацій після ініціалізації terrain
+	_load_all_modifications()
+
 	# Ініціалізація менеджера глибини
 	_depth_manager = TerrainDepthManager.new()
 	add_child(_depth_manager)
@@ -151,6 +154,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _chunk_save_manager:
 				print("VoxdotController: Force saving all chunks (F5 pressed)")
 				_chunk_save_manager.force_save_all()
+				get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_F9:
+			if _chunk_save_manager:
+				print("VoxdotController: Force loading all chunks (F9 pressed)")
+				_load_all_modifications()
 				get_viewport().set_input_as_handled()
 
 func _process(_delta: float) -> void:
@@ -315,3 +323,37 @@ func place_cube(world_pos: Vector3, size: Vector3, material: int = 1) -> void:
 func place_vox_model(world_pos: Vector3, vox_path: String, material: int = 0) -> void:
 	## Поставити .vox модель (MagicaVoxel)
 	terrain.place_vox_edit(vox_path, world_pos, material)
+
+## Завантажити всі збережені модифікації чанків
+func _load_all_modifications() -> void:
+	if not _chunk_save_manager:
+		return
+
+	print("VoxdotController: Loading all saved chunk modifications...")
+
+	# Отримати список всіх збережених файлів чанків
+	var save_dir = DirAccess.open(_chunk_save_manager.save_directory)
+	if not save_dir:
+		print("VoxdotController: No save directory found, starting fresh")
+		return
+
+	var chunk_files = []
+	save_dir.list_dir_begin()
+	var file_name = save_dir.get_next()
+	while file_name != "":
+		if file_name.ends_with(".json") and file_name.begins_with("chunk_"):
+			chunk_files.append(file_name)
+		file_name = save_dir.get_next()
+	save_dir.list_dir_end()
+
+	print("VoxdotController: Found ", chunk_files.size(), " saved chunk files")
+
+	# Завантажити модифікації для кожного файлу
+	for file_name in chunk_files:
+		var parts = file_name.trim_suffix(".json").split("_")
+		if parts.size() == 4 and parts[0] == "chunk":
+			var chunk_coords = Vector3(int(parts[1]), int(parts[2]), int(parts[3]))
+			_chunk_save_manager.load_chunk_modifications(chunk_coords)
+			print("VoxdotController: Loaded modifications for chunk ", chunk_coords)
+
+	print("VoxdotController: Finished loading all chunk modifications")
