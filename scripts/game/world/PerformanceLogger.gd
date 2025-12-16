@@ -58,8 +58,12 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	# Temporarily disabled to reduce console spam during persistence testing
-	return
+	# Reduced logging frequency to reduce spam but keep some info
+	_log_timer += delta
+	if _log_timer >= 10.0:  # Log every 10 seconds instead of every frame
+		_log_timer = 0.0
+		var active_chunks = Performance.get_monitor(Performance.OBJECT_COUNT)
+		print("(PerformanceLogger) Active chunks: ", active_chunks)
 	## Оновлення метрик кожного кадру
 	update_fps_metrics()
 	update_render_metrics()

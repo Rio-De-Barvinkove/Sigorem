@@ -144,8 +144,5 @@ text = "+"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PerformanceMonitor" parent="." instance=ExtResource("11_perf_monitor")]
-visible_by_default = true
-
 [node name="OverlayLayer" type="CanvasLayer" parent="."]
 layer = 20
