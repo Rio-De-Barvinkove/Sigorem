@@ -12,6 +12,8 @@ var loaded_chunks: Dictionary = {}  # Vector3 -> Dictionary (chunk data)
 var _world_seed: int = 0
 var _world_version: String = "1.0"
 
+const COMPRESSED_HEADER = "VOXDOT_CHUNK_V1_COMPRESSED\n"  # Заголовок для ідентифікації стиснутих файлів
+
 func _ready() -> void:
 	# Створити директорію для збереження
 	var dir = DirAccess.open("user://")
@@ -133,23 +135,49 @@ func _load_chunk_from_disk(chunk_data: Dictionary) -> bool:
 
 	var file = FileAccess.open(save_path, FileAccess.READ)
 	if not file:
-		push_error("ChunkSaveManager: Failed to load chunk ", chunk_data.chunk_coords, " from ", save_path)
+		print("ChunkSaveManager: No saved data for chunk ", chunk_data.chunk_coords, " at ", save_path)
 		return false
 
-	var file_data = file.get_buffer(file.get_length())
+	var file_size = file.get_length()
+	if file_size == 0:
+		print("ChunkSaveManager: Empty file for chunk ", chunk_data.chunk_coords, " at ", save_path)
+		file.close()
+		return false
+
+	var file_data = file.get_buffer(file_size)
 	file.close()
+
+	print("ChunkSaveManager: Loading chunk ", chunk_data.chunk_coords, " from ", save_path, " (size: ", file_size, " bytes)")
 
 	var json: String
 	var data: Variant
 
-	# Спробувати завантажити як стиснутий файл (новий формат)
-	var decompressed_data = file_data.decompress(file_data.size() * 10, FileAccess.COMPRESSION_GZIP)
-	if decompressed_data.size() > 0:  # Якщо декомпресія успішна
-		json = decompressed_data.get_string_from_utf8()
-		data = JSON.parse_string(json)
-	else:  # Якщо декомпресія не вдалася, спробувати як звичайний JSON (старий формат)
+	# Перевірити чи файл має заголовок стиснутого формату
+	var header_string = file_data.slice(0, COMPRESSED_HEADER.length()).get_string_from_utf8()
+	if header_string == COMPRESSED_HEADER:
+		# Це стиснутий файл - видалити заголовок і декомпресувати
+		var compressed_data = file_data.slice(COMPRESSED_HEADER.length())
+		var decompressed_data = compressed_data.decompress(compressed_data.size() * 10, FileAccess.COMPRESSION_GZIP)
+		if decompressed_data.size() > 0:
+			json = decompressed_data.get_string_from_utf8()
+			data = JSON.parse_string(json)
+			if data and typeof(data) == TYPE_DICTIONARY:
+				print("ChunkSaveManager: Loaded compressed chunk ", chunk_data.chunk_coords)
+			else:
+				push_error("ChunkSaveManager: Failed to parse compressed chunk ", chunk_data.chunk_coords)
+				return false
+		else:
+			push_error("ChunkSaveManager: Failed to decompress chunk ", chunk_data.chunk_coords)
+			return false
+	else:
+		# Це звичайний JSON файл (старий формат)
 		json = file_data.get_string_from_utf8()
 		data = JSON.parse_string(json)
+		if data and typeof(data) == TYPE_DICTIONARY:
+			print("ChunkSaveManager: Loaded uncompressed chunk ", chunk_data.chunk_coords)
+		else:
+			push_error("ChunkSaveManager: Failed to parse uncompressed chunk ", chunk_data.chunk_coords)
+			return false
 	if not data or typeof(data) != TYPE_DICTIONARY:
 		push_error("ChunkSaveManager: Invalid JSON in ", save_path)
 		return false
@@ -200,10 +228,15 @@ func _save_chunk_to_disk(chunk_data: Dictionary) -> void:
 	var compressed_data = json.to_utf8_buffer()
 	compressed_data = compressed_data.compress(FileAccess.COMPRESSION_GZIP)
 
+	# Додати заголовок для ідентифікації стиснутих файлів
+	var header_data = COMPRESSED_HEADER.to_utf8_buffer()
+	var final_data = header_data + compressed_data
+
 	var file = FileAccess.open(save_path, FileAccess.WRITE)
 	if file:
-		file.store_buffer(compressed_data)
+		file.store_buffer(final_data)
 		file.close()
+		print("ChunkSaveManager: Saved compressed chunk ", chunk_data.chunk_coords, " to ", save_path, " (size: ", final_data.size(), " bytes)")
 	else:
 		push_error("ChunkSaveManager: Failed to save chunk ", chunk_data.chunk_coords, " to ", save_path)
 
