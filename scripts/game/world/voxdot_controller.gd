@@ -149,6 +149,10 @@ func _initialize_managers() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Debug: check if input is being received
+	if event is InputEventKey and event.pressed:
+		print("VoxdotController: Key pressed: ", event.keycode, " (F5=", KEY_F5, ", F9=", KEY_F9, ")")
+
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_F5:
 			if _chunk_save_manager:
@@ -294,9 +298,11 @@ func place_voxel(world_pos: Vector3, material: int = 1) -> void:
 
 	# Зберегти модифікацію для персистентності
 	if _chunk_save_manager:
+		print("VoxdotController: Adding voxel modification at ", world_pos, " material=", material)
 		_chunk_save_manager.add_voxel_modification(world_pos, material)
 		var chunk_coords = _world_to_chunk(world_pos)
 		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
+		print("VoxdotController: Marked chunk ", chunk_coords, " as dirty")
 
 
 func remove_voxel(world_pos: Vector3, radius: float = 0.3) -> void:
@@ -305,9 +311,11 @@ func remove_voxel(world_pos: Vector3, radius: float = 0.3) -> void:
 
 	# Зберегти модифікацію для персистентності (матеріал 0 = повітря)
 	if _chunk_save_manager:
+		print("VoxdotController: Removing voxel at ", world_pos)
 		_chunk_save_manager.add_voxel_modification(world_pos, 0)
 		var chunk_coords = _world_to_chunk(world_pos)
 		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
+		print("VoxdotController: Marked chunk ", chunk_coords, " as dirty")
 
 
 func place_sphere(world_pos: Vector3, radius: float, material: int = 1) -> void:
