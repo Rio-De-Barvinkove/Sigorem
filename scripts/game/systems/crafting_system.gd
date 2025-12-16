@@ -39,7 +39,9 @@ func craft_item(recipe: CraftingRecipe, inventory_system: Node):
 		for i in range(recipe.ingredients.size()):
 			inventory_system.remove_item(recipe.ingredients[i].id, recipe.ingredient_counts[i])
 		inventory_system.add_item(recipe.result_item, recipe.result_count)
-		GameEvents.emit_signal("item_crafted", recipe)
+		if Engine.has_singleton("GameEvents"):
+			var game_events = Engine.get_singleton("GameEvents")
+			game_events.emit_signal("item_crafted", recipe)
 		return true
 	return false
 
