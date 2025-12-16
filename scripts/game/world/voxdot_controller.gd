@@ -154,7 +154,9 @@ func _initialize_managers() -> void:
 func _input(event: InputEvent) -> void:
 	# Debug: check if input is being received
 	if event is InputEventKey and event.pressed:
-		print("VoxdotController: Key pressed: ", event.keycode)
+		print("VoxdotController: Key pressed: ", event.keycode, " key_label: ", event.key_label)
+		if event.keycode >= 4194336 and event.keycode <= 4194345:  # F1-F10 range
+			print("VoxdotController: F-key detected! Keycode: ", event.keycode)
 
 	if event is InputEventKey and event.pressed:
 		# Use physical keycodes instead of KEY_* constants

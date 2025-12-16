@@ -197,6 +197,7 @@ func handle_mouse_button(button: int) -> void:
 				_dig_area(hit_pos - hit_normal * 0.1, hit_normal)
 			else:
 				# Звичайний режим - малий радіус
+				print("VoxelInteractionHandler: Calling remove_voxel on controller")
 				voxdot_controller.remove_voxel(hit_pos - hit_normal * 0.1, 0.2)
 				print("Removed voxel at: ", hit_pos)
 
@@ -206,11 +207,13 @@ func handle_mouse_button(button: int) -> void:
 				_build_area(hit_pos + hit_normal * 0.1, hit_normal)
 			else:
 				# Звичайний режим
+				print("VoxelInteractionHandler: Calling place_voxel on controller")
 				voxdot_controller.place_voxel(hit_pos + hit_normal * 0.1, 2)
 				print("Placed voxel at: ", hit_pos + hit_normal * 0.1)
 
 		MOUSE_BUTTON_MIDDLE:
 			# Повністю знищити сферу (як було)
+			print("VoxelInteractionHandler: Calling place_sphere on controller")
 			voxdot_controller.place_sphere(hit_pos, 1.0, 0)
 			print("Destroyed sphere at: ", hit_pos)
 
