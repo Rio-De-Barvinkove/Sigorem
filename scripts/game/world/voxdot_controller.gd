@@ -357,6 +357,7 @@ func place_cube(world_pos: Vector3, size: Vector3, material: int = 1) -> void:
 func place_vox_model(world_pos: Vector3, vox_path: String, material: int = 0) -> void:
 	## Поставити .vox модель (MagicaVoxel)
 	terrain.place_vox_edit(vox_path, world_pos, material)
+}
 
 ## Завантажити всі збережені модифікації чанків
 func _load_all_modifications() -> void:
