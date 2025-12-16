@@ -1,0 +1,165 @@
+[gd_scene load_steps=23 format=3 uid="uid://buit3iwni4tey"]
+
+[ext_resource type="Script" uid="uid://cadnf7y2a2r0o" path="res://scripts/game/world/voxdot_controller.gd" id="1_controller"]
+[ext_resource type="Script" uid="uid://d0fkfqdh6cjb2" path="res://scripts/game/player/voxdot_player.gd" id="2_player"]
+[ext_resource type="Script" uid="uid://bulwgswbyj2rm" path="res://scripts/game/player/PlayerStats.gd" id="3_stats"]
+[ext_resource type="Script" uid="uid://daacxon052cxy" path="res://scripts/game/systems/needs_system.gd" id="4_needs"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih236027" path="res://scenes/ui/inventory.tscn" id="5_inventory"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih236030" path="res://scenes/ui/crafting_menu.tscn" id="6_crafting"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih236028" path="res://scenes/ui/pause_menu.tscn" id="7_pause"]
+[ext_resource type="PackedScene" uid="uid://dsv2wih23603a" path="res://scenes/ui/character_menu.tscn" id="8_char"]
+[ext_resource type="Script" uid="uid://hysujkh8ld81" path="res://scripts/game/world/perf_logger.gd" id="9_perf"]
+[ext_resource type="Script" uid="uid://cetxv7nkqepgl" path="res://scripts/game/world/PerformanceLogger.gd" id="10_performance"]
+[ext_resource type="PackedScene" path="res://scenes/ui/performance_monitor.tscn" id="11_perf_monitor"]
+[ext_resource type="Script" uid="uid://bhbb2tobikv66" path="res://scripts/game/player/voxel_interaction_handler.gd" id="12_interaction"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
+sky_top_color = Color(0.4, 0.6, 0.9, 1)
+sky_horizon_color = Color(0.7, 0.8, 0.9, 1)
+ground_bottom_color = Color(0.2, 0.15, 0.1, 1)
+ground_horizon_color = Color(0.5, 0.45, 0.4, 1)
+
+[sub_resource type="Sky" id="Sky_1"]
+sky_material = SubResource("ProceduralSkyMaterial_1")
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 2
+sky = SubResource("Sky_1")
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.65, 0.7, 1)
+ambient_light_energy = 0.5
+tonemap_mode = 2
+fog_enabled = true
+fog_light_color = Color(0.7, 0.75, 0.8, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_terrain"]
+vertex_color_use_as_albedo = true
+roughness = 0.9
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_xa0qd"]
+noise_type = 3
+seed = 12345
+frequency = 0.05
+fractal_octaves = 3
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_layer1"]
+noise_type = 3
+seed = 54321
+frequency = 0.02
+fractal_octaves = 4
+
+[sub_resource type="TerrainLayer" id="TerrainLayer_1"]
+noise = SubResource("FastNoiseLite_layer1")
+noise_base = 50.0
+
+[sub_resource type="Biome" id="Biome_1"]
+terrain_layers = [SubResource("TerrainLayer_1")]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+
+[node name="VoxdotDemo" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, 0.75, -0.433, 20, 50, 20)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="VoxdotTerrain" type="VoxdotTerrain" parent="."]
+shared_material = SubResource("StandardMaterial3D_terrain")
+noise = SubResource("FastNoiseLite_xa0qd")
+noise_base = 50.0
+noise_max = 150.0
+biomes = [SubResource("Biome_1")]
+
+[node name="VoxdotController" type="Node3D" parent="."]
+script = ExtResource("1_controller")
+terrain_path = NodePath("../VoxdotTerrain")
+player_path = NodePath("../Player")
+view_distance = 6
+terrain_radius_chunks = 2
+perf_logger_path = NodePath("../PerfLogger")
+performance_logger_path = NodePath("../PerformanceLogger")
+
+[node name="PerfLogger" type="Node" parent="."]
+script = ExtResource("9_perf")
+
+[node name="PerformanceLogger" type="Node" parent="."]
+script = ExtResource("10_performance")
+
+[node name="Player" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 20, 0)
+script = ExtResource("2_player")
+voxdot_controller_path = NodePath("../VoxdotController")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="CharacterMesh" type="MeshInstance3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("CapsuleMesh_1")
+
+[node name="Camera3D" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+current = true
+fov = 90.0
+near = 0.1
+far = 112.0
+
+[node name="PlayerStats" type="Node" parent="Player"]
+script = ExtResource("3_stats")
+
+[node name="NeedsSystem" type="Node" parent="Player"]
+script = ExtResource("4_needs")
+
+[node name="VoxelInteractionHandler" type="Node" parent="Player"]
+script = ExtResource("12_interaction")
+voxdot_controller_path = NodePath("../../VoxdotController")
+camera_path = NodePath("../Camera3D")
+
+[node name="TerrainLayer" type="CanvasLayer" parent="."]
+layer = -10
+
+[node name="ObjectsLayer" type="CanvasLayer" parent="."]
+layer = -5
+
+[node name="PlayerLayer" type="CanvasLayer" parent="."]
+layer = 0
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="Crosshair" type="CenterContainer" parent="UILayer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Cross" type="Label" parent="UILayer/Crosshair"]
+layout_mode = 2
+text = "+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+# Temporarily disabled problematic UI elements for testing
+# [node name="InventoryUI" parent="UILayer" instance=ExtResource("5_inventory")]
+
+[node name="PauseMenu" parent="UILayer" instance=ExtResource("7_pause")]
+
+[node name="CharacterMenu" parent="UILayer" instance=ExtResource("8_char")]
+
+# [node name="CraftingMenu" parent="UILayer" instance=ExtResource("6_crafting")]
+
+[node name="PerformanceMonitor" parent="UILayer" instance=ExtResource("11_perf_monitor")]
+visible_by_default = true
+
+[node name="OverlayLayer" type="CanvasLayer" parent="."]
+layer = 20
