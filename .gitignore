@@ -18,8 +18,9 @@ VOXDOT_SETUP.md
 docs/voxdot_integration.md
 docs/mixed_generator_implementation.md
 
-# Exception: our custom VoxdotController is part of the project
+# Exception: our custom VoxdotController and VoxdotPlayer are part of the project
 !scripts/game/world/voxdot_controller.gd
+!scripts/game/player/voxdot_player.gd
 
 # Reference voxel game (for learning only, not part of project)
 voxel_game_refference/
