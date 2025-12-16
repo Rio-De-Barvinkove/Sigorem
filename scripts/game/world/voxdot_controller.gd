@@ -155,19 +155,19 @@ func _input(event: InputEvent) -> void:
 	# Debug: check if input is being received
 	if event is InputEventKey and event.pressed:
 		print("VoxdotController: Key pressed: ", event.keycode, " key_label: ", event.key_label)
-		if event.keycode >= 4194336 and event.keycode <= 4194345:  # F1-F10 range
-			print("VoxdotController: F-key detected! Keycode: ", event.keycode)
+		if event.keycode == KEY_8 or event.keycode == KEY_9:
+			print("VoxdotController: Save/Load key detected! Keycode: ", event.keycode)
 
 	if event is InputEventKey and event.pressed:
-		# Use physical keycodes instead of KEY_* constants
-		if event.keycode == 4194336:  # F5 physical keycode
+		# Use number keys instead of F-keys for easier testing
+		if event.keycode == KEY_8:  # 8 key for save
 			if _chunk_save_manager:
-				print("VoxdotController: Force saving all chunks (F5 pressed)")
+				print("VoxdotController: Force saving all chunks (8 pressed)")
 				_chunk_save_manager.force_save_all()
 				get_viewport().set_input_as_handled()
-		elif event.keycode == 4194340:  # F9 physical keycode
+		elif event.keycode == KEY_9:  # 9 key for load
 			if _chunk_save_manager:
-				print("VoxdotController: Force loading all chunks (F9 pressed)")
+				print("VoxdotController: Force loading all chunks (9 pressed)")
 				_load_all_modifications()
 				get_viewport().set_input_as_handled()
 

@@ -62,8 +62,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			fly_mode = not fly_mode
 			print("Fly mode: ", fly_mode)
 
-		# Не обробляти F5/F9 - це для VoxdotController
-		elif event.keycode in [4194336, 4194340]:  # F5, F9
+		# Не обробляти 8/9 - це для VoxdotController
+		elif event.keycode in [KEY_8, KEY_9]:  # 8, 9
 			return  # Пропустити, нехай VoxdotController обробить
 	
 	# Передати подію в interaction handler

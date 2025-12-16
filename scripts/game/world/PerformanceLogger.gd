@@ -58,6 +58,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# Temporarily disabled to reduce console spam during persistence testing
+	return
 	## Оновлення метрик кожного кадру
 	update_fps_metrics()
 	update_render_metrics()

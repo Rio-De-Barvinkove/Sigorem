@@ -1,16 +1,11 @@
-[gd_scene load_steps=23 format=3 uid="uid://buit3iwni4tey"]
+[gd_scene load_steps=18 format=3 uid="uid://buit3iwni4tey"]
 
 [ext_resource type="Script" uid="uid://cadnf7y2a2r0o" path="res://scripts/game/world/voxdot_controller.gd" id="1_controller"]
 [ext_resource type="Script" uid="uid://d0fkfqdh6cjb2" path="res://scripts/game/player/voxdot_player.gd" id="2_player"]
 [ext_resource type="Script" uid="uid://bulwgswbyj2rm" path="res://scripts/game/player/PlayerStats.gd" id="3_stats"]
 [ext_resource type="Script" uid="uid://daacxon052cxy" path="res://scripts/game/systems/needs_system.gd" id="4_needs"]
-[ext_resource type="PackedScene" uid="uid://dsv2wih236027" path="res://scenes/ui/inventory.tscn" id="5_inventory"]
-[ext_resource type="PackedScene" uid="uid://dsv2wih236030" path="res://scenes/ui/crafting_menu.tscn" id="6_crafting"]
-[ext_resource type="PackedScene" uid="uid://dsv2wih236028" path="res://scenes/ui/pause_menu.tscn" id="7_pause"]
-[ext_resource type="PackedScene" uid="uid://dsv2wih23603a" path="res://scenes/ui/character_menu.tscn" id="8_char"]
 [ext_resource type="Script" uid="uid://hysujkh8ld81" path="res://scripts/game/world/perf_logger.gd" id="9_perf"]
 [ext_resource type="Script" uid="uid://cetxv7nkqepgl" path="res://scripts/game/world/PerformanceLogger.gd" id="10_performance"]
-[ext_resource type="PackedScene" path="res://scenes/ui/performance_monitor.tscn" id="11_perf_monitor"]
 [ext_resource type="Script" uid="uid://bhbb2tobikv66" path="res://scripts/game/player/voxel_interaction_handler.gd" id="12_interaction"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
@@ -149,16 +144,7 @@ text = "+"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-# Temporarily disabled problematic UI elements for testing
-# [node name="InventoryUI" parent="UILayer" instance=ExtResource("5_inventory")]
-
-[node name="PauseMenu" parent="UILayer" instance=ExtResource("7_pause")]
-
-[node name="CharacterMenu" parent="UILayer" instance=ExtResource("8_char")]
-
-# [node name="CraftingMenu" parent="UILayer" instance=ExtResource("6_crafting")]
-
-[node name="PerformanceMonitor" parent="UILayer" instance=ExtResource("11_perf_monitor")]
+[node name="PerformanceMonitor" parent="." instance=ExtResource("11_perf_monitor")]
 visible_by_default = true
 
 [node name="OverlayLayer" type="CanvasLayer" parent="."]
