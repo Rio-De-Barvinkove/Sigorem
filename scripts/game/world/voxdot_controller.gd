@@ -339,11 +339,11 @@ func _load_all_modifications() -> void:
 
 	var chunk_files = []
 	save_dir.list_dir_begin()
-	var file_name = save_dir.get_next()
-	while file_name != "":
-		if file_name.ends_with(".json") and file_name.begins_with("chunk_"):
-			chunk_files.append(file_name)
-		file_name = save_dir.get_next()
+	var current_file = save_dir.get_next()
+	while current_file != "":
+		if current_file.ends_with(".json") and current_file.begins_with("chunk_"):
+			chunk_files.append(current_file)
+		current_file = save_dir.get_next()
 	save_dir.list_dir_end()
 
 	print("VoxdotController: Found ", chunk_files.size(), " saved chunk files")
