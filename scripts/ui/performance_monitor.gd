@@ -20,7 +20,7 @@ class_name PerformanceMonitor
 @onready var panel: Panel = $Panel
 
 @export var update_interval: float = 0.5  ## Інтервал оновлення UI в секундах
-@export var visible_by_default: bool = false  ## Чи показувати за замовчуванням
+@export var visible_by_default: bool = true  ## Чи показувати за замовчуванням
 
 var _time_since_update: float = 0.0
 

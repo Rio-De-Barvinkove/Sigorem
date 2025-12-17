@@ -128,54 +128,51 @@ func _update_preview_position() -> void:
 func handle_input(event: InputEvent) -> void:
 	# Обробка клавіш
 	if event is InputEventKey and event.pressed:
-		# B - перемикання creative режиму
+		# B - перемикання Build mode (CREATIVE режим)
 		if event.keycode == KEY_B:
 			interaction_mode = InteractionMode.CREATIVE if interaction_mode == InteractionMode.NORMAL else InteractionMode.NORMAL
-			print("Switched to %s mode" % ("CREATIVE" if interaction_mode == InteractionMode.CREATIVE else "NORMAL"))
+			var mode_name = "BUILD MODE (ON)" if interaction_mode == InteractionMode.CREATIVE else "BUILD MODE (OFF)"
+			print("VoxelInteractionHandler: ", mode_name)
 			_update_preview_visibility()
 
-		# 1-3 - перемикання інструментів
-		elif event.keycode == KEY_1:
+		# 1-3 - перемикання інструментів (тільки в Build mode)
+		elif event.keycode == KEY_1 and interaction_mode == InteractionMode.CREATIVE:
 			current_tool = ToolType.HANDS
 			dig_radius = 0.3
-			print("Selected HANDS tool")
 			_update_preview_size()
-		elif event.keycode == KEY_2:
+		elif event.keycode == KEY_2 and interaction_mode == InteractionMode.CREATIVE:
 			current_tool = ToolType.SHOVEL
 			dig_radius = 0.8
-			print("Selected SHOVEL tool")
 			_update_preview_size()
-		elif event.keycode == KEY_3:
+		elif event.keycode == KEY_3 and interaction_mode == InteractionMode.CREATIVE:
 			current_tool = ToolType.PICKAXE
 			dig_radius = 1.2
-			print("Selected PICKAXE tool")
 			_update_preview_size()
 
-	# Прокрутка миші - зміна розміру області
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP and interaction_mode == InteractionMode.CREATIVE:
+	# Прокрутка миші - зміна розміру області (тільки в Build mode)
+	if event is InputEventMouseButton and event.pressed and interaction_mode == InteractionMode.CREATIVE:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			dig_radius = min(dig_radius + 0.1, 3.0)  # Максимум 3.0
-			print("Area radius increased to: %.1f" % dig_radius)
 			_update_preview_size()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and interaction_mode == InteractionMode.CREATIVE:
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			var min_radius = 0.1
 			match current_tool:
 				ToolType.HANDS: min_radius = 0.1
 				ToolType.SHOVEL: min_radius = 0.5
 				ToolType.PICKAXE: min_radius = 0.8
 			dig_radius = max(dig_radius - 0.1, min_radius)
-			print("Area radius decreased to: %.1f" % dig_radius)
 			_update_preview_size()
 
 
 func handle_mouse_button(button: int) -> void:
-	print("VoxelInteractionHandler: handle_mouse_button called with button ", button)
+	# Взаємодія з терейном тільки в CREATIVE режимі
+	if interaction_mode != InteractionMode.CREATIVE:
+		return
+	
 	if not voxdot_controller or not camera:
-		print("VoxelInteractionHandler: voxdot_controller or camera is null")
 		return
 
 	if not is_inside_tree():
-		print("VoxelInteractionHandler: not in scene tree")
 		return
 
 	var from = camera.global_position
@@ -192,30 +189,16 @@ func handle_mouse_button(button: int) -> void:
 
 	match button:
 		MOUSE_BUTTON_LEFT:
-			if interaction_mode == InteractionMode.CREATIVE:
-				# Creative режим - копати з динамічною областю залежно від інструменту
-				_dig_area(hit_pos - hit_normal * 0.1, hit_normal)
-			else:
-				# Звичайний режим - малий радіус
-				print("VoxelInteractionHandler: Calling remove_voxel on controller")
-				voxdot_controller.remove_voxel(hit_pos - hit_normal * 0.1, 0.2)
-				print("Removed voxel at: ", hit_pos)
+			# Копати з динамічною областю залежно від інструменту
+			_dig_area(hit_pos - hit_normal * 0.1, hit_normal)
 
 		MOUSE_BUTTON_RIGHT:
-			if interaction_mode == InteractionMode.CREATIVE:
-				# Creative режим - будувати з динамічною областю
-				_build_area(hit_pos + hit_normal * 0.1, hit_normal)
-			else:
-				# Звичайний режим
-				print("VoxelInteractionHandler: Calling place_voxel on controller")
-				voxdot_controller.place_voxel(hit_pos + hit_normal * 0.1, 2)
-				print("Placed voxel at: ", hit_pos + hit_normal * 0.1)
+			# Будувати з динамічною областю
+			_build_area(hit_pos + hit_normal * 0.1, hit_normal)
 
 		MOUSE_BUTTON_MIDDLE:
-			# Повністю знищити сферу (як було)
-			print("VoxelInteractionHandler: Calling place_sphere on controller")
+			# Повністю знищити сферу
 			voxdot_controller.place_sphere(hit_pos, 1.0, 0)
-			print("Destroyed sphere at: ", hit_pos)
 
 
 func _dig_area(center_pos: Vector3, normal: Vector3) -> void:
@@ -226,20 +209,17 @@ func _dig_area(center_pos: Vector3, normal: Vector3) -> void:
 		ToolType.HANDS:
 			# Руки - видалити один воксель
 			voxdot_controller.remove_voxel(center_pos, voxel_scale * 0.5)
-			print("Hands: Removed single voxel at: ", center_pos)
 
 		ToolType.SHOVEL:
 			# Лопата - плоска область паралельно поверхні
 			var area_size = Vector3(dig_radius * 2, voxel_scale * 0.5, dig_radius * 2)
 			voxdot_controller.place_cube(center_pos, area_size, 0)  # 0 = видалити
-			print("Shovel: Removed flat area at: ", center_pos, " size: ", area_size)
 
 		ToolType.PICKAXE:
 			# Кирка - вертикальна область
 			var depth = dig_radius * 2
 			var area_size = Vector3(voxel_scale * 0.8, depth, voxel_scale * 0.8)
 			voxdot_controller.place_cube(center_pos, area_size, 0)  # 0 = видалити
-			print("Pickaxe: Removed vertical area at: ", center_pos, " size: ", area_size)
 
 
 func _build_area(center_pos: Vector3, normal: Vector3) -> void:
@@ -250,20 +230,17 @@ func _build_area(center_pos: Vector3, normal: Vector3) -> void:
 		ToolType.HANDS:
 			# Руки - поставити один воксель
 			voxdot_controller.place_voxel(center_pos, 2)
-			print("Hands: Placed single voxel at: ", center_pos)
 
 		ToolType.SHOVEL:
 			# Лопата - заповнити плоску область
 			var area_size = Vector3(dig_radius * 2, voxel_scale * 0.5, dig_radius * 2)
 			voxdot_controller.place_cube(center_pos, area_size, 2)
-			print("Shovel: Built flat area at: ", center_pos, " size: ", area_size)
 
 		ToolType.PICKAXE:
 			# Кирка - будувати вертикальну стіну
 			var height = dig_radius * 2
 			var area_size = Vector3(voxel_scale * 0.8, height, voxel_scale * 0.8)
 			voxdot_controller.place_cube(center_pos, area_size, 2)
-			print("Pickaxe: Built vertical wall at: ", center_pos, " size: ", area_size)
 
 
 func _physics_process(_delta: float) -> void:

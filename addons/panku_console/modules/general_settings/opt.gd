@@ -16,21 +16,30 @@ extends ModuleOptions
 
 @export var enable_os_window := false:
 	set(v):
-		_module.core.windows_manager.enable_os_popup_btns(v)
+		if _module and _module.core and _module.core.windows_manager:
+			_module.core.windows_manager.enable_os_popup_btns(v)
 	get:
-		return _module.core.windows_manager.os_popup_btn_enabled
+		if _module and _module.core and _module.core.windows_manager:
+			return _module.core.windows_manager.os_popup_btn_enabled
+		return false
 
 @export var os_window_bg_color:Color:
 	set(v):
-		_module.core.windows_manager.set_os_window_bg_color(v)
+		if _module and _module.core and _module.core.windows_manager:
+			_module.core.windows_manager.set_os_window_bg_color(v)
 	get:
-		return _module.core.windows_manager.os_window_bg_color
+		if _module and _module.core and _module.core.windows_manager:
+			return _module.core.windows_manager.os_window_bg_color
+		return Color.BLACK
 		
 @export var global_font_size:int:
 	set(v):
-		Panku.windows_manager.theme.default_font_size = v
+		if Panku and Panku.windows_manager and Panku.windows_manager.theme:
+			Panku.windows_manager.theme.default_font_size = v
 	get:
-		return Panku.windows_manager.theme.default_font_size
+		if Panku and Panku.windows_manager and Panku.windows_manager.theme:
+			return Panku.windows_manager.theme.default_font_size
+		return 0
 
 @export var export_comment_auto_global_font_size = (
 	"Adjust global font size automatically according to your device DPI"

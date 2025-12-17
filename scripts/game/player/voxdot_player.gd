@@ -47,11 +47,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotation.y = _yaw
 		camera.rotation.x = _pitch
 	
-	# Mouse button handling
-	if event is InputEventMouseButton and event.pressed:
-		print("VoxdotPlayer: Mouse button ", event.button_index, " pressed")
-		interaction_handler.handle_mouse_button(event.button_index)
-
 	# Escape - вийти/увійти в захоплення миші
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE:
@@ -60,16 +55,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		# F - перемкнути режим польоту (не F5!)
 		elif event.keycode == KEY_F:
 			fly_mode = not fly_mode
-			print("Fly mode: ", fly_mode)
+			pass  # Fly mode toggle
 
-		# Не обробляти 8/9 - це для VoxdotController
+			# Не обробляти 8/9 - це для VoxdotController
 		elif event.keycode in [KEY_8, KEY_9]:  # 8, 9
 			return  # Пропустити, нехай VoxdotController обробить
 	
-	# Передати подію в interaction handler
+	# Передати подію в interaction handler для обробки клавіш (B, 1-3, scroll)
 	if interaction_handler:
 		interaction_handler.handle_input(event)
-
+	
 	# Клік миші - редагування вокселів
 	if event is InputEventMouseButton and event.pressed:
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
