@@ -294,10 +294,12 @@ func _update_chunks_around_player() -> void:
 
 func place_voxel(world_pos: Vector3, material: int = 1) -> void:
 	## Поставити воксель (куб 1x1x1)
+	## place_edit очікує half_size як перший параметр
 	if not terrain or not terrain.has_method("place_edit"):
 		push_error("VoxdotController: terrain or place_edit method not available")
 		return
-	terrain.place_edit(Vector3(voxel_scale, voxel_scale, voxel_scale), world_pos, material, 1)
+	var half_size = voxel_scale * 0.5
+	terrain.place_edit(Vector3(half_size, half_size, half_size), world_pos, material, 1)
 
 	# Зберегти модифікацію для персистентності
 	if _chunk_save_manager:
@@ -307,8 +309,16 @@ func place_voxel(world_pos: Vector3, material: int = 1) -> void:
 
 
 func remove_voxel(world_pos: Vector3, radius: float = 0.3) -> void:
-	## Видалити воксель (сфера)
-	terrain.place_edit(Vector3(radius, radius, radius), world_pos, 0, 0)
+	## Видалити воксель (сфера або точний воксель)
+	## place_edit очікує half_size як перший параметр
+	# Якщо radius дорівнює voxel_scale, використовувати точне руйнування 1 вокселя (куб)
+	if abs(radius - voxel_scale) < 0.01:
+		# Точне руйнування одного вокселя - використовувати куб з половиною розміру вокселя
+		var half_size = voxel_scale * 0.5
+		terrain.place_edit(Vector3(half_size, half_size, half_size), world_pos, 0, 1)
+	else:
+		# Руйнування сферою (для інструментів з областями) - radius вже є радіусом сфери
+		terrain.place_edit(Vector3(radius, radius, radius), world_pos, 0, 0)
 
 	# Зберегти модифікацію для персистентності (матеріал 0 = повітря)
 	if _chunk_save_manager:
@@ -330,7 +340,9 @@ func place_sphere(world_pos: Vector3, radius: float, material: int = 1) -> void:
 
 func place_cube(world_pos: Vector3, size: Vector3, material: int = 1) -> void:
 	## Поставити куб
-	terrain.place_edit(size, world_pos, material, 1)
+	## place_edit очікує half_size як перший параметр
+	var half_size = size * 0.5
+	terrain.place_edit(half_size, world_pos, material, 1)
 
 	# Зберегти операцію для персистентності
 	if _chunk_save_manager:

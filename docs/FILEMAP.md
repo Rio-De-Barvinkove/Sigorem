@@ -37,17 +37,19 @@ Legend for status tags:
 - `[ACTIVE?]` `ResourceManager.gd` – shared loader/cacher for resources (avoids duplicate loads).
 
 ## scripts/game/world/
-- `[ACTIVE]` `voxdot_controller.gd` – main Voxdot terrain controller: initializes terrain node, sets voxel scale, noise parameters, biome assignment, connects player, SafeSpawn, PerfLogger; manages chunk add/mesh pipeline and view-distance updates (chunk unload currently disabled to avoid holes; ready for future unload logic). Uses TerrainDepthManager for depth sorting and Y-sort.
+- `[ACTIVE]` `voxdot_controller.gd` – main Voxdot terrain controller: initializes terrain node, sets voxel scale, noise parameters, biome assignment, connects player, SafeSpawn, PerfLogger, ChunkSaveManager; manages chunk add/mesh pipeline and view-distance updates with automatic save/load of chunk modifications. Uses TerrainDepthManager for depth sorting and Y-sort. Optimized chunk processing (batch operations, reduced logging, proper cleanup).
+- `[ACTIVE]` `chunk_save_manager.gd` – persistent chunk modification system: saves/loads voxel edits to disk (compressed JSON format), tracks dirty chunks, auto-saves periodically, supports operations (cube/sphere) and point modifications. Manages chunk data in memory and on disk, applies modifications when chunks are loaded.
+- `[ACTIVE]` `terrain_constants.gd` – global terrain constants: chunk size, region size, save intervals, performance thresholds, default values, material IDs. Provides static helper functions for coordinate conversion (world-to-chunk, chunk-to-region).
 - `[ACTIVE]` `TerrainDepthManager.gd` – manages depth buffer settings, Y-sort for MeshInstance3D, material depth configuration, performance optimization, and transparent material preparation.
 - `[ACTIVE]` `safe_spawn.gd` – creates a flat platform (configurable radius/thickness/material) at origin using `terrain.place_edit`, samples noise height, sets player spawn above platform; prevents spawning in void/inside terrain.
 - `[ACTIVE]` `perf_logger.gd` – console-based chunk timing logger: tracks add/mesh operations, prints basic periodic reports to console; lightweight, minimal overhead.
 - `[ACTIVE]` `PerformanceLogger.gd` – advanced performance monitoring system (UI + console): FPS/frame time, memory usage (current/peak), object count, draw calls, chunk generation times, custom metrics; includes debug overlay panel for real-time performance visualization and periodic console reports.
-- `[ACTIVE]` `performance_monitor.gd` – debug UI panel for real-time performance metrics: FPS, frame time, memory usage (MB), total chunks generated, current scene objects count, average draw calls; integrates with PerformanceLogger for development monitoring.
+- `[ACTIVE]` `performance_monitor.gd` – debug UI panel for real-time performance metrics: FPS, frame time, memory usage (MB), total chunks generated, current scene objects count, average draw calls; integrates with PerformanceLogger for development monitoring. Visible by default.
 - `[PLACEHOLDER]` `physics/voxel_physics.gd` – stub to satisfy autoload name; real voxel physics TBD.
 
 ## scripts/game/player/
 - `[ACTIVE]` `voxdot_player.gd` – main player controller: movement (walk/fly/jump), first-person camera mode, visible character mesh (small green capsule), integrates PlayerStats/NeedsSystem/StatusEffects/VoxelInteractionHandler child nodes. Controls: WASD movement, Shift sprint, Space jump/fly up, Ctrl fly down, F toggle fly mode, mouse look.
-- `[ACTIVE]` `voxel_interaction_handler.gd` – voxel interaction system: creative/normal modes (B key), tool switching (1-3 keys), dynamic area scaling (mouse wheel), visual previews (semi-transparent cubes), tool-specific area shapes (hands: single voxel, shovel: flat area, pickaxe: vertical column).
+- `[ACTIVE]` `voxel_interaction_handler.gd` – voxel interaction system: creative/normal modes (B key toggle), tool switching (1-3 keys), dynamic area scaling (mouse wheel). Wireframe outline preview (black lines for destruction, white for building) showing exact voxel targeting. NORMAL mode: interaction disabled. CREATIVE mode: destruction (LMB) with tool-specific areas (hands: single voxel, shovel: flat area, pickaxe: vertical column), building (RMB) always places single voxel. Uses precise voxel position calculation for accurate targeting.
 - `[ACTIVE]` `PlayerStats.gd` – health/stamina component with class_name for typing; basic regen/damage hooks.
 - `[ACTIVE]` `NeedsSystem.gd` – hunger/thirst/sleepiness decay and thresholds; emits to status effects.
 - `[ACTIVE]` `StatusEffects.gd` – applies effects based on needs (e.g., debuffs when starving/thirsty/sleepy).
@@ -119,8 +121,8 @@ project.godot
 └─ scripts/
    ├─ autoload/
    ├─ game/
-   │  ├─ world/ (voxdot_controller, TerrainDepthManager, safe_spawn, perf_logger, PerformanceLogger, physics/)
-   │  ├─ player/ (voxdot_player, stats/needs/effects, legacy controllers)
+   │  ├─ world/ (voxdot_controller, chunk_save_manager, terrain_constants, TerrainDepthManager, safe_spawn, perf_logger, PerformanceLogger, physics/)
+   │  ├─ player/ (voxdot_player, voxel_interaction_handler, stats/needs/effects, legacy controllers)
    │  └─ systems/ (inventory, crafting, game_events, needs, status_effects)
    ├─ ui/ (menus, HUD, components, performance_monitor)
    └─ tools/ (voxel library builders)

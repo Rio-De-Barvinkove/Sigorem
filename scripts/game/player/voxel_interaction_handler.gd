@@ -3,8 +3,8 @@ class_name VoxelInteractionHandler
 ## Обробляє взаємодію з вокселями: копання, будівництво, візуальні індикатори
 
 enum InteractionMode {
-	NORMAL,     # Звичайний режим (видалити/поставити один блок)
-	CREATIVE    # Режим копання/будівництва з динамічною областю
+	NORMAL,     # Звичайний режим - тільки руйнування/копання
+	CREATIVE    # Creative режим - тільки будівництво
 }
 
 enum ToolType {
@@ -26,6 +26,9 @@ var dig_radius: float = 0.3  # Динамічний радіус копання
 var dig_preview: MeshInstance3D
 var build_preview: MeshInstance3D
 
+# VoxelTool для raycast (якщо доступний)
+var _voxel_tool = null
+
 
 func _ready() -> void:
 	# Отримати посилання на контролери
@@ -34,67 +37,146 @@ func _ready() -> void:
 	if camera_path:
 		camera = get_node_or_null(camera_path)
 
+	# Спробувати отримати VoxelTool з terrain (як в референсі)
+	if voxdot_controller and voxdot_controller.terrain:
+		var terrain = voxdot_controller.terrain
+		if terrain.has_method("get_voxel_tool"):
+			_voxel_tool = terrain.get_voxel_tool()
+			if _voxel_tool:
+				print("VoxelInteractionHandler: VoxelTool отримано! Клас: ", _voxel_tool.get_class())
+				# Налаштувати channel як в референсі
+				if _voxel_tool.has_method("set") and _voxel_tool.has("channel"):
+					_voxel_tool.set("channel", 0)  # VoxelBuffer.CHANNEL_TYPE = 0
+			else:
+				print("VoxelInteractionHandler: get_voxel_tool повернув null")
+		else:
+			print("VoxelInteractionHandler: terrain не має методу get_voxel_tool")
+
 	# Створити візуальні індикатори
 	_create_preview_meshes()
 
 
 func _create_preview_meshes() -> void:
-	# Preview для копання (червоний куб)
+	# Preview для копання (wireframe outline)
 	dig_preview = MeshInstance3D.new()
 	dig_preview.visible = false
-
 	var dig_material = StandardMaterial3D.new()
-	dig_material.albedo_color = Color(1.0, 0.2, 0.2, 0.4)  # Напівпрозорий червоний
-	dig_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dig_material.albedo_color = Color.BLACK
+	dig_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dig_material.no_depth_test = true  # Outline має бути видимий поверх всього
 	dig_preview.material_override = dig_material
 	add_child(dig_preview)
 
-	# Preview для будівництва (зелений куб)
+	# Preview для будівництва (wireframe outline)
 	build_preview = MeshInstance3D.new()
 	build_preview.visible = false
-
 	var build_material = StandardMaterial3D.new()
-	build_material.albedo_color = Color(0.2, 1.0, 0.2, 0.4)  # Напівпрозорий зелений
-	build_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	build_material.albedo_color = Color.WHITE
+	build_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	build_material.no_depth_test = true
 	build_preview.material_override = build_material
 	add_child(build_preview)
 
 
 func _update_preview_visibility() -> void:
-	var show_previews = (interaction_mode == InteractionMode.CREATIVE)
-	dig_preview.visible = show_previews
-	build_preview.visible = show_previews
+	# Preview керується в _update_preview_position() залежно від режиму
+	# Функція залишається для сумісності
+	pass
+
+
+func _create_wireframe_mesh(size: Vector3) -> ArrayMesh:
+	## Створити wireframe mesh для outline (чорні лінії по краях куба)
+	var arr_mesh = ArrayMesh.new()
+	var vertices = PackedVector3Array()
+	var half_size = size * 0.5
+	
+	# Нижня грань (4 лінії)
+	vertices.append(Vector3(-half_size.x, -half_size.y, -half_size.z))
+	vertices.append(Vector3(half_size.x, -half_size.y, -half_size.z))
+	vertices.append(Vector3(half_size.x, -half_size.y, -half_size.z))
+	vertices.append(Vector3(half_size.x, -half_size.y, half_size.z))
+	vertices.append(Vector3(half_size.x, -half_size.y, half_size.z))
+	vertices.append(Vector3(-half_size.x, -half_size.y, half_size.z))
+	vertices.append(Vector3(-half_size.x, -half_size.y, half_size.z))
+	vertices.append(Vector3(-half_size.x, -half_size.y, -half_size.z))
+	
+	# Верхня грань (4 лінії)
+	vertices.append(Vector3(-half_size.x, half_size.y, -half_size.z))
+	vertices.append(Vector3(half_size.x, half_size.y, -half_size.z))
+	vertices.append(Vector3(half_size.x, half_size.y, -half_size.z))
+	vertices.append(Vector3(half_size.x, half_size.y, half_size.z))
+	vertices.append(Vector3(half_size.x, half_size.y, half_size.z))
+	vertices.append(Vector3(-half_size.x, half_size.y, half_size.z))
+	vertices.append(Vector3(-half_size.x, half_size.y, half_size.z))
+	vertices.append(Vector3(-half_size.x, half_size.y, -half_size.z))
+	
+	# Вертикальні лінії (4 лінії)
+	vertices.append(Vector3(-half_size.x, -half_size.y, -half_size.z))
+	vertices.append(Vector3(-half_size.x, half_size.y, -half_size.z))
+	vertices.append(Vector3(half_size.x, -half_size.y, -half_size.z))
+	vertices.append(Vector3(half_size.x, half_size.y, -half_size.z))
+	vertices.append(Vector3(half_size.x, -half_size.y, half_size.z))
+	vertices.append(Vector3(half_size.x, half_size.y, half_size.z))
+	vertices.append(Vector3(-half_size.x, -half_size.y, half_size.z))
+	vertices.append(Vector3(-half_size.x, half_size.y, half_size.z))
+	
+	var arrays = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	
+	arr_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_LINES, arrays)
+	return arr_mesh
 
 
 func _update_preview_size() -> void:
 	var voxel_scale = voxdot_controller.voxel_scale if voxdot_controller else 0.1
+	var single_voxel_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
 
+	# Для руйнування (NORMAL режим) - розмір залежить від інструменту
 	match current_tool:
 		ToolType.HANDS:
-			# Для рук - маленький куб
-			_update_preview_mesh(BoxMesh.new(), Vector3(voxel_scale, voxel_scale, voxel_scale))
+			# Для рук - один воксель
+			dig_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 
 		ToolType.SHOVEL:
-			# Для лопати - плоский прямокутник
-			_update_preview_mesh(BoxMesh.new(), Vector3(dig_radius * 2, voxel_scale * 0.5, dig_radius * 2))
+			# Для лопати - плоска область
+			var size = Vector3(dig_radius * 2, voxel_scale * 0.5, dig_radius * 2)
+			dig_preview.mesh = _create_wireframe_mesh(size)
 
 		ToolType.PICKAXE:
-			# Для кирки - вертикальний прямокутник
-			_update_preview_mesh(BoxMesh.new(), Vector3(voxel_scale * 0.8, dig_radius * 2, voxel_scale * 0.8))
+			# Для кирки - вертикальна область
+			var size = Vector3(voxel_scale * 0.8, dig_radius * 2, voxel_scale * 0.8)
+			dig_preview.mesh = _create_wireframe_mesh(size)
+
+	# Для будівництва (CREATIVE режим) - завжди один воксель
+	build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 
 
-func _update_preview_mesh(mesh_type: Mesh, size: Vector3) -> void:
-	if dig_preview:
-		dig_preview.mesh = mesh_type.duplicate()
-		if dig_preview.mesh is BoxMesh:
-			var box_mesh: BoxMesh = dig_preview.mesh as BoxMesh
-			box_mesh.size = size
-
-	if build_preview:
-		build_preview.mesh = mesh_type.duplicate()
-		if build_preview.mesh is BoxMesh:
-			var box_mesh: BoxMesh = build_preview.mesh as BoxMesh
-			box_mesh.size = size
+func _get_targeted_voxel_position(hit_pos: Vector3, hit_normal: Vector3, is_digging: bool) -> Vector3:
+	## Отримати точну позицію вокселя на який наведено курсор
+	## hit_pos - точка попадання raycast на поверхню mesh (на грані вокселя)
+	## hit_normal - нормаль поверхні (напрямок від вокселя назовні)
+	if not voxdot_controller:
+		return hit_pos
+	
+	var voxel_scale = voxdot_controller.voxel_scale
+	var normal = hit_normal.normalized()
+	
+	var target_pos: Vector3
+	if is_digging:
+		# Для руйнування - воксель всередині якого знаходиться hit_pos
+		# Зсуваємо трохи всередину (протилежно нормалі) щоб потрапити в правильний воксель
+		var inside_offset = normal * -voxel_scale * 0.01  # Дуже маленький offset всередину
+		target_pos = hit_pos + inside_offset
+	else:
+		# Для будування - сусідній воксель в напрямку нормалі
+		# Зсуваємо на повний воксель назовні
+		target_pos = hit_pos + normal * voxel_scale
+	
+	# Конвертуємо в індекси вокселів (floor для попадання в правильний воксель)
+	var voxel_indices = (target_pos / voxel_scale).floor()
+	# Повертаємо центр вокселя
+	return (voxel_indices + Vector3(0.5, 0.5, 0.5)) * voxel_scale
 
 
 func _update_preview_position() -> void:
@@ -119,38 +201,46 @@ func _update_preview_position() -> void:
 	var hit_pos: Vector3 = result.position
 	var hit_normal: Vector3 = result.normal
 
-	# Показувати обидва preview в creative режимі
-	if interaction_mode == InteractionMode.CREATIVE:
-		dig_preview.global_position = hit_pos - hit_normal * 0.1
-		build_preview.global_position = hit_pos + hit_normal * 0.1
+	# NORMAL режим - показувати preview для руйнування (чорний outline)
+	if interaction_mode == InteractionMode.NORMAL:
+		var dig_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, true)
+		dig_preview.global_position = dig_voxel_pos
+		dig_preview.visible = true
+		build_preview.visible = false
+	# CREATIVE режим - показувати preview для будівництва (білий outline)
+	elif interaction_mode == InteractionMode.CREATIVE:
+		var build_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, false)
+		build_preview.global_position = build_voxel_pos
+		build_preview.visible = true
+		dig_preview.visible = false
 
 
 func handle_input(event: InputEvent) -> void:
 	# Обробка клавіш
 	if event is InputEventKey and event.pressed:
-		# B - перемикання Build mode (CREATIVE режим)
+		# B - перемикання Build mode (CREATIVE режим для будівництва)
 		if event.keycode == KEY_B:
 			interaction_mode = InteractionMode.CREATIVE if interaction_mode == InteractionMode.NORMAL else InteractionMode.NORMAL
-			var mode_name = "BUILD MODE (ON)" if interaction_mode == InteractionMode.CREATIVE else "BUILD MODE (OFF)"
+			var mode_name = "BUILD MODE (ON) - будівництво" if interaction_mode == InteractionMode.CREATIVE else "NORMAL MODE - руйнування/копання"
 			print("VoxelInteractionHandler: ", mode_name)
 			_update_preview_visibility()
 
-		# 1-3 - перемикання інструментів (тільки в Build mode)
-		elif event.keycode == KEY_1 and interaction_mode == InteractionMode.CREATIVE:
+		# 1-3 - перемикання інструментів для руйнування (тільки в NORMAL режимі)
+		elif event.keycode == KEY_1 and interaction_mode == InteractionMode.NORMAL:
 			current_tool = ToolType.HANDS
 			dig_radius = 0.3
 			_update_preview_size()
-		elif event.keycode == KEY_2 and interaction_mode == InteractionMode.CREATIVE:
+		elif event.keycode == KEY_2 and interaction_mode == InteractionMode.NORMAL:
 			current_tool = ToolType.SHOVEL
 			dig_radius = 0.8
 			_update_preview_size()
-		elif event.keycode == KEY_3 and interaction_mode == InteractionMode.CREATIVE:
+		elif event.keycode == KEY_3 and interaction_mode == InteractionMode.NORMAL:
 			current_tool = ToolType.PICKAXE
 			dig_radius = 1.2
 			_update_preview_size()
 
-	# Прокрутка миші - зміна розміру області (тільки в Build mode)
-	if event is InputEventMouseButton and event.pressed and interaction_mode == InteractionMode.CREATIVE:
+	# Прокрутка миші - зміна розміру області для руйнування (тільки в NORMAL режимі)
+	if event is InputEventMouseButton and event.pressed and interaction_mode == InteractionMode.NORMAL:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			dig_radius = min(dig_radius + 0.1, 3.0)  # Максимум 3.0
 			_update_preview_size()
@@ -165,10 +255,6 @@ func handle_input(event: InputEvent) -> void:
 
 
 func handle_mouse_button(button: int) -> void:
-	# Взаємодія з терейном тільки в CREATIVE режимі
-	if interaction_mode != InteractionMode.CREATIVE:
-		return
-	
 	if not voxdot_controller or not camera:
 		return
 
@@ -187,18 +273,18 @@ func handle_mouse_button(button: int) -> void:
 	var hit_pos: Vector3 = result.position
 	var hit_normal: Vector3 = result.normal
 
-	match button:
-		MOUSE_BUTTON_LEFT:
-			# Копати з динамічною областю залежно від інструменту
-			_dig_area(hit_pos - hit_normal * 0.1, hit_normal)
-
-		MOUSE_BUTTON_RIGHT:
-			# Будувати з динамічною областю
-			_build_area(hit_pos + hit_normal * 0.1, hit_normal)
-
-		MOUSE_BUTTON_MIDDLE:
-			# Повністю знищити сферу
-			voxdot_controller.place_sphere(hit_pos, 1.0, 0)
+	match interaction_mode:
+		InteractionMode.NORMAL:
+			# NORMAL режим - тільки руйнування/копання (ЛКМ)
+			if button == MOUSE_BUTTON_LEFT:
+				var dig_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, true)
+				_dig_area(dig_voxel_pos, hit_normal)
+		
+		InteractionMode.CREATIVE:
+			# CREATIVE режим - тільки будівництво (ПКМ)
+			if button == MOUSE_BUTTON_RIGHT:
+				var build_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, false)
+				_build_area(build_voxel_pos, hit_normal)
 
 
 func _dig_area(center_pos: Vector3, normal: Vector3) -> void:
@@ -207,8 +293,8 @@ func _dig_area(center_pos: Vector3, normal: Vector3) -> void:
 
 	match current_tool:
 		ToolType.HANDS:
-			# Руки - видалити один воксель
-			voxdot_controller.remove_voxel(center_pos, voxel_scale * 0.5)
+			# Руки - видалити точно один воксель
+			voxdot_controller.remove_voxel(center_pos, voxel_scale)
 
 		ToolType.SHOVEL:
 			# Лопата - плоска область паралельно поверхні
@@ -223,24 +309,8 @@ func _dig_area(center_pos: Vector3, normal: Vector3) -> void:
 
 
 func _build_area(center_pos: Vector3, normal: Vector3) -> void:
-	## Будувати область залежно від інструменту
-	var voxel_scale = voxdot_controller.voxel_scale if voxdot_controller else 0.1
-
-	match current_tool:
-		ToolType.HANDS:
-			# Руки - поставити один воксель
-			voxdot_controller.place_voxel(center_pos, 2)
-
-		ToolType.SHOVEL:
-			# Лопата - заповнити плоску область
-			var area_size = Vector3(dig_radius * 2, voxel_scale * 0.5, dig_radius * 2)
-			voxdot_controller.place_cube(center_pos, area_size, 2)
-
-		ToolType.PICKAXE:
-			# Кирка - будувати вертикальну стіну
-			var height = dig_radius * 2
-			var area_size = Vector3(voxel_scale * 0.8, height, voxel_scale * 0.8)
-			voxdot_controller.place_cube(center_pos, area_size, 2)
+	## Будувати - завжди ставити 1 воксель
+	voxdot_controller.place_voxel(center_pos, 2)
 
 
 func _physics_process(_delta: float) -> void:

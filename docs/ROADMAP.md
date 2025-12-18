@@ -26,6 +26,8 @@
 - [X] Логування часу генерації/видалення (WorldLogger.performance)  
 - [X] Налаштування шарів (terrain, objects, player, UI)
 - [X] **Profiler hooks** 
+- [x] Збереження чанків (per-chunk data) - JSON файли на чанк
+- [x] **ChunkSaveManager створений** - збереження воксельних модифікацій чанків
 
 ## ФАЗА 1: ГРА 🔧
 
@@ -43,9 +45,8 @@
 - [] Partial mesh updates (патчити змінені грані; ліміт rebuild-пулу)  
 
 
-- [x] **ChunkSaveManager створений** - збереження воксельних модифікацій чанків
 - [ ] SaveLoadManager інтеграція (частково: chunk data ready)
-- [x] Збереження чанків (per-chunk data) - JSON файли на чанк
+
 - [ ] Збереження інвентаря гравця
 - [ ] Збереження позиції гравця
 - [ ] Екран "Створити світ" (name, seed/randomize, preset)

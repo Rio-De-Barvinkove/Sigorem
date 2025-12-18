@@ -225,18 +225,25 @@ func apply_modifications_to_chunk(terrain: VoxdotTerrain, chunk_coords: Vector3)
 		
 		match op.type:
 			"cube":
-				terrain.place_edit(size, pos, material, 1)
+				# place_edit очікує half_size
+				var half_size = size * 0.5
+				terrain.place_edit(half_size, pos, material, 1)
 			"sphere":
+				# Для сфери size вже є радіусом, тому передаємо як є
 				terrain.place_edit(size, pos, material, 0)
 			"point":
-				var voxel_size = Vector3.ONE * voxel_scale
-				terrain.place_edit(voxel_size, pos, material, 1)
+				# place_edit очікує half_size
+				var half_voxel = voxel_scale * 0.5
+				var voxel_half_size = Vector3(half_voxel, half_voxel, half_voxel)
+				terrain.place_edit(voxel_half_size, pos, material, 1)
 
 	# Потім застосувати точкові модифікації (для сумісності зі старим форматом)
 	for world_pos in chunk_data.modifications.keys():
 		var material = chunk_data.modifications[world_pos]
-		var voxel_size = Vector3.ONE * voxel_scale
-		terrain.place_edit(voxel_size, world_pos, material, 1 if material > 0 else 0)
+		# place_edit очікує half_size
+		var half_voxel = voxel_scale * 0.5
+		var voxel_half_size = Vector3(half_voxel, half_voxel, half_voxel)
+		terrain.place_edit(voxel_half_size, world_pos, material, 1 if material > 0 else 0)
 
 ## Завантажити chunk data з диска
 func _load_chunk_from_disk(chunk_data: Dictionary) -> bool:
