@@ -140,8 +140,9 @@ func _update_preview_size() -> void:
 
 
 func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
-	## Перетворити voxel index (grid position) в центр вокселя в world space
-	## КРИТИЧНО: hit.position з VoxelTool.raycast() - це voxel index, не world center
+	## Перетворити цілочисельний voxel index в центр вокселя в world space
+	## Формула: (voxel_index + 0.5) * voxel_scale
+	## КРИТИЧНО: voxel_index має бути цілочисельним (після floor())
 	if not voxdot_controller:
 		return voxel_index
 	var scale := voxdot_controller.voxel_scale
