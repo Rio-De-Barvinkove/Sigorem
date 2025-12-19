@@ -37,7 +37,7 @@ window/stretch/mode="viewport"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/day_and_night_cycle/plugin.cfg", "res://addons/dialogue_manager/plugin.cfg", "res://addons/health_hitbox_hurtbox/plugin.cfg", "res://addons/massimo/plugin.cfg", "res://addons/net.yarvis.pixel_pen/plugin.cfg", "res://addons/proto_shape/plugin.cfg", "res://addons/questify/plugin.cfg", "res://addons/road-generator/plugin.cfg", "res://addons/rubonnek.inventory_manager/plugin.cfg", "res://addons/wfc/plugin.cfg")
+enabled=PackedStringArray("res://addons/day_and_night_cycle/plugin.cfg", "res://addons/dialogue_manager/plugin.cfg", "res://addons/health_hitbox_hurtbox/plugin.cfg", "res://addons/massimo/plugin.cfg", "res://addons/net.yarvis.pixel_pen/plugin.cfg", "res://addons/panku_console/plugin.cfg", "res://addons/proto_shape/plugin.cfg", "res://addons/questify/plugin.cfg", "res://addons/road-generator/plugin.cfg", "res://addons/rubonnek.inventory_manager/plugin.cfg", "res://addons/wfc/plugin.cfg")
 "res://addons/panku_console/plugin.cfg[input]ui_cancel"={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194305,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)

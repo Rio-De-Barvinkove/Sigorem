@@ -51,6 +51,7 @@ func _ready() -> void:
 
 	# Створити візуальні індикатори
 	_create_preview_meshes()
+	_update_preview_size()
 
 
 func _create_preview_meshes() -> void:
@@ -137,7 +138,7 @@ func _update_preview_size() -> void:
 		dig_preview.mesh = _create_wireframe_mesh(preview_size)
 		build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 	else:
-		# CREATIVE режим - один воксель для обох preview
+		# CREATIVE режим - завжди один воксель (1x1x1) для обох preview
 		build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 		dig_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 
@@ -152,10 +153,43 @@ func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
 	return (voxel_index + Vector3(0.5, 0.5, 0.5)) * scale
 
 
+func world_pos_to_voxel_center(world_pos: Vector3) -> Vector3:
+	## Перетворити світову позицію в центр найближчого вокселя
+	## 1. Знайти індекс вокселя: floor(world_pos / voxel_scale)
+	## 2. Перетворити індекс в центр вокселя
+	if not voxdot_controller:
+		return world_pos
+	var voxel_scale = voxdot_controller.voxel_scale
+	var voxel_index = (world_pos / voxel_scale).floor()
+	return voxel_index_to_world_center(voxel_index)
+
+
+func _snap_to_voxel_center(pos: Vector3, voxel_scale: float) -> Vector3:
+	## Допоміжна функція для ідеального вирівнювання по сітці вокселів
+	## Використовується для гарантованого позиціонування в центрі вокселя
+	## 1. Ділимо на масштаб, щоб отримати індекс (наприклад 1.55 -> 15.5)
+	var idx_x = floor(pos.x / voxel_scale)
+	var idx_y = floor(pos.y / voxel_scale)
+	var idx_z = floor(pos.z / voxel_scale)
+	
+	# 2. Повертаємо координати центру цього індексу
+	# Центр вокселя [15, 0, 0] це (15 * 0.1) + (0.1 / 2) = 1.55
+	var center_offset = voxel_scale * 0.5
+	
+	return Vector3(
+		idx_x * voxel_scale + center_offset,
+		idx_y * voxel_scale + center_offset,
+		idx_z * voxel_scale + center_offset
+	)
+
+
 func _voxel_raycast(max_distance: float = 100.0) -> Dictionary:
 	## Raycast у voxel grid або через фізичний raycast як fallback
-	## Повертає Dictionary з 'position' (voxel index) та 'normal' (для будівництва)
-	## КРИТИЧНО: hit.position - це voxel index, потрібно перетворити в world center через voxel_index_to_world_center()
+	## Повертає Dictionary з:
+	## - 'position' (voxel index або world_pos залежно від джерела)
+	## - 'world_pos' (world position для точного зсуву)
+	## - 'normal' (для будівництва)
+	## КРИТИЧНО: якщо 'position' це voxel_index, використовувати безпосередньо, інакше використовувати 'world_pos'
 	if not camera or not voxdot_controller:
 		return {}
 	
@@ -167,7 +201,17 @@ func _voxel_raycast(max_distance: float = 100.0) -> Dictionary:
 	if _voxel_tool != null and _voxel_tool.has_method("raycast"):
 		var hit = _voxel_tool.raycast(from, dir, max_distance)
 		if hit != null and typeof(hit) == TYPE_DICTIONARY and hit.has("position"):
-			return hit
+			# Перевіряємо наявність normal, якщо відсутня - переходимо до fallback
+			if not hit.has("normal") or hit.get("normal", Vector3.ZERO).length() < 0.001:
+				# Normal відсутня, переходимо до fallback
+				pass
+			else:
+				# VoxelTool повертає voxel_index, додаємо world_pos для зсуву
+				var voxel_index = hit.position
+				if typeof(voxel_index) == TYPE_VECTOR3:
+					var world_pos = voxel_index_to_world_center(voxel_index)
+					hit["world_pos"] = world_pos
+				return hit
 	
 	# Fallback: фізичний raycast через mesh (для сумісності)
 	var space_state = get_viewport().world_3d.direct_space_state
@@ -182,16 +226,23 @@ func _voxel_raycast(max_distance: float = 100.0) -> Dictionary:
 	var hit_normal: Vector3 = result.normal.normalized()
 	var voxel_scale = voxdot_controller.voxel_scale
 	
-	# Для копання: зсуваємо всередину вокселя на epsilon
-	# Для будівництва: потрібен сусідній воксель, але поки що повертаємо той самий
-	var epsilon = voxel_scale * 0.1
-	var target_pos = hit_pos - hit_normal * epsilon
+	# Якщо normal невалідна, обчислюємо fallback normal з напрямку камери
+	if hit_normal.length() < 0.001:
+		# Використовуємо напрямок від камери до точки попадання як fallback
+		var cam_to_hit = (hit_pos - from).normalized()
+		hit_normal = -cam_to_hit
 	
-	# Обчислюємо voxel index
-	var voxel_index = (target_pos / voxel_scale).floor()
+	# КРИТИЧНО: Зсуваємо всередину вокселя для правильного визначення індексу
+	# Використовуємо дуже малий offset (0.01) щоб гарантовано потрапити в правильний воксель
+	var offset_dist = voxel_scale * 0.01
+	var point_inside = hit_pos - (hit_normal * offset_dist)
+	
+	# Обчислюємо voxel index через floor
+	var voxel_index = (point_inside / voxel_scale).floor()
 	
 	return {
 		"position": voxel_index,
+		"world_pos": hit_pos,  # Зберігаємо world_pos для зсуву
 		"normal": hit_normal
 	}
 
@@ -210,35 +261,37 @@ func _update_preview_position() -> void:
 		build_preview.visible = false
 		return
 
-	# hit.position - це позиція в voxel space, але може бути float (наприклад 12.99998)
-	# КРИТИЧНО: потрібно floor() для отримання цілочисельного індексу
-	var voxel_index: Vector3 = hit.position.floor()
-	# Потрібно перетворити в центр вокселя в world space
-	var voxel_center := voxel_index_to_world_center(voxel_index)
+	# Отримуємо world_pos та normal для точного позиціонування
+	var hit_pos: Vector3
+	var hit_normal: Vector3
+	var voxel_scale = voxdot_controller.voxel_scale
+	
+	if hit.has("world_pos"):
+		hit_pos = hit.world_pos
+	else:
+		# Якщо world_pos відсутня, використовуємо voxel_index
+		var voxel_index: Vector3 = hit.position.floor()
+		hit_pos = voxel_index_to_world_center(voxel_index)
+	
+	if hit.has("normal") and hit.normal.length() > 0.001:
+		hit_normal = hit.normal.normalized()
+	else:
+		hit_normal = (camera.global_position - hit_pos).normalized()
 
-	# NORMAL режим - показувати preview тільки для руйнування (чорний outline)
+	# NORMAL режим - показувати preview для копання з правильним зсувом
 	if interaction_mode == InteractionMode.NORMAL:
-		dig_preview.global_position = voxel_center
+		# Зсуваємо всередину для точного копання
+		var dig_pos = hit_pos - hit_normal * (voxel_scale * 0.2)
+		var dig_voxel_center = world_pos_to_voxel_center(dig_pos)
+		dig_preview.global_position = dig_voxel_center
 		dig_preview.visible = true
 		build_preview.visible = false
-	# CREATIVE режим - показувати preview тільки для будівництва (білий outline)
+	# CREATIVE режим - показувати preview для будівництва з правильним зсувом
 	else:
-		# Для будівництва показуємо preview в сусідньому вокселі (якщо є нормаль)
-		var build_preview_pos = voxel_center
-		if hit.has("normal"):
-			var hit_normal = hit.normal.normalized()
-			# Квантуємо нормаль до найближчої осі (X, Y, або Z)
-			var abs_n = hit_normal.abs()
-			var qn: Vector3
-			if abs_n.x > abs_n.y and abs_n.x > abs_n.z:
-				qn = Vector3(sign(hit_normal.x), 0, 0)
-			elif abs_n.y > abs_n.z:
-				qn = Vector3(0, sign(hit_normal.y), 0)
-			else:
-				qn = Vector3(0, 0, sign(hit_normal.z))
-			var adjacent_index = voxel_index + qn
-			build_preview_pos = voxel_index_to_world_center(adjacent_index)
-		build_preview.global_position = build_preview_pos
+		# Зсуваємо назовні для будівництва
+		var build_pos = hit_pos + hit_normal * (voxel_scale * 1.1)
+		var build_voxel_center = world_pos_to_voxel_center(build_pos)
+		build_preview.global_position = build_voxel_center
 		build_preview.visible = true
 		dig_preview.visible = false
 
@@ -297,56 +350,104 @@ func handle_mouse_button(button: int) -> void:
 	# hit.position - це позиція в voxel space, але може бути float (наприклад 12.99998)
 	# КРИТИЧНО: потрібно floor() для отримання цілочисельного індексу
 	var voxel_index: Vector3 = hit.position.floor()
+	
 	# Потрібно перетворити в центр вокселя в world space
-	var voxel_center := voxel_index_to_world_center(voxel_index)
+	# voxel_index_to_world_center() вже дає правильний центр, подвійне snap не потрібно
+	var voxel_center = voxel_index_to_world_center(voxel_index)
 
 	match interaction_mode:
 		InteractionMode.NORMAL:
 			# NORMAL режим - тільки копання/руйнування (ЛКМ) з радіусом dig_radius
 			if button == MOUSE_BUTTON_LEFT:
-				_dig_area(voxel_index)
+				# Отримуємо world_pos для зсуву (якщо доступний)
+				var hit_pos: Vector3
+				var hit_normal: Vector3
+				if hit.has("world_pos"):
+					hit_pos = hit.world_pos
+				else:
+					# Якщо world_pos відсутня, використовуємо voxel_center як наближення
+					hit_pos = voxel_center
+				
+				if hit.has("normal") and hit.normal.length() > 0.001:
+					hit_normal = hit.normal.normalized()
+				else:
+					# Fallback normal
+					hit_normal = (camera.global_position - hit_pos).normalized()
+				
+				_dig_area(hit_pos, hit_normal)
 		
 		InteractionMode.CREATIVE:
 			# CREATIVE режим - руйнування/будівництва по одному вокселю
 			if button == MOUSE_BUTTON_LEFT:
 				# Руйнування одного вокселя (LMB в CREATIVE)
-				voxdot_controller.remove_voxel(voxel_center)
+				# КРИТИЧНО: зсуваємо всередину для точного копання
+				var hit_pos: Vector3
+				var hit_normal: Vector3
+				var voxel_scale = voxdot_controller.voxel_scale
+				
+				if hit.has("world_pos"):
+					hit_pos = hit.world_pos
+				else:
+					hit_pos = voxel_center
+				
+				if hit.has("normal") and hit.normal.length() > 0.001:
+					hit_normal = hit.normal.normalized()
+				else:
+					hit_normal = (camera.global_position - hit_pos).normalized()
+				
+				# Зсуваємо всередину для точного копання
+				var dig_pos = hit_pos - hit_normal * (voxel_scale * 0.2)
+				var dig_voxel_center = world_pos_to_voxel_center(dig_pos)
+				voxdot_controller.remove_voxel(dig_voxel_center)
+				
 			elif button == MOUSE_BUTTON_RIGHT:
 				# Будівництво одного вокселя (RMB в CREATIVE)
 				# КРИТИЧНО: для будівництва потрібен сусідній порожній воксель
-				# hit_normal вказує напрямок від знайденого вокселя до порожнього простору
-				var build_center: Vector3
-				if hit.has("normal"):
-					var hit_normal = hit.normal.normalized()
-					# Квантуємо нормаль до найближчої осі (X, Y, або Z)
-					var abs_n = hit_normal.abs()
-					var qn: Vector3
-					if abs_n.x > abs_n.y and abs_n.x > abs_n.z:
-						qn = Vector3(sign(hit_normal.x), 0, 0)
-					elif abs_n.y > abs_n.z:
-						qn = Vector3(0, sign(hit_normal.y), 0)
-					else:
-						qn = Vector3(0, 0, sign(hit_normal.z))
-					# Сусідній воксель в напрямку нормалі
-					var adjacent_index = voxel_index + qn
-					build_center = voxel_index_to_world_center(adjacent_index)
+				# Зсуваємо назовні для правильного будівництва
+				var hit_pos: Vector3
+				var hit_normal: Vector3
+				var voxel_scale = voxdot_controller.voxel_scale
+				
+				if hit.has("world_pos"):
+					hit_pos = hit.world_pos
 				else:
-					# Якщо нормаль недоступна, використовуємо той самий центр
-					build_center = voxel_center
-				voxdot_controller.place_voxel(build_center, 2)
+					hit_pos = voxel_center
+				
+				if hit.has("normal") and hit.normal.length() > 0.001:
+					hit_normal = hit.normal.normalized()
+				else:
+					hit_normal = (camera.global_position - hit_pos).normalized()
+				
+				# Зсуваємо назовні для будівництва
+				var build_pos = hit_pos + hit_normal * (voxel_scale * 1.1)
+				var build_voxel_center = world_pos_to_voxel_center(build_pos)
+				voxdot_controller.place_voxel(build_voxel_center, 2)
 
 
-func _dig_area(center_index: Vector3) -> void:
+func _dig_area(center_pos: Vector3, normal: Vector3) -> void:
 	## Копати область з радіусом dig_radius в NORMAL режимі
-	## Видаляє вокселі в сферичній області навколо center_index
-	var radius_voxels = int(ceil(dig_radius / voxdot_controller.voxel_scale))
+	## Видаляє вокселі в сферичній області навколо center_pos
+	## КРИТИЧНО: зсуваємо всередину для точного копання перед визначенням центру області
+	var voxel_scale = voxdot_controller.voxel_scale
 	
-	# Видаляємо вокселі в кубічній області (потім можна оптимізувати до сфери)
+	# Зсуваємо всередину для точного копання
+	var dig_pos = center_pos - normal * (voxel_scale * 0.2)
+	
+	# Визначаємо центр області копання
+	var center_voxel_center = world_pos_to_voxel_center(dig_pos)
+	var center_index = (dig_pos / voxel_scale).floor()
+	
+	# Радіус в вокселях
+	var radius_voxels = int(ceil(dig_radius / voxel_scale))
+	
+	# Видаляємо вокселі в сферичній області
 	for x in range(-radius_voxels, radius_voxels + 1):
 		for y in range(-radius_voxels, radius_voxels + 1):
 			for z in range(-radius_voxels, radius_voxels + 1):
 				var offset = Vector3(x, y, z)
-				var dist = offset.length() * voxdot_controller.voxel_scale
+				
+				# Перевірка відстані (сферична область)
+				var dist = offset.length() * voxel_scale
 				if dist <= dig_radius:
 					var target_index = center_index + offset
 					var target_center = voxel_index_to_world_center(target_index)
