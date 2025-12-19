@@ -40,6 +40,9 @@ var build_preview: MeshInstance3D
 
 # Використовуємо physics raycast для voxel targeting (Voxdot не має VoxelTool)
 
+# Для оптимізації та дебагу
+var _last_hit_info: Dictionary = {}
+
 
 func _ready() -> void:
 	# Отримати посилання на контролери з перевірками
@@ -60,23 +63,25 @@ func _ready() -> void:
 
 
 func _create_preview_meshes() -> void:
-	# Preview для копання (wireframe outline)
+	# Preview для копання (wireframe outline) - ЧЕРВОНИЙ
 	dig_preview = MeshInstance3D.new()
 	dig_preview.visible = false
 	var dig_material = StandardMaterial3D.new()
-	dig_material.albedo_color = Color.BLACK
+	dig_material.albedo_color = Color(1.0, 0.0, 0.0, 0.7)  # Червоний з прозорістю
+	dig_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	dig_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	dig_material.no_depth_test = true  # Outline має бути видимий поверх всього
+	dig_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	dig_preview.material_override = dig_material
 	add_child(dig_preview)
 
-	# Preview для будівництва (wireframe outline)
+	# Preview для будівництва (wireframe outline) - ЗЕЛЕНИЙ
 	build_preview = MeshInstance3D.new()
 	build_preview.visible = false
 	var build_material = StandardMaterial3D.new()
-	build_material.albedo_color = Color.WHITE
+	build_material.albedo_color = Color(0.0, 1.0, 0.0, 0.7)  # Зелений з прозорістю
+	build_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	build_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	build_material.no_depth_test = true
+	build_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	build_preview.material_override = build_material
 	add_child(build_preview)
 
@@ -159,6 +164,21 @@ func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
 	return (voxel_index + Vector3.ONE * 0.5) * scale
 
 
+func _quantize_normal(normal: Vector3) -> Vector3:
+	## Квантувати нормаль до найближчої осі (X, Y, або Z)
+	var abs_n = normal.abs()
+	var qn: Vector3
+
+	if abs_n.x > abs_n.y and abs_n.x > abs_n.z:
+		qn = Vector3(sign(normal.x), 0, 0)
+	elif abs_n.y > abs_n.z:
+		qn = Vector3(0, sign(normal.y), 0)
+	else:
+		qn = Vector3(0, 0, sign(normal.z))
+
+	return qn
+
+
 
 
 func _physics_raycast(max_distance: float = 100.0) -> Dictionary:
@@ -187,7 +207,7 @@ func _physics_raycast(max_distance: float = 100.0) -> Dictionary:
 
 
 func _voxel_raycast(max_distance: float = 100.0) -> Variant:
-	## Перетворює physics raycast в voxel targeting з surface offset
+	## Перетворює physics raycast в voxel targeting з РІЗНИМИ зсувами для копання/будівництва
 	var hit = _physics_raycast(max_distance)
 	if hit.is_empty():
 		return null
@@ -196,16 +216,22 @@ func _voxel_raycast(max_distance: float = 100.0) -> Variant:
 	var hit_normal: Vector3 = hit.normal.normalized()
 	var voxel_scale = voxdot_controller.voxel_scale
 
-	# Зсуваємо всередину вокселя вздовж нормалі (як в документації)
-	var surface_offset = voxel_scale * 0.1  # 0.1 * voxel_scale для гарантованого попадання всередину
-	var adjusted_pos = hit_pos - hit_normal * surface_offset
+	# КРИТИЧНО ВАЖЛИВО: РІЗНІ ЗСУВИ для копання та будівництва (згідно з аналізом API)
+	var dig_pos = hit_pos - hit_normal * (voxel_scale * 0.2)      # Копання: всередину
+	var build_pos = hit_pos + hit_normal * (voxel_scale * 1.1)    # Будівництво: назовні
 
-	var voxel_index = (adjusted_pos / voxel_scale).floor()
+	var dig_index = (dig_pos / voxel_scale).floor()
+	var build_index = (build_pos / voxel_scale).floor()
+
+	var quantized_normal = _quantize_normal(hit_normal)
 
 	return {
-		"position": voxel_index,  # Voxel index
-		"normal": hit_normal,     # Surface normal
-		"world_hit": hit_pos      # Оригінальна world позиція
+		"dig_position": dig_index,       # Для копання
+		"build_position": build_index,   # Для будівництва
+		"normal": hit_normal,            # Оригінальна нормаль
+		"quantized_normal": quantized_normal,  # Квантована нормаль
+		"world_hit": hit_pos,            # Оригінальна позиція удару
+		"raw_hit": hit                   # Сирий результат raycast
 	}
 
 
@@ -216,33 +242,34 @@ func _update_preview_position() -> void:
 	if not is_inside_tree():
 		return
 
-	# Raycast - отримуємо voxel index або null
+	# Raycast
 	var hit = _voxel_raycast()
-	if hit == null or not hit.has("position"):
+	if hit == null:
 		dig_preview.visible = false
 		build_preview.visible = false
 		return
 
-	var voxel_index = hit.position
+	# Оновлюємо останню інформацію про hit для оптимізації
+	_last_hit_info = hit
 
-	# Конвертуємо voxel index в world center
-	var center = voxel_index_to_world_center(voxel_index)
-	if center == voxel_index:
-		dig_preview.visible = false
-		build_preview.visible = false
-		return
-
-	# NORMAL режим - preview для копання
 	if interaction_mode == InteractionMode.NORMAL:
-		dig_preview.global_position = center
+		# NORMAL режим - показуємо preview для копання (червоний)
+		var dig_center = voxel_index_to_world_center(hit.dig_position)
+		dig_preview.global_position = dig_center
 		dig_preview.visible = true
 		build_preview.visible = false
 
-	# CREATIVE режим - preview для будівництва (той самий voxel, бо це preview)
-	else:
-		build_preview.global_position = center
+	else:  # CREATIVE режим
+		# CREATIVE режим - показуємо ОБИДВА preview
+		# Червоний - для копання (в поточному вокселі)
+		var dig_center = voxel_index_to_world_center(hit.dig_position)
+		dig_preview.global_position = dig_center
+		dig_preview.visible = true
+
+		# Зелений - для будівництва (в сусідньому вокселі)
+		var build_center = voxel_index_to_world_center(hit.build_position)
+		build_preview.global_position = build_center
 		build_preview.visible = true
-		dig_preview.visible = false
 
 
 func handle_input(event: InputEvent) -> void:
@@ -287,36 +314,35 @@ func handle_mouse_button(button: int) -> void:
 	if not is_inside_tree():
 		return
 
-	# Raycast - отримуємо voxel index або null
-	var hit = _voxel_raycast()
-	if hit == null or not hit.has("position"):
-		return
-
-	var voxel_index = hit.position
-
-	# Конвертуємо voxel index в world center
-	var center = voxel_index_to_world_center(voxel_index)
-	if center == voxel_index:
-		return
+	# Якщо немає збереженої інформації про hit, робимо новий raycast
+	if _last_hit_info.is_empty():
+		_last_hit_info = _voxel_raycast()
+		if _last_hit_info == null:
+			return
 
 	match interaction_mode:
 		InteractionMode.NORMAL:
-			# NORMAL режим - кубічне копання (ЛКМ) в області (2*dig_radius_voxels + 1)^3 вокселів
+			# NORMAL режим - кубічне копання (ЛКМ)
 			if button == MOUSE_BUTTON_LEFT:
-				_dig_area(voxel_index)
+				print("VoxelInteractionHandler: Копання області радіусом ", dig_radius_voxels)
+				_dig_area(_last_hit_info.dig_position)
 
 		InteractionMode.CREATIVE:
 			# CREATIVE режим - копання/будівництво по одному вокселю
 			if button == MOUSE_BUTTON_LEFT:
 				# Копання одного вокселя
-				voxdot_controller.remove_voxel(center)
+				var dig_center = voxel_index_to_world_center(_last_hit_info.dig_position)
+				print("VoxelInteractionHandler: Видалення вокселя в ", dig_center)
+				voxdot_controller.remove_voxel(dig_center)
 				# Обробити dirty chunks після видалення
 				if voxdot_controller.terrain and voxdot_controller.terrain.has_method("process_dirty_chunks"):
 					voxdot_controller.terrain.process_dirty_chunks(voxdot_controller.chunks_per_frame, true)
 
 			elif button == MOUSE_BUTTON_RIGHT:
 				# Будівництво одного вокселя
-				voxdot_controller.place_voxel(center, 2)
+				var build_center = voxel_index_to_world_center(_last_hit_info.build_position)
+				print("VoxelInteractionHandler: Будівництво вокселя в ", build_center)
+				voxdot_controller.place_voxel(build_center, 2)
 				# Обробити dirty chunks після додавання
 				if voxdot_controller.terrain and voxdot_controller.terrain.has_method("process_dirty_chunks"):
 					voxdot_controller.terrain.process_dirty_chunks(voxdot_controller.chunks_per_frame, true)
