@@ -130,26 +130,28 @@ func _create_wireframe_mesh(size: Vector3) -> ArrayMesh:
 
 func _update_preview_size() -> void:
 	var voxel_scale = voxdot_controller.voxel_scale if voxdot_controller else 0.1
-	# Розмір області 2x2x2 вокселів (відповідає remove_voxel/place_voxel)
-	var area_size = Vector3(voxel_scale * 2.0, voxel_scale * 2.0, voxel_scale * 2.0)
+	# Розмір одного вокселя (відповідає remove_voxel/place_voxel)
+	# remove_voxel/place_voxel використовують half_size = voxel_scale * 0.5
+	# тобто повний розмір = voxel_scale (один воксель)
+	var single_voxel_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
 
-	# Для руйнування (NORMAL режим) - область 2x2x2 вокселів
-	dig_preview.mesh = _create_wireframe_mesh(area_size)
+	# Для руйнування (NORMAL режим) - один воксель
+	dig_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 
-	# Для будівництва (CREATIVE режим) - область 2x2x2 вокселів
-	build_preview.mesh = _create_wireframe_mesh(area_size)
+	# Для будівництва (CREATIVE режим) - один воксель
+	build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 
 
 func _get_targeted_voxel_position(hit_pos: Vector3, hit_normal: Vector3, is_digging: bool) -> Vector3:
-	## Отримати точну позицію центру області 2x2x2 вокселів
+	## Отримати точну позицію центру одного вокселя
 	## КРИТИЧНО: Правильний порядок обчислень:
 	## 1. Знайти точку ВСЕРЕДИНІ потрібного вокселя (малий offset 0.01)
 	## 2. З цієї точки обчислити voxel_index через floor (КУТ вокселя)
-	## 3. І тільки тоді обчислити центр області 2x2x2
+	## 3. І тільки тоді обчислити центр одного вокселя
 	##
 	## Voxdot перевіряє КУТ вокселя для SDF, тому ми ТЕЖ маємо визначати воксель через кут
-	## Для області 2x2x2: half_size = voxel_scale, повний розмір = 2 * voxel_scale
-	## Центр області має бути на межі між вокселями: (voxel_index + 1.0) * voxel_scale
+	## Для одного вокселя: half_size = voxel_scale * 0.5, повний розмір = voxel_scale
+	## Центр вокселя: (voxel_index + 0.5) * voxel_scale
 	if not voxdot_controller:
 		return hit_pos
 	
@@ -174,11 +176,11 @@ func _get_targeted_voxel_position(hit_pos: Vector3, hit_normal: Vector3, is_digg
 		floori(p.z / voxel_scale)
 	)
 	
-	# КРОК 3: Обчислити центр області 2x2x2
-	# Для області 2x2x2: центр на межі між вокселями = (voxel_index + 1.0) * voxel_scale
-	var area_center = (Vector3(voxel_index.x, voxel_index.y, voxel_index.z) + Vector3(1.0, 1.0, 1.0)) * voxel_scale
+	# КРОК 3: Обчислити центр одного вокселя
+	# Для одного вокселя: центр = (voxel_index + 0.5) * voxel_scale
+	var voxel_center = (Vector3(voxel_index.x, voxel_index.y, voxel_index.z) + Vector3(0.5, 0.5, 0.5)) * voxel_scale
 	
-	return area_center
+	return voxel_center
 
 
 func _update_preview_position() -> void:
