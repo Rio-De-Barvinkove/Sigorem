@@ -145,7 +145,11 @@ func save_chunk_modifications(chunk_coords: Vector3) -> void:
 		return
 
 	var chunk_data = loaded_chunks[chunk_coords]
-	if chunk_data.modifications.is_empty() and not dirty_chunks.has(chunk_coords):
+	var has_modifications = not chunk_data.modifications.is_empty()
+	var has_operations = chunk_data.get("operations", []).size() > 0
+	var is_dirty = dirty_chunks.has(chunk_coords)
+	
+	if not has_modifications and not has_operations and not is_dirty:
 		return  # Нема чого зберігати
 	
 	_save_chunk_to_disk(chunk_data)
@@ -195,14 +199,20 @@ func chunk_has_modifications(chunk_coords: Vector3) -> bool:
 
 ## Вивантажити чанк із пам'яті (але зберегти на диск)
 func unload_chunk(chunk_coords: Vector3) -> void:
-	if loaded_chunks.has(chunk_coords):
-		var chunk_data = loaded_chunks[chunk_coords]
-		# Переконатися що модифікації збережені перед вивантаженням
-		var has_operations = chunk_data.get("operations", []).size() > 0
-		if not chunk_data.modifications.is_empty() or has_operations or dirty_chunks.has(chunk_coords):
-			_save_chunk_to_disk(chunk_data)
-		loaded_chunks.erase(chunk_coords)
-		dirty_chunks.erase(chunk_coords)  # Очистити dirty після збереження
+	if not loaded_chunks.has(chunk_coords):
+		return
+	
+	var chunk_data = loaded_chunks[chunk_coords]
+	# Переконатися що модифікації збережені перед вивантаженням
+	var has_modifications = not chunk_data.modifications.is_empty()
+	var has_operations = chunk_data.get("operations", []).size() > 0
+	var is_dirty = dirty_chunks.has(chunk_coords)
+	
+	if has_modifications or has_operations or is_dirty:
+		_save_chunk_to_disk(chunk_data)
+	
+	loaded_chunks.erase(chunk_coords)
+	dirty_chunks.erase(chunk_coords)  # Очистити dirty після збереження
 
 ## Застосувати модифікації до чанка після генерації
 func apply_modifications_to_chunk(terrain: VoxdotTerrain, chunk_coords: Vector3) -> void:

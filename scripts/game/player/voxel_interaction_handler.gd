@@ -130,53 +130,47 @@ func _create_wireframe_mesh(size: Vector3) -> ArrayMesh:
 
 func _update_preview_size() -> void:
 	var voxel_scale = voxdot_controller.voxel_scale if voxdot_controller else 0.1
-	var single_voxel_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
+	# Розмір області 2x2x2 вокселів (відповідає remove_voxel/place_voxel)
+	var area_size = Vector3(voxel_scale * 2.0, voxel_scale * 2.0, voxel_scale * 2.0)
 
-	# Для руйнування (NORMAL режим) - розмір залежить від інструменту
-	match current_tool:
-		ToolType.HANDS:
-			# Для рук - один воксель
-			dig_preview.mesh = _create_wireframe_mesh(single_voxel_size)
+	# Для руйнування (NORMAL режим) - область 2x2x2 вокселів
+	dig_preview.mesh = _create_wireframe_mesh(area_size)
 
-		ToolType.SHOVEL:
-			# Для лопати - плоска область
-			var size = Vector3(dig_radius * 2, voxel_scale * 0.5, dig_radius * 2)
-			dig_preview.mesh = _create_wireframe_mesh(size)
-
-		ToolType.PICKAXE:
-			# Для кирки - вертикальна область
-			var size = Vector3(voxel_scale * 0.8, dig_radius * 2, voxel_scale * 0.8)
-			dig_preview.mesh = _create_wireframe_mesh(size)
-
-	# Для будівництва (CREATIVE режим) - завжди один воксель
-	build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
+	# Для будівництва (CREATIVE режим) - область 2x2x2 вокселів
+	build_preview.mesh = _create_wireframe_mesh(area_size)
 
 
 func _get_targeted_voxel_position(hit_pos: Vector3, hit_normal: Vector3, is_digging: bool) -> Vector3:
-	## Отримати точну позицію вокселя на який наведено курсор
+	## Отримати точну позицію центру області 2x2x2 вокселів
 	## hit_pos - точка попадання raycast на поверхню mesh (на грані вокселя)
 	## hit_normal - нормаль поверхні (напрямок від вокселя назовні)
+	##
+	## Для області 2x2x2: half_size = voxel_scale, повний розмір = 2 * voxel_scale
+	## Центр області має бути вирівняний по сітці: на межі між вокселями
+	## Центр 2x2x2 області: (voxel_index + Vector3(1.0, 1.0, 1.0)) * voxel_scale
 	if not voxdot_controller:
 		return hit_pos
 	
 	var voxel_scale = voxdot_controller.voxel_scale
 	var normal = hit_normal.normalized()
 	
-	var target_pos: Vector3
+	# Обчислюємо offset залежно від напрямку
+	var offset: Vector3
 	if is_digging:
-		# Для руйнування - воксель всередині якого знаходиться hit_pos
-		# Зсуваємо трохи всередину (протилежно нормалі) щоб потрапити в правильний воксель
-		var inside_offset = normal * -voxel_scale * 0.01  # Дуже маленький offset всередину
-		target_pos = hit_pos + inside_offset
+		# Для копання: зсуваємо всередину на половину області
+		offset = -normal * voxel_scale
 	else:
-		# Для будування - сусідній воксель в напрямку нормалі
-		# Зсуваємо на повний воксель назовні
-		target_pos = hit_pos + normal * voxel_scale
+		# Для будівництва: зсуваємо назовні на половину області (1 воксель)
+		# щоб нижня грань області 2x2x2 була точно на поверхні
+		offset = normal * voxel_scale
 	
-	# Конвертуємо в індекси вокселів (floor для попадання в правильний воксель)
-	var voxel_indices = (target_pos / voxel_scale).floor()
-	# Повертаємо центр вокселя
-	return (voxel_indices + Vector3(0.5, 0.5, 0.5)) * voxel_scale
+	var adjusted = hit_pos + offset
+	# Отримуємо індекс вокселя (кут області 2x2x2)
+	var voxel_index = (adjusted / voxel_scale).floor()
+	
+	# Для області 2x2x2: центр = (voxel_index + 1.0) * voxel_scale (на межі між вокселями)
+	# Це забезпечує вирівнювання по сітці та правильне позиціонування
+	return (voxel_index + Vector3(1.0, 1.0, 1.0)) * voxel_scale
 
 
 func _update_preview_position() -> void:
@@ -201,13 +195,13 @@ func _update_preview_position() -> void:
 	var hit_pos: Vector3 = result.position
 	var hit_normal: Vector3 = result.normal
 
-	# NORMAL режим - показувати preview для руйнування (чорний outline)
+	# NORMAL режим - показувати preview тільки для руйнування (чорний outline)
 	if interaction_mode == InteractionMode.NORMAL:
 		var dig_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, true)
 		dig_preview.global_position = dig_voxel_pos
 		dig_preview.visible = true
 		build_preview.visible = false
-	# CREATIVE режим - показувати preview для будівництва (білий outline)
+	# CREATIVE режим - показувати preview тільки для будівництва (білий outline)
 	elif interaction_mode == InteractionMode.CREATIVE:
 		var build_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, false)
 		build_preview.global_position = build_voxel_pos
@@ -275,37 +269,28 @@ func handle_mouse_button(button: int) -> void:
 
 	match interaction_mode:
 		InteractionMode.NORMAL:
-			# NORMAL режим - тільки руйнування/копання (ЛКМ)
+			# NORMAL режим - тільки копання/руйнування (ЛКМ) - завжди один воксель
 			if button == MOUSE_BUTTON_LEFT:
 				var dig_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, true)
 				_dig_area(dig_voxel_pos, hit_normal)
 		
 		InteractionMode.CREATIVE:
-			# CREATIVE режим - тільки будівництво (ПКМ)
-			if button == MOUSE_BUTTON_RIGHT:
+			# CREATIVE режим - руйнування/будівництва по одному вокселю
+			if button == MOUSE_BUTTON_LEFT:
+				# Руйнування одного вокселя (LMB в CREATIVE)
+				var dig_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, true)
+				voxdot_controller.remove_voxel(dig_voxel_pos)
+			elif button == MOUSE_BUTTON_RIGHT:
+				# Будівництво одного вокселя (RMB в CREATIVE)
 				var build_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, false)
-				_build_area(build_voxel_pos, hit_normal)
+				voxdot_controller.place_voxel(build_voxel_pos, 2)
 
 
 func _dig_area(center_pos: Vector3, normal: Vector3) -> void:
-	## Копати область залежно від інструменту
-	var voxel_scale = voxdot_controller.voxel_scale if voxdot_controller else 0.1
-
-	match current_tool:
-		ToolType.HANDS:
-			# Руки - видалити точно один воксель
-			voxdot_controller.remove_voxel(center_pos, voxel_scale)
-
-		ToolType.SHOVEL:
-			# Лопата - плоска область паралельно поверхні
-			var area_size = Vector3(dig_radius * 2, voxel_scale * 0.5, dig_radius * 2)
-			voxdot_controller.place_cube(center_pos, area_size, 0)  # 0 = видалити
-
-		ToolType.PICKAXE:
-			# Кирка - вертикальна область
-			var depth = dig_radius * 2
-			var area_size = Vector3(voxel_scale * 0.8, depth, voxel_scale * 0.8)
-			voxdot_controller.place_cube(center_pos, area_size, 0)  # 0 = видалити
+	## Копати - завжди видалити точно один воксель (NORMAL режим)
+	## Усі інструменти (HANDS, SHOVEL, PICKAXE) видаляють один воксель
+	## Для великих областей використовується CREATIVE режим
+	voxdot_controller.remove_voxel(center_pos)
 
 
 func _build_area(center_pos: Vector3, normal: Vector3) -> void:

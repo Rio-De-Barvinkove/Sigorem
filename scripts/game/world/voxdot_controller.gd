@@ -84,7 +84,10 @@ func _initialize_managers() -> void:
 		push_error("VoxdotController: Failed to create ChunkSaveManager")
 		return
 	add_child(_chunk_save_manager)
-	_chunk_save_manager.initialize(randi(), "default_world", voxel_scale)
+	# Генерація унікальної назви світу на основі seed для нового світу без старих модифікацій
+	var world_seed = randi()
+	var world_name = "world_" + str(world_seed)
+	_chunk_save_manager.initialize(world_seed, world_name, voxel_scale)
 
 	# Автоматичне завантаження всіх збережених модифікацій після ініціалізації terrain
 	_load_all_modifications()
@@ -274,7 +277,8 @@ func _update_chunks_around_player() -> void:
 	for chunk_coords in chunks_to_unload:
 		# Зберегти модифікації перед вивантаженням
 		if _chunk_save_manager:
-			# Зберегти модифікації перед вивантаженням (unload_chunk вже викликає збереження)
+			# Зберегти модифікації перед вивантаженням
+			_chunk_save_manager.save_chunk_modifications(chunk_coords)
 			_chunk_save_manager.unload_chunk(chunk_coords)
 
 		if terrain.has_method("remove_chunk"):
@@ -292,14 +296,15 @@ func _update_chunks_around_player() -> void:
 			_depth_manager.check_chunk_seams(loaded_chunks)
 
 
-func place_voxel(world_pos: Vector3, material: int = 1) -> void:
-	## Поставити воксель (куб 1x1x1)
-	## place_edit очікує half_size як перший параметр
+func place_voxel(world_pos: Vector3, material: int = 2) -> void:
+	## Поставити область 2x2x2 вокселів
+	## place_edit очікує halfExtents як перший параметр для куба (shape=1)
+	## Для 2x2 вокселів: повний розмір = 2 * voxel_scale, halfExtents = voxel_scale
 	if not terrain or not terrain.has_method("place_edit"):
 		push_error("VoxdotController: terrain or place_edit method not available")
 		return
-	var half_size = voxel_scale * 0.5
-	terrain.place_edit(Vector3(half_size, half_size, half_size), world_pos, material, 1)
+	var half_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
+	terrain.place_edit(half_size, world_pos, material, 1)
 
 	# Зберегти модифікацію для персистентності
 	if _chunk_save_manager:
@@ -308,18 +313,16 @@ func place_voxel(world_pos: Vector3, material: int = 1) -> void:
 		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
 
 
-func remove_voxel(world_pos: Vector3, radius: float = 0.3) -> void:
-	## Видалити воксель (сфера або точний воксель)
-	## place_edit очікує half_size як перший параметр
-	# Якщо radius дорівнює voxel_scale, використовувати точне руйнування 1 вокселя (куб)
-	if abs(radius - voxel_scale) < 0.01:
-		# Точне руйнування одного вокселя - використовувати куб з половиною розміру вокселя
-		var half_size = voxel_scale * 0.5
-		terrain.place_edit(Vector3(half_size, half_size, half_size), world_pos, 0, 1)
-	else:
-		# Руйнування сферою (для інструментів з областями) - radius вже є радіусом сфери
-		terrain.place_edit(Vector3(radius, radius, radius), world_pos, 0, 0)
-
+func remove_voxel(world_pos: Vector3) -> void:
+	## Видалити область 2x2x2 вокселів
+	## place_edit очікує halfExtents як перший параметр для куба (shape=1)
+	## Для 2x2 вокселів: повний розмір = 2 * voxel_scale, halfExtents = voxel_scale
+	if not terrain or not terrain.has_method("place_edit"):
+		push_error("VoxdotController: terrain or place_edit method not available")
+		return
+	var half_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
+	terrain.place_edit(half_size, world_pos, 0, 1)  # shape=1 (cube), material=0 (повітря)
+	
 	# Зберегти модифікацію для персистентності (матеріал 0 = повітря)
 	if _chunk_save_manager:
 		_chunk_save_manager.add_voxel_modification(world_pos, 0)
