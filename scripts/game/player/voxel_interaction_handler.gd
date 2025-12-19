@@ -44,9 +44,6 @@ func _ready() -> void:
 			_voxel_tool = terrain.get_voxel_tool()
 			if _voxel_tool:
 				print("VoxelInteractionHandler: VoxelTool отримано! Клас: ", _voxel_tool.get_class())
-				# Налаштувати channel як в референсі
-				if _voxel_tool.has_method("set") and _voxel_tool.has("channel"):
-					_voxel_tool.set("channel", 0)  # VoxelBuffer.CHANNEL_TYPE = 0
 			else:
 				print("VoxelInteractionHandler: get_voxel_tool повернув null")
 		else:
@@ -142,10 +139,19 @@ func _update_preview_size() -> void:
 	build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 
 
+func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
+	## Перетворити voxel index (grid position) в центр вокселя в world space
+	## КРИТИЧНО: hit.position з VoxelTool.raycast() - це voxel index, не world center
+	if not voxdot_controller:
+		return voxel_index
+	var scale := voxdot_controller.voxel_scale
+	return (voxel_index + Vector3(0.5, 0.5, 0.5)) * scale
+
+
 func _voxel_raycast(max_distance: float = 100.0) -> Dictionary:
 	## Raycast у voxel grid, а не в mesh
-	## Повертає Dictionary з 'position' (voxel позиція) та 'normal' (якщо доступно)
-	## КРИТИЧНО: Це працює безпосередньо з voxel grid, тому позиція вже правильна
+	## Повертає Dictionary з 'position' (voxel index / grid position), НЕ world center
+	## КРИТИЧНО: hit.position - це voxel index, потрібно перетворити в world center через voxel_index_to_world_center()
 	if _voxel_tool == null:
 		return {}
 	
@@ -178,17 +184,19 @@ func _update_preview_position() -> void:
 		build_preview.visible = false
 		return
 
-	# hit.position вже є voxel позиція (в voxel grid), не потрібно жодних перетворень
-	var voxel_pos: Vector3 = hit.position
+	# hit.position - це voxel index (grid position), не world center
+	# Потрібно перетворити в центр вокселя в world space
+	var voxel_index: Vector3 = hit.position
+	var voxel_center := voxel_index_to_world_center(voxel_index)
 
 	# NORMAL режим - показувати preview тільки для руйнування (чорний outline)
 	if interaction_mode == InteractionMode.NORMAL:
-		dig_preview.global_position = voxel_pos
+		dig_preview.global_position = voxel_center
 		dig_preview.visible = true
 		build_preview.visible = false
 	# CREATIVE режим - показувати preview тільки для будівництва (білий outline)
 	elif interaction_mode == InteractionMode.CREATIVE:
-		build_preview.global_position = voxel_pos
+		build_preview.global_position = voxel_center
 		build_preview.visible = true
 		dig_preview.visible = false
 
@@ -244,23 +252,25 @@ func handle_mouse_button(button: int) -> void:
 	if hit.is_empty() or not hit.has("position"):
 		return
 
-	# hit.position вже є voxel позиція (в voxel grid), не потрібно жодних перетворень
-	var voxel_pos: Vector3 = hit.position
+	# hit.position - це voxel index (grid position), не world center
+	# Потрібно перетворити в центр вокселя в world space
+	var voxel_index: Vector3 = hit.position
+	var voxel_center := voxel_index_to_world_center(voxel_index)
 
 	match interaction_mode:
 		InteractionMode.NORMAL:
 			# NORMAL режим - тільки копання/руйнування (ЛКМ) - завжди один воксель
 			if button == MOUSE_BUTTON_LEFT:
-				voxdot_controller.remove_voxel(voxel_pos)
+				voxdot_controller.remove_voxel(voxel_center)
 		
 		InteractionMode.CREATIVE:
 			# CREATIVE режим - руйнування/будівництва по одному вокселю
 			if button == MOUSE_BUTTON_LEFT:
 				# Руйнування одного вокселя (LMB в CREATIVE)
-				voxdot_controller.remove_voxel(voxel_pos)
+				voxdot_controller.remove_voxel(voxel_center)
 			elif button == MOUSE_BUTTON_RIGHT:
 				# Будівництво одного вокселя (RMB в CREATIVE)
-				voxdot_controller.place_voxel(voxel_pos, 2)
+				voxdot_controller.place_voxel(voxel_center, 2)
 
 
 func _dig_area(center_pos: Vector3, normal: Vector3) -> void:
