@@ -133,7 +133,8 @@ func _update_preview_size() -> void:
 	var single_voxel_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
 
 	if interaction_mode == InteractionMode.NORMAL:
-		# NORMAL режим - preview показує voxel cube розміром (2*radius_voxels + 1)^3
+		# NORMAL режим - preview показує кубічну область копання розміром (2*radius_voxels + 1)^3
+		# Центр preview співпадає з центром центрального вокселя (center_index)
 		var preview_diameter = dig_radius_voxels * 2 + 1  # Наприклад: radius=2 -> 5x5x5
 		var preview_size = Vector3(preview_diameter, preview_diameter, preview_diameter) * voxel_scale
 		dig_preview.mesh = _create_wireframe_mesh(preview_size)
@@ -145,13 +146,13 @@ func _update_preview_size() -> void:
 
 
 func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
-	## Перетворити цілочисельний voxel index в центр вокселя в world space
-	## Формула: (voxel_index + 0.5) * voxel_scale
-	## КРИТИЧНО: voxel_index має бути цілочисельним (після floor())
+	## Перетворити voxel index в center вокселя в world space
+	## Формула: (index + 0.5) * scale дає центр вокселя з індексом index
+	## Наприклад: index (0,0,0) -> center (0.5*scale, 0.5*scale, 0.5*scale)
 	if not voxdot_controller:
 		return voxel_index
 	var scale := voxdot_controller.voxel_scale
-	return (voxel_index + Vector3(0.5, 0.5, 0.5)) * scale
+	return (voxel_index + Vector3.ONE * 0.5) * scale
 
 
 
@@ -262,7 +263,7 @@ func handle_mouse_button(button: int) -> void:
 
 	match interaction_mode:
 		InteractionMode.NORMAL:
-			# NORMAL режим - тільки копання (ЛКМ) з радіусом dig_radius_voxels
+			# NORMAL режим - кубічне копання (ЛКМ) в області (2*dig_radius_voxels + 1)^3 вокселів
 			if button == MOUSE_BUTTON_LEFT:
 				_dig_area(voxel_index)
 
@@ -283,26 +284,17 @@ func handle_mouse_button(button: int) -> void:
 					voxdot_controller.terrain.process_dirty_chunks(voxdot_controller.chunks_per_frame, true)
 
 func _dig_area(center_index: Vector3) -> void:
-	## Копати область з радіусом dig_radius_voxels в NORMAL режимі
-	## Видаляє вокселі в кубічній області навколо center_index
+	## Кубічне копання: видаляє вокселі в області (2*radius_voxels + 1)^3 навколо center_index
+	## Наприклад: radius_voxels=0 -> 1x1x1, radius_voxels=1 -> 3x3x3, radius_voxels=2 -> 5x5x5
 	var voxel_scale = voxdot_controller.voxel_scale
 
-	# Якщо радіус = 0, копати тільки один воксель
-	if dig_radius_voxels == 0:
-		var center = voxel_index_to_world_center(center_index)
-		voxdot_controller.remove_voxel(center)
-
-		# Обробити dirty chunks
-		if voxdot_controller.terrain and voxdot_controller.terrain.has_method("process_dirty_chunks"):
-			voxdot_controller.terrain.process_dirty_chunks(voxdot_controller.chunks_per_frame, true)
-		return
-
-	# Видаляємо вокселі в кубічній області (radius_voxels x radius_voxels x radius_voxels)
+	# Видаляємо вокселі в кубічній області навколо center_index
 	var removed_count = 0
 	for x in range(-dig_radius_voxels, dig_radius_voxels + 1):
 		for y in range(-dig_radius_voxels, dig_radius_voxels + 1):
 			for z in range(-dig_radius_voxels, dig_radius_voxels + 1):
 				var target_index = center_index + Vector3(x, y, z)
+				# Конвертуємо voxel index в world center для Voxdot API
 				var target_center = voxel_index_to_world_center(target_index)
 				voxdot_controller.remove_voxel(target_center)
 				removed_count += 1
