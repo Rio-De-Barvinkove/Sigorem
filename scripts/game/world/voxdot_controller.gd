@@ -13,6 +13,10 @@ class_name VoxdotController
 @export var terrain_amplitude: float = 18.0 ## Амплітуда шуму
 @export var terrain_frequency: float = 0.045 ## Частота шуму
 @export var material_ground: int = 2 ## Індекс матеріалу для грунту/трави
+
+# Спеціальний матеріал для "порожнечі" (видалених вокселів)
+# Material 0 ігнорується при мешинг в Voxdot, тому використовуємо 255
+const AIR_MATERIAL = 255
 @export_node_path("PerfLogger") var perf_logger_path: NodePath
 @export_node_path("PerformanceLogger") var performance_logger_path: NodePath
 
@@ -303,16 +307,19 @@ func place_voxel(world_pos: Vector3, material: int = 2) -> void:
 	## Поставити точно один воксель (куб 1x1x1)
 	## place_edit очікує halfExtents як перший параметр для куба (shape=1)
 	## Для одного вокселя: повний розмір = voxel_scale, halfExtents = voxel_scale * 0.5
+	##
+	## Примітка: Для видалення використовується AIR_MATERIAL (255), а не 0,
+	## бо Voxdot ігнорує матеріал 0 при мешинг
 	if not terrain or not terrain.has_method("place_edit"):
 		push_error("VoxdotController: terrain or place_edit method not available")
 		return
-	
+
 	# КРИТИЧНО: Оновити чанк перед edit'ом, щоб працювати з актуальною геометрією
 	# RayCast працює з mesh, але Voxdot працює з SDF, тому потрібна синхронізація
 	var chunk_coords = _world_to_chunk(world_pos)
 	if terrain.has_method("process_dirty_chunks"):
 		terrain.process_dirty_chunks(1, false)  # Обробити 1 чанк без форсування
-	
+
 	var half_size = Vector3(voxel_scale * 0.5, voxel_scale * 0.5, voxel_scale * 0.5)
 	terrain.place_edit(half_size, world_pos, material, 1)
 
@@ -328,12 +335,15 @@ func remove_voxel(world_pos: Vector3) -> void:
 	## Видалити точно один воксель (куб 1x1x1)
 	## place_edit очікує halfExtents як перший параметр для куба (shape=1)
 	## Для одного вокселя: повний розмір = voxel_scale, halfExtents = voxel_scale * 0.5
+	##
+	## КРИТИЧНО: Використовуємо AIR_MATERIAL (255) замість 0, бо Voxdot
+	## ігнорує матеріал 0 при мешинг і не створює візуальні "дірки"
 	if not terrain or not terrain.has_method("place_edit"):
 		push_error("VoxdotController: terrain or place_edit method not available")
 		return
 
 	# ДЕБАГ: Перевірка координат
-	print("DEBUG remove_voxel: world_pos=%s, half_size=%s, voxel_scale=%s" % [world_pos, voxel_scale * 0.5, voxel_scale])
+	print("DEBUG remove_voxel: world_pos=%s, material=%s, voxel_scale=%s" % [world_pos, AIR_MATERIAL, voxel_scale])
 
 	# КРИТИЧНО: Оновити чанк перед edit'ом, щоб працювати з актуальною геометрією
 	# RayCast працює з mesh, але Voxdot працює з SDF, тому потрібна синхронізація
@@ -342,7 +352,7 @@ func remove_voxel(world_pos: Vector3) -> void:
 		terrain.process_dirty_chunks(1, false)  # Обробити 1 чанк без форсування
 
 	var half_size = Vector3(voxel_scale * 0.5, voxel_scale * 0.5, voxel_scale * 0.5)
-	terrain.place_edit(half_size, world_pos, 0, 1)  # shape=1 (cube), material=0 (повітря)
+	terrain.place_edit(half_size, world_pos, AIR_MATERIAL, 1)  # shape=1 (cube), спеціальний матеріал для порожнечі
 	
 	# Зберегти SDF-операцію (cube) для персистентності (матеріал 0 = повітря)
 	# КРИТИЧНО: зберігаємо операцію (cube з size), а не точку

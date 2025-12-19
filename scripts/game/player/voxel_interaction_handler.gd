@@ -348,7 +348,7 @@ func handle_mouse_button(button: int) -> void:
 				var dig_center = voxel_index_to_world_center(_last_hit_info.dig_position)
 				print("VoxelInteractionHandler: Видалення вокселя в ", dig_center)
 				if _debug_mode:
-					print("VoxelInteractionHandler: Відправлено команду для вокселя: позиція=", dig_center, " матеріал=0 (повітря)")
+					print("VoxelInteractionHandler: Відправлено команду для вокселя: позиція=", dig_center, " матеріал=AIR_MATERIAL (255)")
 				voxdot_controller.remove_voxel(dig_center)
 
 			elif button == MOUSE_BUTTON_RIGHT:
@@ -391,6 +391,8 @@ func _dig_area(center_index: Vector3) -> void:
 				var target_center = voxel_index_to_world_center(target_index)
 
 				voxdot_controller.remove_voxel(target_center)  # ПЕРЕДАЄМО WORLD CENTER!
+				if _debug_mode:
+					print("VoxelInteractionHandler: Відправлено команду для вокселя: позиція=", target_center, " матеріал=AIR_MATERIAL (255)")
 				removed_count += 1
 
 	# Обробити dirty chunks після всіх видалень
