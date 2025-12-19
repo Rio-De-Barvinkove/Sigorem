@@ -142,35 +142,43 @@ func _update_preview_size() -> void:
 
 func _get_targeted_voxel_position(hit_pos: Vector3, hit_normal: Vector3, is_digging: bool) -> Vector3:
 	## Отримати точну позицію центру області 2x2x2 вокселів
-	## hit_pos - точка попадання raycast на поверхню mesh (на грані вокселя)
-	## hit_normal - нормаль поверхні (напрямок від вокселя назовні)
+	## КРИТИЧНО: Правильний порядок обчислень:
+	## 1. Знайти точку ВСЕРЕДИНІ потрібного вокселя (малий offset 0.01)
+	## 2. З цієї точки обчислити voxel_index через floor (КУТ вокселя)
+	## 3. І тільки тоді обчислити центр області 2x2x2
 	##
+	## Voxdot перевіряє КУТ вокселя для SDF, тому ми ТЕЖ маємо визначати воксель через кут
 	## Для області 2x2x2: half_size = voxel_scale, повний розмір = 2 * voxel_scale
-	## Центр області має бути вирівняний по сітці: на межі між вокселями
-	## Центр 2x2x2 області: (voxel_index + Vector3(1.0, 1.0, 1.0)) * voxel_scale
+	## Центр області має бути на межі між вокселями: (voxel_index + 1.0) * voxel_scale
 	if not voxdot_controller:
 		return hit_pos
 	
 	var voxel_scale = voxdot_controller.voxel_scale
 	var normal = hit_normal.normalized()
 	
-	# Обчислюємо offset залежно від напрямку
-	var offset: Vector3
+	# КРОК 1: Знайти точку ВСЕРЕДИНІ потрібного вокселя
+	# Використовуємо малий offset (0.01), щоб гарантовано потрапити в правильний воксель
+	var p: Vector3
 	if is_digging:
-		# Для копання: зсуваємо всередину на половину області
-		offset = -normal * voxel_scale
+		# Для ламання: зсуваємо всередину на 0.01 * voxel_scale
+		p = hit_pos - normal * (voxel_scale * 0.01)
 	else:
-		# Для будівництва: зсуваємо назовні на половину області (1 воксель)
-		# щоб нижня грань області 2x2x2 була точно на поверхні
-		offset = normal * voxel_scale
+		# Для будівництва: зсуваємо назовні на 0.01 * voxel_scale
+		p = hit_pos + normal * (voxel_scale * 0.01)
 	
-	var adjusted = hit_pos + offset
-	# Отримуємо індекс вокселя (кут області 2x2x2)
-	var voxel_index = (adjusted / voxel_scale).floor()
+	# КРОК 2: Обчислити ІНДЕКС вокселя (КУТ) з цієї точки
+	# floor() дає той самий voxel_index, який Voxdot використовує при SDF-перевірці
+	var voxel_index = Vector3i(
+		floori(p.x / voxel_scale),
+		floori(p.y / voxel_scale),
+		floori(p.z / voxel_scale)
+	)
 	
-	# Для області 2x2x2: центр = (voxel_index + 1.0) * voxel_scale (на межі між вокселями)
-	# Це забезпечує вирівнювання по сітці та правильне позиціонування
-	return (voxel_index + Vector3(1.0, 1.0, 1.0)) * voxel_scale
+	# КРОК 3: Обчислити центр області 2x2x2
+	# Для області 2x2x2: центр на межі між вокселями = (voxel_index + 1.0) * voxel_scale
+	var area_center = (Vector3(voxel_index.x, voxel_index.y, voxel_index.z) + Vector3(1.0, 1.0, 1.0)) * voxel_scale
+	
+	return area_center
 
 
 func _update_preview_position() -> void:
