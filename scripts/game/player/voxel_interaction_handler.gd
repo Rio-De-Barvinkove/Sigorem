@@ -142,61 +142,26 @@ func _update_preview_size() -> void:
 	build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 
 
-func quantize_normal(n: Vector3) -> Vector3:
-	## Привести нормаль до найближчої осі вокселя
-	## КРИТИЧНО: hit_normal з mesh може бути під кутом, але нам потрібна осьова нормаль
-	var abs_n = n.abs()
-	if abs_n.x > abs_n.y and abs_n.x > abs_n.z:
-		return Vector3(sign(n.x), 0, 0)
-	elif abs_n.y > abs_n.z:
-		return Vector3(0, sign(n.y), 0)
-	else:
-		return Vector3(0, 0, sign(n.z))
-
-
-func _get_targeted_voxel_position(hit_pos: Vector3, hit_normal: Vector3, is_digging: bool) -> Vector3:
-	## Отримати точну позицію центру одного вокселя
-	## КРИТИЧНО: Правильний порядок обчислень:
-	## 1. Квантувати нормаль до осі (hit_normal з mesh не осьова!)
-	## 2. Знайти точку ВСЕРЕДИНІ потрібного вокселя (малий offset 0.01 по осі)
-	## 3. З цієї точки обчислити voxel_index через floor (КУТ вокселя)
-	## 4. І тільки тоді обчислити центр одного вокселя
-	##
-	## Voxdot перевіряє КУТ вокселя для SDF, тому ми ТЕЖ маємо визначати воксель через кут
-	## Для одного вокселя: half_size = voxel_scale * 0.5, повний розмір = voxel_scale
-	## Центр вокселя: (voxel_index + 0.5) * voxel_scale
-	if not voxdot_controller:
-		return hit_pos
+func _voxel_raycast(max_distance: float = 100.0) -> Dictionary:
+	## Raycast у voxel grid, а не в mesh
+	## Повертає Dictionary з 'position' (voxel позиція) та 'normal' (якщо доступно)
+	## КРИТИЧНО: Це працює безпосередньо з voxel grid, тому позиція вже правильна
+	if _voxel_tool == null:
+		return {}
 	
-	var voxel_scale = voxdot_controller.voxel_scale
+	if not camera:
+		return {}
 	
-	# КРОК 1: КВАНТУВАТИ нормаль до осі вокселя
-	# hit_normal з mesh може бути під кутом, але нам потрібна осьова нормаль
-	var qn = quantize_normal(hit_normal.normalized())
+	var from = camera.global_position
+	var dir = -camera.global_basis.z.normalized()
 	
-	# КРОК 2: Знайти точку ВСЕРЕДИНІ потрібного вокселя
-	# Використовуємо малий offset (0.01) по КВАНТОВАНІЙ осі, щоб гарантовано потрапити в правильний воксель
-	var p: Vector3
-	if is_digging:
-		# Для ламання: зсуваємо всередину на 0.01 * voxel_scale по осі
-		p = hit_pos - qn * (voxel_scale * 0.01)
-	else:
-		# Для будівництва: зсуваємо назовні на 0.01 * voxel_scale по осі
-		p = hit_pos + qn * (voxel_scale * 0.01)
+	# Викликаємо raycast через voxel_tool (працює безпосередньо з voxel grid)
+	if _voxel_tool.has_method("raycast"):
+		var hit = _voxel_tool.raycast(from, dir, max_distance)
+		if hit != null and typeof(hit) == TYPE_DICTIONARY:
+			return hit
 	
-	# КРОК 3: Обчислити ІНДЕКС вокселя (КУТ) з цієї точки
-	# floor() дає той самий voxel_index, який Voxdot використовує при SDF-перевірці
-	var voxel_index = Vector3i(
-		floori(p.x / voxel_scale),
-		floori(p.y / voxel_scale),
-		floori(p.z / voxel_scale)
-	)
-	
-	# КРОК 4: Обчислити центр одного вокселя
-	# ЖОРСТКО повертаємося в центр цього вокселя, НЕ використовуємо hit_pos далі
-	var voxel_center = (Vector3(voxel_index.x, voxel_index.y, voxel_index.z) + Vector3(0.5, 0.5, 0.5)) * voxel_scale
-	
-	return voxel_center
+	return {}
 
 
 func _update_preview_position() -> void:
@@ -206,31 +171,24 @@ func _update_preview_position() -> void:
 	if not is_inside_tree():
 		return
 
-	var from = camera.global_position
-	var to = from - camera.global_basis.z * 100.0
-
-	var space_state = get_viewport().world_3d.direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(from, to)
-	var result = space_state.intersect_ray(query)
-
-	if result.is_empty():
+	# Raycast у voxel grid замість mesh
+	var hit = _voxel_raycast()
+	if hit.is_empty() or not hit.has("position"):
 		dig_preview.visible = false
 		build_preview.visible = false
 		return
 
-	var hit_pos: Vector3 = result.position
-	var hit_normal: Vector3 = result.normal
+	# hit.position вже є voxel позиція (в voxel grid), не потрібно жодних перетворень
+	var voxel_pos: Vector3 = hit.position
 
 	# NORMAL режим - показувати preview тільки для руйнування (чорний outline)
 	if interaction_mode == InteractionMode.NORMAL:
-		var dig_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, true)
-		dig_preview.global_position = dig_voxel_pos
+		dig_preview.global_position = voxel_pos
 		dig_preview.visible = true
 		build_preview.visible = false
 	# CREATIVE режим - показувати preview тільки для будівництва (білий outline)
 	elif interaction_mode == InteractionMode.CREATIVE:
-		var build_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, false)
-		build_preview.global_position = build_voxel_pos
+		build_preview.global_position = voxel_pos
 		build_preview.visible = true
 		dig_preview.visible = false
 
@@ -281,35 +239,28 @@ func handle_mouse_button(button: int) -> void:
 	if not is_inside_tree():
 		return
 
-	var from = camera.global_position
-	var to = from - camera.global_basis.z * 100.0
-
-	var space_state = get_viewport().world_3d.direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(from, to)
-	var result = space_state.intersect_ray(query)
-	if result.is_empty():
+	# Raycast у voxel grid замість mesh
+	var hit = _voxel_raycast()
+	if hit.is_empty() or not hit.has("position"):
 		return
 
-	var hit_pos: Vector3 = result.position
-	var hit_normal: Vector3 = result.normal
+	# hit.position вже є voxel позиція (в voxel grid), не потрібно жодних перетворень
+	var voxel_pos: Vector3 = hit.position
 
 	match interaction_mode:
 		InteractionMode.NORMAL:
 			# NORMAL режим - тільки копання/руйнування (ЛКМ) - завжди один воксель
 			if button == MOUSE_BUTTON_LEFT:
-				var dig_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, true)
-				_dig_area(dig_voxel_pos, hit_normal)
+				voxdot_controller.remove_voxel(voxel_pos)
 		
 		InteractionMode.CREATIVE:
 			# CREATIVE режим - руйнування/будівництва по одному вокселю
 			if button == MOUSE_BUTTON_LEFT:
 				# Руйнування одного вокселя (LMB в CREATIVE)
-				var dig_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, true)
-				voxdot_controller.remove_voxel(dig_voxel_pos)
+				voxdot_controller.remove_voxel(voxel_pos)
 			elif button == MOUSE_BUTTON_RIGHT:
 				# Будівництво одного вокселя (RMB в CREATIVE)
-				var build_voxel_pos = _get_targeted_voxel_position(hit_pos, hit_normal, false)
-				voxdot_controller.place_voxel(build_voxel_pos, 2)
+				voxdot_controller.place_voxel(voxel_pos, 2)
 
 
 func _dig_area(center_pos: Vector3, normal: Vector3) -> void:
