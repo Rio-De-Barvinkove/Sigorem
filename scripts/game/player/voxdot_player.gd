@@ -57,14 +57,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			fly_mode = not fly_mode
 			pass  # Fly mode toggle
 
-			# Не обробляти 8/9 - це для VoxdotController
+		# Не обробляти 8/9 - це для VoxdotController
 		elif event.keycode in [KEY_8, KEY_9]:  # 8, 9
 			return  # Пропустити, нехай VoxdotController обробить
 	
 	# Передати подію в interaction handler для обробки клавіш (B, 1-3, scroll)
 	if interaction_handler:
 		interaction_handler.handle_input(event)
-	
+
 	# Клік миші - редагування вокселів
 	if event is InputEventMouseButton and event.pressed:
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
