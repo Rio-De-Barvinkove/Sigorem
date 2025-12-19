@@ -159,18 +159,21 @@ func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
 func _voxel_raycast(max_distance: float = 100.0) -> Variant:
 	## Raycast у voxel grid через VoxelTool
 	## Повертає voxel index (Vector3) або null якщо немає попадання
-	## VoxelTool.raycast повертає hit.position вже у voxel space (не world space)
 	if not _voxel_tool or not camera or not voxdot_controller:
 		return null
 
-	var from = camera.global_position
-	var dir = -camera.global_basis.z.normalized()
+	var voxel_scale = voxdot_controller.voxel_scale
 
-	var hit = _voxel_tool.raycast(from, dir, max_distance)
+	# КРИТИЧНО: VoxelTool.raycast() працює у voxel space, не world space
+	# Конвертуємо world координати у voxel space перед raycast
+	var from_voxel = camera.global_position / voxel_scale
+	var dir_voxel = (-camera.global_basis.z).normalized()
+
+	var hit = _voxel_tool.raycast(from_voxel, dir_voxel, max_distance / voxel_scale)
 	if hit == null or not hit.has("position"):
 		return null
 
-	return hit.position.floor()  # Гарантуємо цілочисельний voxel index
+	return hit.position.floor()  # Voxel index вже у voxel space
 
 
 func _update_preview_position() -> void:
