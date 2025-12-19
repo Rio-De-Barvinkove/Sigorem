@@ -42,6 +42,7 @@ var build_preview: MeshInstance3D
 
 # Для оптимізації та дебагу
 var _last_hit_info: Dictionary = {}
+var _debug_mode: bool = false  # Ввімкнути DEBUG спам клавішею F12
 
 
 func _ready() -> void:
@@ -161,12 +162,7 @@ func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
 		push_error("VoxelInteractionHandler: invalid voxel_scale: " + str(scale))
 		return voxel_index
 
-	var center = (voxel_index + Vector3.ONE * 0.5) * scale
-
-	# ДЕБАГ: Додамо перевірку
-	print("DEBUG voxel_index_to_world_center: index=%s, scale=%s, result=%s" % [voxel_index, scale, center])
-
-	return center
+	return (voxel_index + Vector3.ONE * 0.5) * scale
 
 
 func _quantize_normal(normal: Vector3) -> Vector3:
@@ -280,8 +276,13 @@ func _update_preview_position() -> void:
 func handle_input(event: InputEvent) -> void:
 	# Обробка клавіш
 	if event is InputEventKey and event.pressed:
+		# F12 - перемикання дебаг режиму
+		if event.keycode == KEY_F12:
+			_debug_mode = not _debug_mode
+			print("VoxelInteractionHandler: DEBUG режим", "ВВІМКНЕНО" if _debug_mode else "ВИМКНЕНО")
+
 		# B - перемикання Build mode (CREATIVE режим для будівництва)
-		if event.keycode == KEY_B:
+		elif event.keycode == KEY_B:
 			interaction_mode = InteractionMode.CREATIVE if interaction_mode == InteractionMode.NORMAL else InteractionMode.NORMAL
 			var mode_name = "BUILD MODE (ON) - будівництво" if interaction_mode == InteractionMode.CREATIVE else "NORMAL MODE - руйнування/копання"
 			print("VoxelInteractionHandler: ", mode_name)
@@ -333,13 +334,12 @@ func handle_mouse_button(button: int) -> void:
 				_dig_area(_last_hit_info.dig_position)
 
 				# ДЕБАГ ІНФО для NORMAL режиму
-				print("=== ДЕБАГ ІНФО NORMAL ===")
-				print("Радіус копання:", dig_radius_voxels)
-				print("Центр копання (voxel index):", _last_hit_info.dig_position if _last_hit_info.has("dig_position") else "N/A")
-				print("Центр копання (world center):", voxel_index_to_world_center(_last_hit_info.dig_position) if _last_hit_info.has("dig_position") else "N/A")
-				print("Voxel scale:", voxdot_controller.voxel_scale if voxdot_controller else "N/A")
-				print("VoxdotController:", "OK" if voxdot_controller else "NULL")
-				print("Terrain:", "OK" if voxdot_controller and voxdot_controller.terrain else "NULL")
+				if _debug_mode:
+					print("=== ДЕБАГ ІНФО NORMAL ===")
+					print("Радіус копання:", dig_radius_voxels)
+					print("Центр копання (voxel index):", _last_hit_info.dig_position if _last_hit_info.has("dig_position") else "N/A")
+					print("Центр копання (world center):", voxel_index_to_world_center(_last_hit_info.dig_position) if _last_hit_info.has("dig_position") else "N/A")
+					print("Voxel scale:", voxdot_controller.voxel_scale if voxdot_controller else "N/A")
 
 		InteractionMode.CREATIVE:
 			# CREATIVE режим - копання/будівництво по одному вокселю
@@ -347,28 +347,31 @@ func handle_mouse_button(button: int) -> void:
 				# Копання одного вокселя
 				var dig_center = voxel_index_to_world_center(_last_hit_info.dig_position)
 				print("VoxelInteractionHandler: Видалення вокселя в ", dig_center)
+				if _debug_mode:
+					print("VoxelInteractionHandler: Відправлено команду для вокселя: позиція=", dig_center, " матеріал=0 (повітря)")
 				voxdot_controller.remove_voxel(dig_center)
-				print("VoxelInteractionHandler: Відправлено команду для вокселя: позиція=", dig_center, " матеріал=0 (повітря)")
 
 			elif button == MOUSE_BUTTON_RIGHT:
 				# Будівництво одного вокселя
 				var build_center = voxel_index_to_world_center(_last_hit_info.build_position)
 				print("VoxelInteractionHandler: Будівництво вокселя в ", build_center)
+				if _debug_mode:
+					print("VoxelInteractionHandler: Відправлено команду для вокселя: позиція=", build_center, " матеріал=", 2)
 				voxdot_controller.place_voxel(build_center, 2)
-				print("VoxelInteractionHandler: Відправлено команду для вокселя: позиція=", build_center, " матеріал=", 2)
 
 	# Обробити dirty chunks один раз після всієї операції
 	if voxdot_controller.terrain and voxdot_controller.terrain.has_method("process_dirty_chunks"):
 		voxdot_controller.terrain.process_dirty_chunks(voxdot_controller.chunks_per_frame, true)
 
 	# ДЕБАГ ІНФО
-	print("=== ДЕБАГ ІНФО ===")
-	print("Режим:", "CREATIVE" if interaction_mode == InteractionMode.CREATIVE else "NORMAL")
-	print("Кнопка:", "ЛКМ" if button == MOUSE_BUTTON_LEFT else "ПКМ")
-	print("Позиція копання:", _last_hit_info.dig_position if _last_hit_info.has("dig_position") else "N/A")
-	print("Позиція будівництва:", _last_hit_info.build_position if _last_hit_info.has("build_position") else "N/A")
-	print("VoxdotController:", "OK" if voxdot_controller else "NULL")
-	print("Terrain:", "OK" if voxdot_controller and voxdot_controller.terrain else "NULL")
+	if _debug_mode:
+		print("=== ДЕБАГ ІНФО ===")
+		print("Режим:", "CREATIVE" if interaction_mode == InteractionMode.CREATIVE else "NORMAL")
+		print("Кнопка:", "ЛКМ" if button == MOUSE_BUTTON_LEFT else "ПКМ")
+		print("Позиція копання:", _last_hit_info.dig_position if _last_hit_info.has("dig_position") else "N/A")
+		print("Позиція будівництва:", _last_hit_info.build_position if _last_hit_info.has("build_position") else "N/A")
+		print("VoxdotController:", "OK" if voxdot_controller else "NULL")
+		print("Terrain:", "OK" if voxdot_controller and voxdot_controller.terrain else "NULL")
 
 func _dig_area(center_index: Vector3) -> void:
 	## Кубічне копання: видаляє вокселі в області (2*radius_voxels + 1)^3 навколо center_index
@@ -387,11 +390,7 @@ func _dig_area(center_index: Vector3) -> void:
 				# Конвертуємо voxel index в world center для Voxdot API
 				var target_center = voxel_index_to_world_center(target_index)
 
-				# ДЕБАГ: Додамо лог для перевірки
-				print("DEBUG: voxel_index=%s -> world_center=%s" % [target_index, target_center])
-
 				voxdot_controller.remove_voxel(target_center)  # ПЕРЕДАЄМО WORLD CENTER!
-				print("VoxelInteractionHandler: Відправлено команду для вокселя: позиція=", target_center, " матеріал=0 (повітря)")
 				removed_count += 1
 
 	# Обробити dirty chunks після всіх видалень
