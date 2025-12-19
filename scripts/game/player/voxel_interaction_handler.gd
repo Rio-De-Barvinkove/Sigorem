@@ -126,17 +126,20 @@ func _create_wireframe_mesh(size: Vector3) -> ArrayMesh:
 
 
 func _update_preview_size() -> void:
-	var voxel_scale = voxdot_controller.voxel_scale if voxdot_controller else 0.1
-	# Розмір одного вокселя (відповідає remove_voxel/place_voxel)
-	# remove_voxel/place_voxel використовують half_size = voxel_scale * 0.5
-	# тобто повний розмір = voxel_scale (один воксель)
+	if not voxdot_controller:
+		return
+	var voxel_scale = voxdot_controller.voxel_scale
 	var single_voxel_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
 
-	# Для руйнування (NORMAL режим) - один воксель
-	dig_preview.mesh = _create_wireframe_mesh(single_voxel_size)
-
-	# Для будівництва (CREATIVE режим) - один воксель
-	build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
+	if interaction_mode == InteractionMode.NORMAL:
+		# NORMAL режим - preview розмір залежить від dig_radius
+		var preview_size = Vector3(dig_radius * 2.0, dig_radius * 2.0, dig_radius * 2.0)
+		dig_preview.mesh = _create_wireframe_mesh(preview_size)
+		build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
+	else:
+		# CREATIVE режим - один воксель для обох preview
+		build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
+		dig_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 
 
 func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
@@ -211,7 +214,7 @@ func handle_input(event: InputEvent) -> void:
 			interaction_mode = InteractionMode.CREATIVE if interaction_mode == InteractionMode.NORMAL else InteractionMode.NORMAL
 			var mode_name = "BUILD MODE (ON) - будівництво" if interaction_mode == InteractionMode.CREATIVE else "NORMAL MODE - руйнування/копання"
 			print("VoxelInteractionHandler: ", mode_name)
-			_update_preview_visibility()
+			_update_preview_size()
 
 		# 1-3 - перемикання інструментів для руйнування (тільки в NORMAL режимі)
 		elif event.keycode == KEY_1 and interaction_mode == InteractionMode.NORMAL:
@@ -262,9 +265,9 @@ func handle_mouse_button(button: int) -> void:
 
 	match interaction_mode:
 		InteractionMode.NORMAL:
-			# NORMAL режим - тільки копання/руйнування (ЛКМ) - завжди один воксель
+			# NORMAL режим - тільки копання/руйнування (ЛКМ) з радіусом dig_radius
 			if button == MOUSE_BUTTON_LEFT:
-				voxdot_controller.remove_voxel(voxel_center)
+				_dig_area(voxel_index)
 		
 		InteractionMode.CREATIVE:
 			# CREATIVE режим - руйнування/будівництва по одному вокселю
@@ -276,11 +279,21 @@ func handle_mouse_button(button: int) -> void:
 				voxdot_controller.place_voxel(voxel_center, 2)
 
 
-func _dig_area(center_pos: Vector3, normal: Vector3) -> void:
-	## Копати - завжди видалити точно один воксель (NORMAL режим)
-	## Усі інструменти (HANDS, SHOVEL, PICKAXE) видаляють один воксель
-	## Для великих областей використовується CREATIVE режим
-	voxdot_controller.remove_voxel(center_pos)
+func _dig_area(center_index: Vector3) -> void:
+	## Копати область з радіусом dig_radius в NORMAL режимі
+	## Видаляє вокселі в сферичній області навколо center_index
+	var radius_voxels = int(ceil(dig_radius / voxdot_controller.voxel_scale))
+	
+	# Видаляємо вокселі в кубічній області (потім можна оптимізувати до сфери)
+	for x in range(-radius_voxels, radius_voxels + 1):
+		for y in range(-radius_voxels, radius_voxels + 1):
+			for z in range(-radius_voxels, radius_voxels + 1):
+				var offset = Vector3(x, y, z)
+				var dist = offset.length() * voxdot_controller.voxel_scale
+				if dist <= dig_radius:
+					var target_index = center_index + offset
+					var target_center = voxel_index_to_world_center(target_index)
+					voxdot_controller.remove_voxel(target_center)
 
 
 func _build_area(center_pos: Vector3, normal: Vector3) -> void:
