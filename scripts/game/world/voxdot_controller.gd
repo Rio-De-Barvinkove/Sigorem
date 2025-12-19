@@ -303,6 +303,13 @@ func place_voxel(world_pos: Vector3, material: int = 2) -> void:
 	if not terrain or not terrain.has_method("place_edit"):
 		push_error("VoxdotController: terrain or place_edit method not available")
 		return
+	
+	# КРИТИЧНО: Оновити чанк перед edit'ом, щоб працювати з актуальною геометрією
+	# RayCast працює з mesh, але Voxdot працює з SDF, тому потрібна синхронізація
+	var chunk_coords = _world_to_chunk(world_pos)
+	if terrain.has_method("process_dirty_chunks"):
+		terrain.process_dirty_chunks(1, false)  # Обробити 1 чанк без форсування
+	
 	var half_size = Vector3(voxel_scale * 0.5, voxel_scale * 0.5, voxel_scale * 0.5)
 	terrain.place_edit(half_size, world_pos, material, 1)
 
@@ -311,7 +318,6 @@ func place_voxel(world_pos: Vector3, material: int = 2) -> void:
 	if _chunk_save_manager:
 		var full_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
 		_chunk_save_manager.add_modification_operation("cube", world_pos, full_size, material)
-		var chunk_coords = _world_to_chunk(world_pos)
 		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
 
 
@@ -322,6 +328,13 @@ func remove_voxel(world_pos: Vector3) -> void:
 	if not terrain or not terrain.has_method("place_edit"):
 		push_error("VoxdotController: terrain or place_edit method not available")
 		return
+	
+	# КРИТИЧНО: Оновити чанк перед edit'ом, щоб працювати з актуальною геометрією
+	# RayCast працює з mesh, але Voxdot працює з SDF, тому потрібна синхронізація
+	var chunk_coords = _world_to_chunk(world_pos)
+	if terrain.has_method("process_dirty_chunks"):
+		terrain.process_dirty_chunks(1, false)  # Обробити 1 чанк без форсування
+	
 	var half_size = Vector3(voxel_scale * 0.5, voxel_scale * 0.5, voxel_scale * 0.5)
 	terrain.place_edit(half_size, world_pos, 0, 1)  # shape=1 (cube), material=0 (повітря)
 	
@@ -330,7 +343,6 @@ func remove_voxel(world_pos: Vector3) -> void:
 	if _chunk_save_manager:
 		var full_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
 		_chunk_save_manager.add_modification_operation("cube", world_pos, full_size, 0)
-		var chunk_coords = _world_to_chunk(world_pos)
 		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
 
 

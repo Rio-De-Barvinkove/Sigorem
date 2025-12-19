@@ -142,12 +142,25 @@ func _update_preview_size() -> void:
 	build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 
 
+func quantize_normal(n: Vector3) -> Vector3:
+	## Привести нормаль до найближчої осі вокселя
+	## КРИТИЧНО: hit_normal з mesh може бути під кутом, але нам потрібна осьова нормаль
+	var abs_n = n.abs()
+	if abs_n.x > abs_n.y and abs_n.x > abs_n.z:
+		return Vector3(sign(n.x), 0, 0)
+	elif abs_n.y > abs_n.z:
+		return Vector3(0, sign(n.y), 0)
+	else:
+		return Vector3(0, 0, sign(n.z))
+
+
 func _get_targeted_voxel_position(hit_pos: Vector3, hit_normal: Vector3, is_digging: bool) -> Vector3:
 	## Отримати точну позицію центру одного вокселя
 	## КРИТИЧНО: Правильний порядок обчислень:
-	## 1. Знайти точку ВСЕРЕДИНІ потрібного вокселя (малий offset 0.01)
-	## 2. З цієї точки обчислити voxel_index через floor (КУТ вокселя)
-	## 3. І тільки тоді обчислити центр одного вокселя
+	## 1. Квантувати нормаль до осі (hit_normal з mesh не осьова!)
+	## 2. Знайти точку ВСЕРЕДИНІ потрібного вокселя (малий offset 0.01 по осі)
+	## 3. З цієї точки обчислити voxel_index через floor (КУТ вокселя)
+	## 4. І тільки тоді обчислити центр одного вокселя
 	##
 	## Voxdot перевіряє КУТ вокселя для SDF, тому ми ТЕЖ маємо визначати воксель через кут
 	## Для одного вокселя: half_size = voxel_scale * 0.5, повний розмір = voxel_scale
@@ -156,19 +169,22 @@ func _get_targeted_voxel_position(hit_pos: Vector3, hit_normal: Vector3, is_digg
 		return hit_pos
 	
 	var voxel_scale = voxdot_controller.voxel_scale
-	var normal = hit_normal.normalized()
 	
-	# КРОК 1: Знайти точку ВСЕРЕДИНІ потрібного вокселя
-	# Використовуємо малий offset (0.01), щоб гарантовано потрапити в правильний воксель
+	# КРОК 1: КВАНТУВАТИ нормаль до осі вокселя
+	# hit_normal з mesh може бути під кутом, але нам потрібна осьова нормаль
+	var qn = quantize_normal(hit_normal.normalized())
+	
+	# КРОК 2: Знайти точку ВСЕРЕДИНІ потрібного вокселя
+	# Використовуємо малий offset (0.01) по КВАНТОВАНІЙ осі, щоб гарантовано потрапити в правильний воксель
 	var p: Vector3
 	if is_digging:
-		# Для ламання: зсуваємо всередину на 0.01 * voxel_scale
-		p = hit_pos - normal * (voxel_scale * 0.01)
+		# Для ламання: зсуваємо всередину на 0.01 * voxel_scale по осі
+		p = hit_pos - qn * (voxel_scale * 0.01)
 	else:
-		# Для будівництва: зсуваємо назовні на 0.01 * voxel_scale
-		p = hit_pos + normal * (voxel_scale * 0.01)
+		# Для будівництва: зсуваємо назовні на 0.01 * voxel_scale по осі
+		p = hit_pos + qn * (voxel_scale * 0.01)
 	
-	# КРОК 2: Обчислити ІНДЕКС вокселя (КУТ) з цієї точки
+	# КРОК 3: Обчислити ІНДЕКС вокселя (КУТ) з цієї точки
 	# floor() дає той самий voxel_index, який Voxdot використовує при SDF-перевірці
 	var voxel_index = Vector3i(
 		floori(p.x / voxel_scale),
@@ -176,8 +192,8 @@ func _get_targeted_voxel_position(hit_pos: Vector3, hit_normal: Vector3, is_digg
 		floori(p.z / voxel_scale)
 	)
 	
-	# КРОК 3: Обчислити центр одного вокселя
-	# Для одного вокселя: центр = (voxel_index + 0.5) * voxel_scale
+	# КРОК 4: Обчислити центр одного вокселя
+	# ЖОРСТКО повертаємося в центр цього вокселя, НЕ використовуємо hit_pos далі
 	var voxel_center = (Vector3(voxel_index.x, voxel_index.y, voxel_index.z) + Vector3(0.5, 0.5, 0.5)) * voxel_scale
 	
 	return voxel_center
