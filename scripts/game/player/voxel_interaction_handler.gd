@@ -38,13 +38,7 @@ var dig_radius_voxels: int = 0  # Радіус копання в voxel units (0 
 var dig_preview: MeshInstance3D
 var build_preview: MeshInstance3D
 
-# VoxelTool для raycast (якщо доступний)
-var _voxel_tool = null
-
-# Оптимізація preview оновлення (тимчасово відключена)
-var _last_camera_position: Vector3
-var _preview_update_frame_skip = 2  # Оновлювати preview кожні 3 кадри
-var _frame_counter = 0
+# Використовуємо physics raycast для voxel targeting (Voxdot не має VoxelTool)
 
 
 func _ready() -> void:
@@ -59,23 +53,6 @@ func _ready() -> void:
 	if not camera:
 		push_warning("VoxelInteractionHandler: camera не знайдена за шляхом: " + str(camera_path))
 		return
-
-	# Спробувати отримати VoxelTool з terrain
-	if voxdot_controller.terrain and voxdot_controller.terrain.has_method("get_voxel_tool"):
-		_voxel_tool = voxdot_controller.terrain.get_voxel_tool()
-		if _voxel_tool:
-			print("VoxelInteractionHandler: VoxelTool отримано успішно")
-		else:
-			push_warning("VoxelInteractionHandler: get_voxel_tool повернув null")
-
-	# DEBUG: Перевірити ініціалізацію
-	print("_voxel_tool:", _voxel_tool)
-	print("voxdot_controller:", voxdot_controller)
-	print("camera:", camera)
-
-	# Ініціалізувати оптимізацію preview
-	if camera:
-		_last_camera_position = camera.global_position
 
 	# Створити візуальні індикатори
 	_create_preview_meshes()
@@ -184,34 +161,51 @@ func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
 
 
 
+func _physics_raycast(max_distance: float = 100.0) -> Dictionary:
+	## Physics raycast для voxel targeting через меш Voxdot
+	## Voxdot не має власного raycast API, використовуємо physics raycast з surface offset
+	if not camera or not voxdot_controller or not get_viewport() or not get_viewport().world_3d:
+		return {}
+
+	var from = camera.global_position
+	var dir = -camera.global_transform.basis.z.normalized()
+	var to = from + dir * max_distance
+
+	var space_state = get_viewport().world_3d.direct_space_state
+	if not space_state:
+		return {}
+
+	var query = PhysicsRayQueryParameters3D.new()
+	query.from = from
+	query.to = to
+	query.collision_mask = 1  # Основна collision mask
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+
+	var result = space_state.intersect_ray(query)
+	return result
+
+
 func _voxel_raycast(max_distance: float = 100.0) -> Variant:
-	## Raycast у voxel grid через VoxelTool
-	## Повертає словник з 'position' (voxel_index) або null якщо немає попадання
-	if not _voxel_tool or not camera or not voxdot_controller:
+	## Перетворює physics raycast в voxel targeting з surface offset
+	var hit = _physics_raycast(max_distance)
+	if hit.is_empty():
 		return null
 
+	var hit_pos: Vector3 = hit.position
+	var hit_normal: Vector3 = hit.normal.normalized()
 	var voxel_scale = voxdot_controller.voxel_scale
 
-	# КРИТИЧНО: VoxelTool.raycast() працює у voxel space, не world space
-	# Конвертуємо world координати у voxel space перед raycast
-	var from_voxel = camera.global_position / voxel_scale
-	var dir_voxel = -camera.global_transform.basis.z.normalized()  # Використовуємо transform замість basis
+	# Зсуваємо всередину вокселя вздовж нормалі (як в документації)
+	var surface_offset = voxel_scale * 0.1  # 0.1 * voxel_scale для гарантованого попадання всередину
+	var adjusted_pos = hit_pos - hit_normal * surface_offset
 
-	var hit = _voxel_tool.raycast(from_voxel, dir_voxel, max_distance / voxel_scale)
-	if hit == null:
-		return null
-	if not hit.has("position") or not hit.has("normal"):
-		return null
-
-	# КЛЮЧ: hit.position лежить на грані вокселя
-	# Зсуваємо всередину поверхні вздовж нормалі на відстань пропорційну voxel_scale
-	var surface_offset = SURFACE_OFFSET_EPSILON * voxel_scale
-	var hit_pos = hit.position - hit.normal * surface_offset
-	var voxel_index = hit_pos.floor()
+	var voxel_index = (adjusted_pos / voxel_scale).floor()
 
 	return {
-		"position": voxel_index,  # Voxel index (головний результат)
-		"normal": hit.normal      # Surface normal (для preview)
+		"position": voxel_index,  # Voxel index
+		"normal": hit_normal,     # Surface normal
+		"world_hit": hit_pos      # Оригінальна world позиція
 	}
 
 
