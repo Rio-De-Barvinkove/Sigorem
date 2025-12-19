@@ -161,7 +161,12 @@ func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
 		push_error("VoxelInteractionHandler: invalid voxel_scale: " + str(scale))
 		return voxel_index
 
-	return (voxel_index + Vector3.ONE * 0.5) * scale
+	var center = (voxel_index + Vector3.ONE * 0.5) * scale
+
+	# ДЕБАГ: Додамо перевірку
+	print("DEBUG voxel_index_to_world_center: index=%s, scale=%s, result=%s" % [voxel_index, scale, center])
+
+	return center
 
 
 func _quantize_normal(normal: Vector3) -> Vector3:
@@ -330,7 +335,9 @@ func handle_mouse_button(button: int) -> void:
 				# ДЕБАГ ІНФО для NORMAL режиму
 				print("=== ДЕБАГ ІНФО NORMAL ===")
 				print("Радіус копання:", dig_radius_voxels)
-				print("Центр копання:", _last_hit_info.dig_position if _last_hit_info.has("dig_position") else "N/A")
+				print("Центр копання (voxel index):", _last_hit_info.dig_position if _last_hit_info.has("dig_position") else "N/A")
+				print("Центр копання (world center):", voxel_index_to_world_center(_last_hit_info.dig_position) if _last_hit_info.has("dig_position") else "N/A")
+				print("Voxel scale:", voxdot_controller.voxel_scale if voxdot_controller else "N/A")
 				print("VoxdotController:", "OK" if voxdot_controller else "NULL")
 				print("Terrain:", "OK" if voxdot_controller and voxdot_controller.terrain else "NULL")
 
@@ -379,7 +386,11 @@ func _dig_area(center_index: Vector3) -> void:
 				var target_index = center_index + Vector3(x, y, z)
 				# Конвертуємо voxel index в world center для Voxdot API
 				var target_center = voxel_index_to_world_center(target_index)
-				voxdot_controller.remove_voxel(target_center)
+
+				# ДЕБАГ: Додамо лог для перевірки
+				print("DEBUG: voxel_index=%s -> world_center=%s" % [target_index, target_center])
+
+				voxdot_controller.remove_voxel(target_center)  # ПЕРЕДАЄМО WORLD CENTER!
 				print("VoxelInteractionHandler: Відправлено команду для вокселя: позиція=", target_center, " матеріал=0 (повітря)")
 				removed_count += 1
 
