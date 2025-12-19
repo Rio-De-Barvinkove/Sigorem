@@ -262,7 +262,7 @@ func handle_mouse_button(button: int) -> void:
 
 	match interaction_mode:
 		InteractionMode.NORMAL:
-			# NORMAL режим - тільки копання (ЛКМ) з радіусом dig_radius
+			# NORMAL режим - тільки копання (ЛКМ) з радіусом dig_radius_voxels
 			if button == MOUSE_BUTTON_LEFT:
 				_dig_area(voxel_index)
 
