@@ -20,25 +20,25 @@ extends ModuleOptions
 			_module.core.windows_manager.enable_os_popup_btns(v)
 	get:
 		if _module and _module.core and _module.core.windows_manager:
-		return _module.core.windows_manager.os_popup_btn_enabled
+			return _module.core.windows_manager.os_popup_btn_enabled
 		return false
 
 @export var os_window_bg_color:Color:
 	set(v):
 		if _module and _module.core and _module.core.windows_manager:
-		_module.core.windows_manager.set_os_window_bg_color(v)
+			_module.core.windows_manager.set_os_window_bg_color(v)
 	get:
 		if _module and _module.core and _module.core.windows_manager:
-		return _module.core.windows_manager.os_window_bg_color
+			return _module.core.windows_manager.os_window_bg_color
 		return Color.BLACK
 		
 @export var global_font_size:int:
 	set(v):
 		if Panku and Panku.windows_manager and Panku.windows_manager.theme:
-		Panku.windows_manager.theme.default_font_size = v
+			Panku.windows_manager.theme.default_font_size = v
 	get:
 		if Panku and Panku.windows_manager and Panku.windows_manager.theme:
-		return Panku.windows_manager.theme.default_font_size
+			return Panku.windows_manager.theme.default_font_size
 		return 0
 
 @export var export_comment_auto_global_font_size = (
