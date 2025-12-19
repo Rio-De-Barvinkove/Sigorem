@@ -159,7 +159,7 @@ func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
 
 func _voxel_raycast(max_distance: float = 100.0) -> Variant:
 	## Raycast у voxel grid через VoxelTool
-	## Повертає voxel index (Vector3) або null якщо немає попадання
+	## Повертає словник з 'position' (voxel_index) або null якщо немає попадання
 	if not _voxel_tool or not camera or not voxdot_controller:
 		return null
 
@@ -171,10 +171,20 @@ func _voxel_raycast(max_distance: float = 100.0) -> Variant:
 	var dir_voxel = (-camera.global_basis.z).normalized()
 
 	var hit = _voxel_tool.raycast(from_voxel, dir_voxel, max_distance / voxel_scale)
-	if hit == null or not hit.has("position"):
+	if hit == null:
+		return null
+	if not hit.has("position") or not hit.has("normal"):
 		return null
 
-	return hit.position.floor()  # Voxel index вже у voxel space
+	# КЛЮЧ: hit.position лежить на грані вокселя
+	# Зсуваємо всередину поверхні вздовж нормалі щоб гарантовано потрапити в правильний воксель
+	var hit_pos = hit.position - hit.normal * 0.001
+	var voxel_index = hit_pos.floor()
+
+	return {
+		"position": voxel_index,  # Voxel index (головний результат)
+		"normal": hit.normal      # Surface normal (для preview)
+	}
 
 
 func _update_preview_position() -> void:
@@ -185,11 +195,13 @@ func _update_preview_position() -> void:
 		return
 
 	# Raycast - отримуємо voxel index або null
-	var voxel_index = _voxel_raycast()
-	if voxel_index == null:
+	var hit = _voxel_raycast()
+	if hit == null or not hit.has("position"):
 		dig_preview.visible = false
 		build_preview.visible = false
 		return
+
+	var voxel_index = hit.position
 
 	# Конвертуємо voxel index в world center
 	var center = voxel_index_to_world_center(voxel_index)
@@ -254,9 +266,11 @@ func handle_mouse_button(button: int) -> void:
 		return
 
 	# Raycast - отримуємо voxel index або null
-	var voxel_index = _voxel_raycast()
-	if voxel_index == null:
+	var hit = _voxel_raycast()
+	if hit == null or not hit.has("position"):
 		return
+
+	var voxel_index = hit.position
 
 	# Конвертуємо voxel index в world center
 	var center = voxel_index_to_world_center(voxel_index)
