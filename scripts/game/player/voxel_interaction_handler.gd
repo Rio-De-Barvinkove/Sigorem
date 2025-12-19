@@ -130,24 +130,23 @@ func _create_wireframe_mesh(size: Vector3) -> ArrayMesh:
 
 func _update_preview_size() -> void:
 	var voxel_scale = voxdot_controller.voxel_scale if voxdot_controller else 0.1
-	# Розмір області 2x2x2 вокселів (відповідає remove_voxel/place_voxel)
-	var area_size = Vector3(voxel_scale * 2.0, voxel_scale * 2.0, voxel_scale * 2.0)
+	# Розмір одного вокселя (відповідає remove_voxel/place_voxel)
+	var single_voxel_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
 
-	# Для руйнування (NORMAL режим) - область 2x2x2 вокселів
-	dig_preview.mesh = _create_wireframe_mesh(area_size)
+	# Для руйнування (NORMAL режим) - один воксель
+	dig_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 
-	# Для будівництва (CREATIVE режим) - область 2x2x2 вокселів
-	build_preview.mesh = _create_wireframe_mesh(area_size)
+	# Для будівництва (CREATIVE режим) - один воксель
+	build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 
 
 func _get_targeted_voxel_position(hit_pos: Vector3, hit_normal: Vector3, is_digging: bool) -> Vector3:
-	## Отримати точну позицію центру області 2x2x2 вокселів
-	## hit_pos - точка попадання raycast на поверхню mesh (на грані вокселя)
-	## hit_normal - нормаль поверхні (напрямок від вокселя назовні)
+	## Отримати точну позицію центру одного вокселя
+	## КРИТИЧНО: Використовуємо floor + 0.5 для точної центровки по сітці
 	##
-	## Для області 2x2x2: half_size = voxel_scale, повний розмір = 2 * voxel_scale
-	## Центр області має бути вирівняний по сітці: на межі між вокселями
-	## Центр 2x2x2 області: (voxel_index + Vector3(1.0, 1.0, 1.0)) * voxel_scale
+	## Для одного вокселя: half_size = voxel_scale * 0.5, повний розмір = voxel_scale
+	## Центр має бути точно в центрі вокселя
+	## Формула: offset → floor → +0.5 → * voxel_scale (центр вокселя)
 	if not voxdot_controller:
 		return hit_pos
 	
@@ -157,20 +156,19 @@ func _get_targeted_voxel_position(hit_pos: Vector3, hit_normal: Vector3, is_digg
 	# Обчислюємо offset залежно від напрямку
 	var offset: Vector3
 	if is_digging:
-		# Для копання: зсуваємо всередину на половину області
-		offset = -normal * voxel_scale
+		# Для копання: зсуваємо всередину на 20% вокселя для надійності
+		offset = -normal * voxel_scale * 0.2
 	else:
-		# Для будівництва: зсуваємо назовні на половину області (1 воксель)
-		# щоб нижня грань області 2x2x2 була точно на поверхні
-		offset = normal * voxel_scale
+		# Для будівництва: зсуваємо назовні на 1 воксель + 10% запасу
+		offset = normal * voxel_scale * 1.1
 	
+	# ОБОВ'ЯЗКОВО: floor для вирівнювання по сітці
 	var adjusted = hit_pos + offset
-	# Отримуємо індекс вокселя (кут області 2x2x2)
 	var voxel_index = (adjusted / voxel_scale).floor()
 	
-	# Для області 2x2x2: центр = (voxel_index + 1.0) * voxel_scale (на межі між вокселями)
-	# Це забезпечує вирівнювання по сітці та правильне позиціонування
-	return (voxel_index + Vector3(1.0, 1.0, 1.0)) * voxel_scale
+	# Для одного вокселя: центр = (voxel_index + 0.5) * voxel_scale
+	# Це ставить центр точно в центр вокселя
+	return (voxel_index + Vector3(0.5, 0.5, 0.5)) * voxel_scale
 
 
 func _update_preview_position() -> void:

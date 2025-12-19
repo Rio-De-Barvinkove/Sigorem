@@ -297,35 +297,39 @@ func _update_chunks_around_player() -> void:
 
 
 func place_voxel(world_pos: Vector3, material: int = 2) -> void:
-	## Поставити область 2x2x2 вокселів
+	## Поставити точно один воксель (куб 1x1x1)
 	## place_edit очікує halfExtents як перший параметр для куба (shape=1)
-	## Для 2x2 вокселів: повний розмір = 2 * voxel_scale, halfExtents = voxel_scale
+	## Для одного вокселя: повний розмір = voxel_scale, halfExtents = voxel_scale * 0.5
 	if not terrain or not terrain.has_method("place_edit"):
 		push_error("VoxdotController: terrain or place_edit method not available")
 		return
-	var half_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
+	var half_size = Vector3(voxel_scale * 0.5, voxel_scale * 0.5, voxel_scale * 0.5)
 	terrain.place_edit(half_size, world_pos, material, 1)
 
-	# Зберегти модифікацію для персистентності
+	# Зберегти SDF-операцію (cube) для персистентності
+	# КРИТИЧНО: зберігаємо операцію (cube з size), а не точку
 	if _chunk_save_manager:
-		_chunk_save_manager.add_voxel_modification(world_pos, material)
+		var full_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
+		_chunk_save_manager.add_modification_operation("cube", world_pos, full_size, material)
 		var chunk_coords = _world_to_chunk(world_pos)
 		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
 
 
 func remove_voxel(world_pos: Vector3) -> void:
-	## Видалити область 2x2x2 вокселів
+	## Видалити точно один воксель (куб 1x1x1)
 	## place_edit очікує halfExtents як перший параметр для куба (shape=1)
-	## Для 2x2 вокселів: повний розмір = 2 * voxel_scale, halfExtents = voxel_scale
+	## Для одного вокселя: повний розмір = voxel_scale, halfExtents = voxel_scale * 0.5
 	if not terrain or not terrain.has_method("place_edit"):
 		push_error("VoxdotController: terrain or place_edit method not available")
 		return
-	var half_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
+	var half_size = Vector3(voxel_scale * 0.5, voxel_scale * 0.5, voxel_scale * 0.5)
 	terrain.place_edit(half_size, world_pos, 0, 1)  # shape=1 (cube), material=0 (повітря)
 	
-	# Зберегти модифікацію для персистентності (матеріал 0 = повітря)
+	# Зберегти SDF-операцію (cube) для персистентності (матеріал 0 = повітря)
+	# КРИТИЧНО: зберігаємо операцію (cube з size), а не точку
 	if _chunk_save_manager:
-		_chunk_save_manager.add_voxel_modification(world_pos, 0)
+		var full_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
+		_chunk_save_manager.add_modification_operation("cube", world_pos, full_size, 0)
 		var chunk_coords = _world_to_chunk(world_pos)
 		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
 
