@@ -20,7 +20,7 @@ var voxdot_controller: VoxdotController
 var camera: Camera3D
 var interaction_mode: InteractionMode = InteractionMode.NORMAL
 var current_tool: ToolType = ToolType.HANDS
-var dig_radius: float = 0.3  # Динамічний радіус копання
+var dig_radius_voxels: int = 0  # Радіус копання в voxel units (0 = один воксель)
 
 # Візуальні індикатори для preview областей
 var dig_preview: MeshInstance3D
@@ -133,8 +133,9 @@ func _update_preview_size() -> void:
 	var single_voxel_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
 
 	if interaction_mode == InteractionMode.NORMAL:
-		# NORMAL режим - preview розмір залежить від dig_radius
-		var preview_size = Vector3(dig_radius * 2.0, dig_radius * 2.0, dig_radius * 2.0)
+		# NORMAL режим - preview показує voxel cube розміром (2*radius_voxels + 1)^3
+		var preview_diameter = dig_radius_voxels * 2 + 1  # Наприклад: radius=2 -> 5x5x5
+		var preview_size = Vector3(preview_diameter, preview_diameter, preview_diameter) * voxel_scale
 		dig_preview.mesh = _create_wireframe_mesh(preview_size)
 		build_preview.mesh = _create_wireframe_mesh(single_voxel_size)
 	else:
@@ -158,6 +159,7 @@ func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
 func _voxel_raycast(max_distance: float = 100.0) -> Variant:
 	## Raycast у voxel grid через VoxelTool
 	## Повертає voxel index (Vector3) або null якщо немає попадання
+	## VoxelTool.raycast повертає hit.position вже у voxel space (не world space)
 	if not _voxel_tool or not camera or not voxdot_controller:
 		return null
 
@@ -168,7 +170,7 @@ func _voxel_raycast(max_distance: float = 100.0) -> Variant:
 	if hit == null or not hit.has("position"):
 		return null
 
-	return hit.position.floor()
+	return hit.position.floor()  # Гарантуємо цілочисельний voxel index
 
 
 func _update_preview_position() -> void:
@@ -214,29 +216,29 @@ func handle_input(event: InputEvent) -> void:
 		# 1-3 - перемикання інструментів для руйнування (тільки в NORMAL режимі)
 		elif event.keycode == KEY_1 and interaction_mode == InteractionMode.NORMAL:
 			current_tool = ToolType.HANDS
-			dig_radius = 0.05  # Один воксель (0.05 < voxel_scale * 0.5)
+			dig_radius_voxels = 0  # Один воксель
 			_update_preview_size()
 		elif event.keycode == KEY_2 and interaction_mode == InteractionMode.NORMAL:
 			current_tool = ToolType.SHOVEL
-			dig_radius = 0.8
+			dig_radius_voxels = 2  # 5x5x5 voxel cube
 			_update_preview_size()
 		elif event.keycode == KEY_3 and interaction_mode == InteractionMode.NORMAL:
 			current_tool = ToolType.PICKAXE
-			dig_radius = 1.2
+			dig_radius_voxels = 3  # 7x7x7 voxel cube
 			_update_preview_size()
 
 	# Прокрутка миші - зміна розміру області для руйнування (тільки в NORMAL режимі)
 	if event is InputEventMouseButton and event.pressed and interaction_mode == InteractionMode.NORMAL:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			dig_radius = min(dig_radius + 0.1, 3.0)  # Максимум 3.0
+			dig_radius_voxels = min(dig_radius_voxels + 1, 5)  # Максимум 5 voxel
 			_update_preview_size()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			var min_radius = 0.0  # Дозволяємо 0 для одного вокселя
+			var min_radius = 0  # Дозволяємо 0 для одного вокселя
 			match current_tool:
-				ToolType.HANDS: min_radius = 0.0    # Один воксель
-				ToolType.SHOVEL: min_radius = 0.5
-				ToolType.PICKAXE: min_radius = 0.8
-			dig_radius = max(dig_radius - 0.1, min_radius)
+				ToolType.HANDS: min_radius = 0    # Один воксель
+				ToolType.SHOVEL: min_radius = 1   # Мінімум 3x3x3
+				ToolType.PICKAXE: min_radius = 2  # Мінімум 5x5x5
+			dig_radius_voxels = max(dig_radius_voxels - 1, min_radius)
 			_update_preview_size()
 
 
@@ -278,12 +280,12 @@ func handle_mouse_button(button: int) -> void:
 					voxdot_controller.terrain.process_dirty_chunks(voxdot_controller.chunks_per_frame, true)
 
 func _dig_area(center_index: Vector3) -> void:
-	## Копати область з радіусом dig_radius в NORMAL режимі
-	## Видаляє вокселі в сферичній області навколо center_index
+	## Копати область з радіусом dig_radius_voxels в NORMAL режимі
+	## Видаляє вокселі в кубічній області навколо center_index
 	var voxel_scale = voxdot_controller.voxel_scale
 
-	# Якщо радіус дуже малий (< половини вокселя), копати тільки один воксель
-	if dig_radius < voxel_scale * 0.5:
+	# Якщо радіус = 0, копати тільки один воксель
+	if dig_radius_voxels == 0:
 		var center = voxel_index_to_world_center(center_index)
 		voxdot_controller.remove_voxel(center)
 
@@ -292,32 +294,21 @@ func _dig_area(center_index: Vector3) -> void:
 			voxdot_controller.terrain.process_dirty_chunks(voxdot_controller.chunks_per_frame, true)
 		return
 
-	# Радіус в вокселях
-	var radius_voxels = int(ceil(dig_radius / voxel_scale))
-
-	# Видаляємо вокселі в сферичній області
+	# Видаляємо вокселі в кубічній області (radius_voxels x radius_voxels x radius_voxels)
 	var removed_count = 0
-	for x in range(-radius_voxels, radius_voxels + 1):
-		for y in range(-radius_voxels, radius_voxels + 1):
-			for z in range(-radius_voxels, radius_voxels + 1):
-				var offset = Vector3(x, y, z)
-
-				# Перевірка відстані (сферична область)
-				var dist = offset.length() * voxel_scale
-				if dist <= dig_radius:
-					var target_index = center_index + offset
-					var target_center = voxel_index_to_world_center(target_index)
-					voxdot_controller.remove_voxel(target_center)
-					removed_count += 1
+	for x in range(-dig_radius_voxels, dig_radius_voxels + 1):
+		for y in range(-dig_radius_voxels, dig_radius_voxels + 1):
+			for z in range(-dig_radius_voxels, dig_radius_voxels + 1):
+				var target_index = center_index + Vector3(x, y, z)
+				var target_center = voxel_index_to_world_center(target_index)
+				voxdot_controller.remove_voxel(target_center)
+				removed_count += 1
 
 	# Обробити dirty chunks після всіх видалень
 	if removed_count > 0 and voxdot_controller.terrain and voxdot_controller.terrain.has_method("process_dirty_chunks"):
 		voxdot_controller.terrain.process_dirty_chunks(voxdot_controller.chunks_per_frame, true)
 
 
-func _build_area(center_pos: Vector3, normal: Vector3) -> void:
-	## Будувати - завжди ставити 1 воксель
-	voxdot_controller.place_voxel(center_pos, 2)
 
 
 func _physics_process(_delta: float) -> void:
