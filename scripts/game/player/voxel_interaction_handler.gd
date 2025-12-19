@@ -184,9 +184,10 @@ func _update_preview_position() -> void:
 		build_preview.visible = false
 		return
 
-	# hit.position - це voxel index (grid position), не world center
+	# hit.position - це позиція в voxel space, але може бути float (наприклад 12.99998)
+	# КРИТИЧНО: потрібно floor() для отримання цілочисельного індексу
+	var voxel_index := hit.position.floor()
 	# Потрібно перетворити в центр вокселя в world space
-	var voxel_index: Vector3 = hit.position
 	var voxel_center := voxel_index_to_world_center(voxel_index)
 
 	# NORMAL режим - показувати preview тільки для руйнування (чорний outline)
@@ -252,9 +253,10 @@ func handle_mouse_button(button: int) -> void:
 	if hit.is_empty() or not hit.has("position"):
 		return
 
-	# hit.position - це voxel index (grid position), не world center
+	# hit.position - це позиція в voxel space, але може бути float (наприклад 12.99998)
+	# КРИТИЧНО: потрібно floor() для отримання цілочисельного індексу
+	var voxel_index := hit.position.floor()
 	# Потрібно перетворити в центр вокселя в world space
-	var voxel_index: Vector3 = hit.position
 	var voxel_center := voxel_index_to_world_center(voxel_index)
 
 	match interaction_mode:
