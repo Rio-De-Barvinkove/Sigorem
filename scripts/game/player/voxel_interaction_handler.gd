@@ -41,6 +41,11 @@ var build_preview: MeshInstance3D
 # VoxelTool для raycast (якщо доступний)
 var _voxel_tool = null
 
+# Оптимізація preview оновлення
+var _last_camera_position: Vector3
+var _preview_update_frame_skip = 2  # Оновлювати preview кожні 3 кадри
+var _frame_counter = 0
+
 
 func _ready() -> void:
 	# Отримати посилання на контролери з перевірками
@@ -48,11 +53,11 @@ func _ready() -> void:
 	camera = get_node_or_null(camera_path) if camera_path else null
 
 	if not voxdot_controller:
-		push_warning("VoxelInteractionHandler: voxdot_controller не знайдено за шляхом: ", voxdot_controller_path)
+		push_warning("VoxelInteractionHandler: voxdot_controller не знайдено за шляхом: " + str(voxdot_controller_path))
 		return
 
 	if not camera:
-		push_warning("VoxelInteractionHandler: camera не знайдена за шляхом: ", camera_path)
+		push_warning("VoxelInteractionHandler: camera не знайдена за шляхом: " + str(camera_path))
 		return
 
 	# Спробувати отримати VoxelTool з terrain
@@ -62,6 +67,10 @@ func _ready() -> void:
 			print("VoxelInteractionHandler: VoxelTool отримано успішно")
 		else:
 			push_warning("VoxelInteractionHandler: get_voxel_tool повернув null")
+
+	# Ініціалізувати оптимізацію preview
+	if camera:
+		_last_camera_position = camera.global_position
 
 	# Створити візуальні індикатори
 	_create_preview_meshes()
@@ -162,7 +171,7 @@ func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
 
 	var scale := voxdot_controller.voxel_scale
 	if scale <= 0:
-		push_error("VoxelInteractionHandler: invalid voxel_scale: ", scale)
+		push_error("VoxelInteractionHandler: invalid voxel_scale: " + str(scale))
 		return voxel_index
 
 	return (voxel_index + Vector3.ONE * 0.5) * scale
@@ -321,6 +330,7 @@ func _dig_area(center_index: Vector3) -> void:
 	var voxel_scale = voxdot_controller.voxel_scale
 
 	# Видаляємо вокселі в кубічній області навколо center_index
+	# TODO: Для великих радіусів можна оптимізувати через batch-операції VoxelTool замість окремих викликів
 	var removed_count = 0
 	for x in range(-dig_radius_voxels, dig_radius_voxels + 1):
 		for y in range(-dig_radius_voxels, dig_radius_voxels + 1):
@@ -341,5 +351,12 @@ func _dig_area(center_index: Vector3) -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	# Оновити позицію preview індикаторів
-	_update_preview_position()
+	# Оптимізація: оновлювати preview не кожен кадр для кращої продуктивності
+	_frame_counter += 1
+	if _frame_counter % _preview_update_frame_skip != 0:
+		return
+
+	# Оновити позицію preview індикаторів тільки якщо камера значно перемістилася
+	if camera and _last_camera_position.distance_squared_to(camera.global_position) > 0.1:
+		_last_camera_position = camera.global_position
+		_update_preview_position()
