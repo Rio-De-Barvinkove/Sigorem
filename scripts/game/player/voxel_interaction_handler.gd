@@ -41,7 +41,7 @@ var build_preview: MeshInstance3D
 # VoxelTool для raycast (якщо доступний)
 var _voxel_tool = null
 
-# Оптимізація preview оновлення
+# Оптимізація preview оновлення (тимчасово відключена)
 var _last_camera_position: Vector3
 var _preview_update_frame_skip = 2  # Оновлювати preview кожні 3 кадри
 var _frame_counter = 0
@@ -67,6 +67,11 @@ func _ready() -> void:
 			print("VoxelInteractionHandler: VoxelTool отримано успішно")
 		else:
 			push_warning("VoxelInteractionHandler: get_voxel_tool повернув null")
+
+	# DEBUG: Перевірити ініціалізацію
+	print("_voxel_tool:", _voxel_tool)
+	print("voxdot_controller:", voxdot_controller)
+	print("camera:", camera)
 
 	# Ініціалізувати оптимізацію preview
 	if camera:
@@ -351,12 +356,5 @@ func _dig_area(center_index: Vector3) -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	# Оптимізація: оновлювати preview не кожен кадр для кращої продуктивності
-	_frame_counter += 1
-	if _frame_counter % _preview_update_frame_skip != 0:
-		return
-
-	# Оновити позицію preview індикаторів тільки якщо камера значно перемістилася
-	if camera and _last_camera_position.distance_squared_to(camera.global_position) > 0.1:
-		_last_camera_position = camera.global_position
-		_update_preview_position()
+	# Оновити позицію preview індикаторів
+	_update_preview_position()
