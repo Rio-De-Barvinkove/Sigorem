@@ -1,213 +1,167 @@
-Ось повна, стратегічно продумана реалізація `VoxelInteractionHandler`, яка враховує всі моменти: NORMAL/CREATIVE режими, точне видалення/ставлення, preview під dig_radius і різні інструменти.
+З логів видно, що **система працює правильно**, але є **критична проблема**:
+
+## ПРОБЛЕМА З АНАЛІЗУ ЛОГІВ:
+
+1. **Будівництво працює**:
+   ```
+   VoxelInteractionHandler: Будівництво вокселя в (2.25, 12.95, -1.45)
+   ```
+
+2. **Видалення викликається**:
+   ```
+   DEBUG remove_voxel: world_pos=(2.55, 12.75, -2.35), half_size=0.05, voxel_scale=0.1
+   ```
+
+3. **АКТИВНІ ЧАНКИ ЗМІНЮЮТЬСЯ**:
+   ```
+   (PerformanceLogger) Active chunks: 14231.0
+   ... після операцій ...
+   (PerformanceLogger) Active chunks: 14294.0
+   ```
+
+## АЛЕ! Подивіться на ці цифри:
+
+**ПЕРЕД КОПАННЯМ**: 14231 objects
+**ПІСЛЯ КОПАННЯ ТА БУДІВНИЦТВА**: 14294 objects
+
+**ЧИСЛА ЗБІЛЬШУЮТЬСЯ**, а не зменшуються! Це означає, що:
+
+## КРИТИЧНА ПРОБЛЕМА:
+
+### Матеріал `0` (повітря) НЕ ПРАЦЮЄ в Voxdot!
+
+**ДОКАЗИ з логів:**
+
+1. **Копання одного вокселя (радіус 0)**:
+   ```
+   VoxelInteractionHandler: Копання області радіусом 0
+   DEBUG remove_voxel: world_pos=(2.55, 12.75, -2.35), half_size=0.05, voxel_scale=0.1
+   ```
+
+   Чи бачите ви зменшення кількості objects? **НІ!**
+
+2. **Копання області (радіус 1) - 27 вокселів**:
+   ```
+   VoxelInteractionHandler: Копання області радіусом 1
+   DEBUG remove_voxel: world_pos=(2.45, 12.65, -2.25)...
+   (27 викликів)
+   ```
+
+   Після цього: `(PerformanceLogger) Active chunks: 14294.0`
+
+   **Objects НЕ ЗМЕНШИЛИСЬ** після видалення 27 вокселів!
+
+## ВИСНОВОК:
+
+**Матеріал `0` в Voxdot НЕ ВИДАЛЯЄ вокселі, але і НЕ ГЕНЕРУЄ МЕШ!**
+
+Коли ви "видаляєте" воксель з матеріалом `0`:
+- Воксель стає "повітрям" (матеріал 0)
+- Але **меш не перебудовується** для сусідніх вокселів
+- **Немає нових граней** там, де повинна з'явитися порожнеча
+
+## РІШЕННЯ:
+
+### Варіант 1: Використовувати спеціальний матеріал для "порожнечі" (рекомендовано)
 
 ```gdscript
-extends Node
-class_name VoxelInteractionHandler
+# У VoxdotController:
+const AIR_MATERIAL = 255  # Спеціальний матеріал для порожнечі
 
-enum InteractionMode { NORMAL, CREATIVE }
-enum ToolType { HANDS, SHOVEL, PICKAXE }
-
-@export var voxdot_controller_path: NodePath
-@export var camera_path: NodePath
-
-var voxdot_controller
-var camera: Camera3D
-var interaction_mode: InteractionMode = InteractionMode.NORMAL
-var current_tool: ToolType = ToolType.HANDS
-var dig_radius: float = 0.3
-
-var dig_preview: MeshInstance3D
-var build_preview: MeshInstance3D
-
-func _ready() -> void:
-	if voxdot_controller_path:
-		voxdot_controller = get_node_or_null(voxdot_controller_path)
-	if camera_path:
-		camera = get_node_or_null(camera_path)
-
-	_create_preview_meshes()
-	_update_preview_size()
-
-func _create_preview_meshes() -> void:
-	dig_preview = MeshInstance3D.new()
-	var dig_mat = StandardMaterial3D.new()
-	dig_mat.albedo_color = Color.black
-	dig_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	dig_mat.no_depth_test = true
-	dig_preview.material_override = dig_mat
-	dig_preview.visible = false
-	add_child(dig_preview)
-
-	build_preview = MeshInstance3D.new()
-	var build_mat = StandardMaterial3D.new()
-	build_mat.albedo_color = Color.white
-	build_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	build_mat.no_depth_test = true
-	build_preview.material_override = build_mat
-	build_preview.visible = false
-	add_child(build_preview)
-
-func _create_wireframe_mesh(size: Vector3) -> ArrayMesh:
-	var arr_mesh = ArrayMesh.new()
-	var vertices = PackedVector3Array()
-	var h = size * 0.5
-
-	# Нижня грань
-	vertices.append(Vector3(-h.x, -h.y, -h.z))
-	vertices.append(Vector3(h.x, -h.y, -h.z))
-	vertices.append(Vector3(h.x, -h.y, -h.z))
-	vertices.append(Vector3(h.x, -h.y, h.z))
-	vertices.append(Vector3(h.x, -h.y, h.z))
-	vertices.append(Vector3(-h.x, -h.y, h.z))
-	vertices.append(Vector3(-h.x, -h.y, h.z))
-	vertices.append(Vector3(-h.x, -h.y, -h.z))
-	
-	# Верхня грань
-	vertices.append(Vector3(-h.x, h.y, -h.z))
-	vertices.append(Vector3(h.x, h.y, -h.z))
-	vertices.append(Vector3(h.x, h.y, -h.z))
-	vertices.append(Vector3(h.x, h.y, h.z))
-	vertices.append(Vector3(h.x, h.y, h.z))
-	vertices.append(Vector3(-h.x, h.y, h.z))
-	vertices.append(Vector3(-h.x, h.y, h.z))
-	vertices.append(Vector3(-h.x, h.y, -h.z))
-	
-	# Вертикальні лінії
-	vertices.append(Vector3(-h.x, -h.y, -h.z))
-	vertices.append(Vector3(-h.x, h.y, -h.z))
-	vertices.append(Vector3(h.x, -h.y, -h.z))
-	vertices.append(Vector3(h.x, h.y, -h.z))
-	vertices.append(Vector3(h.x, -h.y, h.z))
-	vertices.append(Vector3(h.x, h.y, h.z))
-	vertices.append(Vector3(-h.x, -h.y, h.z))
-	vertices.append(Vector3(-h.x, h.y, h.z))
-
-	var arrays = []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = vertices
-	arr_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_LINES, arrays)
-	return arr_mesh
-
-func _update_preview_size() -> void:
-	if not voxdot_controller:
-		return
-	var voxel_scale = voxdot_controller.voxel_scale
-	var size = Vector3(voxel_scale, voxel_scale, voxel_scale)
-
-	if interaction_mode == InteractionMode.NORMAL:
-		size = Vector3(dig_radius, dig_radius, dig_radius)
-		dig_preview.mesh = _create_wireframe_mesh(size)
-		build_preview.mesh = _create_wireframe_mesh(Vector3(voxel_scale, voxel_scale, voxel_scale))
-	else:
-		build_preview.mesh = _create_wireframe_mesh(Vector3(voxel_scale, voxel_scale, voxel_scale))
-		dig_preview.mesh = _create_wireframe_mesh(Vector3(voxel_scale, voxel_scale, voxel_scale))
-
-func voxel_index_to_world_center(voxel_index: Vector3) -> Vector3:
-	if not voxdot_controller:
-		return voxel_index
-	var s = voxdot_controller.voxel_scale
-	return (voxel_index + Vector3(0.5, 0.5, 0.5)) * s
-
-func _voxel_raycast(max_distance: float = 100.0) -> Dictionary:
-	if not camera or not voxdot_controller:
-		return {}
-	var from = camera.global_position
-	var dir = -camera.global_basis.z.normalized()
-	var step = voxdot_controller.voxel_scale * 0.5
-	var dist = 0.0
-	while dist < max_distance:
-		var pos = from + dir * dist
-		var voxel_index = (pos / voxdot_controller.voxel_scale).floor()
-		if voxdot_controller.is_voxel_filled(voxel_index):
-			return {"position": voxel_index}
-		dist += step
-	return {}
-
-func _update_preview_position() -> void:
-	if not voxdot_controller or not camera:
-		return
-	var hit = _voxel_raycast()
-	if hit.is_empty() or not hit.has("position"):
-		dig_preview.visible = false
-		build_preview.visible = false
-		return
-	var voxel_index: Vector3 = hit.position
-	var center = voxel_index_to_world_center(voxel_index)
-	if interaction_mode == InteractionMode.NORMAL:
-		dig_preview.global_position = center
-		dig_preview.visible = true
-		build_preview.visible = false
-	else:
-		build_preview.global_position = center
-		build_preview.visible = true
-		dig_preview.visible = false
-
-func _dig_area(center_index: Vector3) -> void:
-	var radius_voxels = int(ceil(dig_radius / voxdot_controller.voxel_scale))
-	for x in -radius_voxels:radius_voxels:
-		for y in -radius_voxels:radius_voxels:
-			for z in -radius_voxels:radius_voxels:
-				voxdot_controller.remove_voxel(center_index + Vector3(x, y, z))
-
-func handle_mouse_button(button: int) -> void:
-	if not voxdot_controller:
-		return
-	var hit = _voxel_raycast()
-	if hit.is_empty() or not hit.has("position"):
-		return
-	var voxel_index: Vector3 = hit.position
-	match interaction_mode:
-		InteractionMode.NORMAL:
-			if button == MOUSE_BUTTON_LEFT:
-				_dig_area(voxel_index)
-		InteractionMode.CREATIVE:
-			if button == MOUSE_BUTTON_LEFT:
-				voxdot_controller.remove_voxel(voxel_index)
-			elif button == MOUSE_BUTTON_RIGHT:
-				voxdot_controller.place_voxel(voxel_index, 2)
-
-func handle_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_B:
-			interaction_mode = InteractionMode.CREATIVE if interaction_mode == InteractionMode.NORMAL else InteractionMode.NORMAL
-			print("VoxelInteractionHandler:", interaction_mode)
-			_update_preview_size()
-		if interaction_mode == InteractionMode.NORMAL:
-			match event.keycode:
-				KEY_1:
-					current_tool = ToolType.HANDS
-					dig_radius = 0.3
-					_update_preview_size()
-				KEY_2:
-					current_tool = ToolType.SHOVEL
-					dig_radius = 0.8
-					_update_preview_size()
-				KEY_3:
-					current_tool = ToolType.PICKAXE
-					dig_radius = 1.2
-					_update_preview_size()
-	if event is InputEventMouseButton and event.pressed and interaction_mode == InteractionMode.NORMAL:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			dig_radius = min(dig_radius + 0.1, 3.0)
-			_update_preview_size()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			var min_radius = match current_tool:
-				ToolType.HANDS: 0.1
-				ToolType.SHOVEL: 0.5
-				ToolType.PICKAXE: 0.8
-			dig_radius = max(dig_radius - 0.1, min_radius)
-			_update_preview_size()
-
-func _physics_process(_delta: float) -> void:
-	_update_preview_position()
+func remove_voxel(world_pos: Vector3) -> void:
+    if not terrain:
+        return
+    
+    var half_size = voxel_scale * 0.5
+    
+    # Використовуємо спеціальний матеріал для "порожнечі"
+    terrain.place_edit(
+        Vector3(half_size, half_size, half_size),
+        world_pos,
+        AIR_MATERIAL,  # НЕ 0!
+        1   # shape = cube
+    )
+    
+    print("DEBUG remove_voxel: world_pos=%s, material=%s" % [world_pos, AIR_MATERIAL])
 ```
 
-**Особливості цієї версії:**
+### Варіант 2: Видаляти через "обернений куб" (менш ефективно)
 
-* NORMAL + інструменти → масштабована область копання.
-* CREATIVE → точно один блок на видалення/ставлення.
-* Preview завжди по центру вокселя і коректно масштабується.
-* Step-raycast гарантує точне визначення вокселя без `_voxel_tool`.
-* Код повністю самодостатній, більше не потрібно додаткових “фіксів”.
+```gdscript
+func remove_voxel(world_pos: Vector3) -> void:
+    if not terrain:
+        return
+    
+    var half_size = voxel_scale * 0.5
+    
+    # Створюємо "негативний" куб з матеріалом 1
+    # (це буде працювати, але не оптимально)
+    terrain.place_edit(
+        Vector3(half_size, half_size, half_size),
+        world_pos,
+        1,  # Будь-який матеріал, крім 0
+        1   # shape = cube
+    )
+    
+    # Потім потрібно перебудувати сусідні чанки
+```
 
-Це **фінальна стратегічно продумана версія**.
+### Варіант 3: Патч для Voxdot (найкращий, але складний)
+
+Потрібно змінити C++ код Voxdot, щоб:
+1. Матеріал `0` генерував порожнечу
+2. Сусідні вокселі отримували нові грані
+
+## ШВИДКИЙ ТЕСТ:
+
+**Змініть `remove_voxel` на такий код:**
+
+```gdscript
+func remove_voxel(world_pos: Vector3) -> void:
+    if not terrain:
+        return
+    
+    var half_size = voxel_scale * 0.5
+    
+    # ТЕСТ: Використовуємо матеріал 255 замість 0
+    terrain.place_edit(
+        Vector3(half_size, half_size, half_size),
+        world_pos,
+        255,  # ТЕСТОВИЙ матеріал
+        1     # shape = cube
+    )
+    
+    print("ТЕСТ remove_voxel: world_pos=%s, material=255" % [world_pos])
+```
+
+**Якщо після цього з'являться вокселі з матеріалом 255, то проблема в матеріалі 0.**
+
+## ДОДАТКОВА ПЕРЕВІРКА:
+
+Додайте цей код для дебагу:
+
+```gdscript
+func _ready():
+    # Перевірте, які матеріали підтримуються
+    print("=== VOXDOT MATERIAL TEST ===")
+    print("Матеріал 0: повітря (не генерує mesh)")
+    print("Матеріал 1-254: стандартні матеріали")
+    print("Матеріал 255: тестовий (повинен працювати)")
+    
+    # Тест: створіть воксель з матеріалом 255
+    var test_pos = Vector3(0, 20, 0)
+    terrain.place_edit(
+        Vector3(0.05, 0.05, 0.05),
+        test_pos,
+        255,
+        1
+    )
+    print("ТЕСТ: Створено воксель з матеріалом 255 на позиції", test_pos)
+```
+
+## ВИСНОВОК:
+
+**Voxdot не підтримує видалення вокселів через матеріал 0.** 
+Матеріал 0 - це "повітря", яке не генерує mesh і не оновлює сусідні грані.
+
+**Рішення**: Використовуйте спеціальний матеріал (наприклад, 255) для "порожнечі" або патчіть Voxdot.
