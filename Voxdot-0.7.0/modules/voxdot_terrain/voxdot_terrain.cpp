@@ -1370,6 +1370,38 @@ bool VoxdotTerrain::add_sdf_edit_at_world_pos(const Ref<ISDFEdit> &edit, int chu
 			}
 		}
 	}
+
+	// VOXEL DIGGING FIX: If this is a removal operation (material=0), also mark neighboring chunks as dirty
+	// This ensures that chunks adjacent to removed voxels get their exposed faces updated
+	if (edit->getMaterial(edit->getApproximateWorldBounds().first) == 0) {
+		// For each chunk that was marked dirty by the main edit, also mark its 26 neighbors
+		for (int cx = static_cast<int>(minChunkCoords.x); cx <= static_cast<int>(maxChunkCoords.x); ++cx) {
+			for (int cy = static_cast<int>(minChunkCoords.y); cy <= static_cast<int>(maxChunkCoords.y); ++cy) {
+				for (int cz = static_cast<int>(minChunkCoords.z); cz <= static_cast<int>(maxChunkCoords.z); ++cz) {
+					// Mark the 26 neighboring chunks as dirty (3x3x3 area around each affected chunk)
+					for (int dx = -1; dx <= 1; ++dx) {
+						for (int dy = -1; dy <= 1; ++dy) {
+							for (int dz = -1; dz <= 1; ++dz) {
+								if (dx == 0 && dy == 0 && dz == 0) continue; // Skip the center chunk (already marked)
+
+								Vector3 neighborCoords(cx + dx, cy + dy, cz + dz);
+
+								// Only add if chunk exists and not already in dirty list
+								if (chunk_map.has(neighborCoords)) {
+									ChunkMetadata *neighbor_md = chunk_map.getptr(neighborCoords);
+									if (neighbor_md && !neighbor_md->is_dirty) {
+										neighbor_md->is_dirty = true;
+										dirty_chunks.push_back(neighborCoords);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return true;
 }
 
