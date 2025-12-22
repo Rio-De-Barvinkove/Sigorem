@@ -224,12 +224,6 @@ func _voxel_raycast(max_distance: float = 100.0) -> Variant:
 	var dig_index = (dig_pos / voxel_scale).floor()
 	var build_index = (build_pos / voxel_scale).floor()
 
-	# DEBUG: показати проміжні розрахунки
-	if _debug_mode:
-		print("RAYCAST DEBUG: hit_pos=", hit_pos, " hit_normal=", hit_normal)
-		print("RAYCAST DEBUG: dig_pos=", dig_pos, " dig_index=", dig_index)
-		print("RAYCAST DEBUG: build_pos=", build_pos, " build_index=", build_index)
-
 	var quantized_normal = _quantize_normal(hit_normal)
 
 	return {
@@ -360,14 +354,8 @@ func handle_mouse_button(button: int) -> void:
 			elif button == MOUSE_BUTTON_RIGHT:
 				# Будівництво одного вокселя
 				var build_center = voxel_index_to_world_center(_last_hit_info.build_position)
-				print("VoxelInteractionHandler: Будівництво вокселя в ", build_center, " (voxel_index: ", _last_hit_info.build_position, ")")
-				if _debug_mode:
-					print("VoxelInteractionHandler: Відправлено команду для вокселя: позиція=", build_center, " матеріал=", 2)
+				print("VoxelInteractionHandler: Будівництво вокселя в ", build_center)
 				voxdot_controller.place_voxel(build_center, 2)
-
-				# ДОДАТКОВА СИНХРОНІЗАЦІЯ: примусово обробити dirty chunks після будівництва
-				if voxdot_controller.terrain and voxdot_controller.terrain.has_method("process_dirty_chunks"):
-					voxdot_controller.terrain.process_dirty_chunks(10, true)  # Агресивніше оновлення
 
 	# Обробити dirty chunks один раз після всієї операції
 	if voxdot_controller.terrain and voxdot_controller.terrain.has_method("process_dirty_chunks"):
