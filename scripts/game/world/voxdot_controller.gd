@@ -334,16 +334,14 @@ func place_voxel(world_pos: Vector3, material: int = 2) -> void:
 func remove_voxel(world_pos: Vector3) -> void:
 	## Видалити точно один воксель (куб 1x1x1)
 	## place_edit очікує halfExtents як перший параметр для куба (shape=1)
-	## Для одного вокселя: повний розмір = voxel_scale, halfExtents = voxel_scale * 0.5
+	## КОСТИЛЬ: використовуємо halfExtents = voxel_scale * 1.5 щоб змусити Voxdot позначати більше чанків як dirty
 	##
-	## КРИТИЧНО: Використовуємо AIR_MATERIAL (255) замість 0, бо Voxdot
-	## ігнорує матеріал 0 при мешинг і не створює візуальні "дірки"
 	if not terrain or not terrain.has_method("place_edit"):
 		push_error("VoxdotController: terrain or place_edit method not available")
 		return
 
 	# ДЕБАГ: Перевірка координат
-	print("DEBUG remove_voxel: world_pos=%s, material=%s, voxel_scale=%s" % [world_pos, AIR_MATERIAL, voxel_scale])
+	print("DEBUG remove_voxel: world_pos=%s, half_size=%s, voxel_scale=%s" % [world_pos, voxel_scale * 1.5, voxel_scale])
 
 	# КРИТИЧНО: Оновити чанк перед edit'ом, щоб працювати з актуальною геометрією
 	# RayCast працює з mesh, але Voxdot працює з SDF, тому потрібна синхронізація
@@ -351,13 +349,14 @@ func remove_voxel(world_pos: Vector3) -> void:
 	if terrain.has_method("process_dirty_chunks"):
 		terrain.process_dirty_chunks(1, false)  # Обробити 1 чанк без форсування
 
-	var half_size = Vector3(voxel_scale * 0.5, voxel_scale * 0.5, voxel_scale * 0.5)
-	terrain.place_edit(half_size, world_pos, AIR_MATERIAL, 1)  # shape=1 (cube), спеціальний матеріал для порожнечі
+	var half_size = Vector3(voxel_scale * 1.5, voxel_scale * 1.5, voxel_scale * 1.5)
+	terrain.place_edit(half_size, world_pos, 0, 1)  # shape=1 (cube), material=0 (повітря)
 	
 	# Зберегти SDF-операцію (cube) для персистентності (матеріал 0 = повітря)
 	# КРИТИЧНО: зберігаємо операцію (cube з size), а не точку
+	# КОСТИЛЬ: зберігаємо повний розмір, хоча edit має half_size * 2
 	if _chunk_save_manager:
-		var full_size = Vector3(voxel_scale, voxel_scale, voxel_scale)
+		var full_size = Vector3(voxel_scale * 3, voxel_scale * 3, voxel_scale * 3)  # 1.5 * 2
 		_chunk_save_manager.add_modification_operation("cube", world_pos, full_size, 0)
 		_chunk_save_manager.mark_chunk_dirty(chunk_coords)
 
