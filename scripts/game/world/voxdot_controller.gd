@@ -307,12 +307,11 @@ func place_voxel(world_pos: Vector3, material: int = 2) -> void:
 	## Поставити точно один воксель (куб 1x1x1)
 	## place_edit очікує halfExtents як перший параметр для куба (shape=1)
 	## Для одного вокселя: повний розмір = voxel_scale, halfExtents = voxel_scale * 0.5
-	##
-	## Примітка: Для видалення використовується AIR_MATERIAL (255), а не 0,
-	## бо Voxdot ігнорує матеріал 0 при мешинг
 	if not terrain or not terrain.has_method("place_edit"):
 		push_error("VoxdotController: terrain or place_edit method not available")
 		return
+
+	print("DEBUG place_voxel: world_pos=", world_pos, " material=", material, " half_size=", voxel_scale * 0.5)
 
 	# КРИТИЧНО: Оновити чанк перед edit'ом, щоб працювати з актуальною геометрією
 	# RayCast працює з mesh, але Voxdot працює з SDF, тому потрібна синхронізація
