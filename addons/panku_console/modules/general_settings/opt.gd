@@ -14,14 +14,14 @@ extends ModuleOptions
 	get:
 		return PankuLynxWindow.lynx_window_shader_material.get("shader_parameter/modulate")
 
-@export var enable_os_window := false:
-	set(v):
-		if _module and _module.core and _module.core.windows_manager:
-			_module.core.windows_manager.enable_os_popup_btns(v)
-	get:
-		if _module and _module.core and _module.core.windows_manager:
-			return _module.core.windows_manager.os_popup_btn_enabled
-		return false
+# @export var enable_os_window := false:
+#	set(v):
+#		if _module and _module.core and _module.core.windows_manager:
+#			_module.core.windows_manager.enable_os_popup_btns(v)
+#	get:
+#		if _module and _module.core and _module.core.windows_manager:
+#			return _module.core.windows_manager.os_popup_btn_enabled
+#		return false
 
 @export var os_window_bg_color:Color:
 	set(v):
